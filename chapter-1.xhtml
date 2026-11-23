@@ -1,0 +1,350 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>1 Django unfolds</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">1</span> </span> <span class="chapter-title-text">Django unfolds</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers </h3>
+<ul>
+<li class="readable-text" id="p2">What the Django Framework is and why to use it</li>
+<li class="readable-text" id="p3">The actions Django performs when you enter a URL in your browser</li>
+<li class="readable-text" id="p4">Server-side rendering vs single-page applications</li>
+<li class="readable-text" id="p5">The kinds of projects you can complete with Django</li>
+</ul>
+</div>
+<div class="readable-text" id="p6">
+<p>You’ve written a brilliant Python script that runs on your local machine, and now you want other people to be able to use it. You can use magical packaging tools and send your program to your users, but then, you’re still stuck with the challenge of whether they have Python installed. Python does not come by default on many computing platforms, and you have the added problem of making sure the Python version your script requires is installed on your user’s machine.</p>
+</div>
+<div class="readable-text intended-text" id="p7">
+<p>Alternatively, you can turn your Python program into a web application. In this case, your user’s interface becomes a web browser, and those are installed everywhere. Your users no longer even need to know what Python is; they simply point their browser at the right URL and can use your software. To do this, your program needs to be adapted to run on a web server. This requires a bit of work, but using a single environment also has a distinct advantage: you are in full control over what version of Python gets run.</p>
+</div>
+<div class="readable-text intended-text" id="p8">
+<p>If you already have some experience with Python, a great answer to building web applications is Django. Django is a third-party Python framework that lets you write code that runs on a web server. Using Django, you write Python code, called a <em>view</em>, that is tied to a URL. When your users visit the URL, the Django view runs and returns results to the user’s browser. Django does a lot more than that though—it includes tools for doing the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p9"> Routing and managing URLs </li>
+<li class="readable-text" id="p10"> Encapsulating what code gets run per page visit </li>
+<li class="readable-text" id="p11"> Reading and writing to databases </li>
+<li class="readable-text" id="p12"> Composing HTML output based on reusable chunks </li>
+<li class="readable-text" id="p13"> Writing multiuser-enabled sites </li>
+<li class="readable-text" id="p14"> Managing user authentication and authorization to your site </li>
+<li class="readable-text" id="p15"> Web-based administrative tools that manage all these features </li>
+</ul>
+<div class="readable-text" id="p16">
+<p>Django started out as a tool for writing newspaper articles at the <em>Lawrence Journal-World</em> in Lawrence, Kansas. Rather than having each article be a single file on a web server, the newspaper wanted a way to reuse pieces of HTML. You don’t want to write the newspaper’s banner in every file—you want to compose it like you would with code. You also probably don’t want your reporters writing HTML; it isn’t their expertise. </p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>Django evolved as both a coding framework and a series of tools to manage web content. Among other things, the framework provides the ability to compose HTML out of reusable pieces solving the banner problem, and one of the tools it includes is a web-based interface for the creation of content. Reporters can write articles without worrying about HTML. Django’s tools are built on top of the framework, giving you the power to customize them to suit your needs.</p>
+</div>
+<div class="readable-text intended-text" id="p18">
+<p>The robustness of the Django framework has led to widespread industry adoption. Reddit, YouTube, <em>The Onion</em>, Pinterest, Netflix, Dropbox, and Spotify are just a few of the organizations that use Django. Sites like these need scale, and Django has proven itself. Whether you want to build something small or hope to become a massive site, Django can help you. It is a mature platform with a vibrant community, focused on maintaining and evolving a well-tested, secure framework. To top it all off, the original developers at the <em>Journal-World</em> made it open source, meaning it is freely available for you to both use and modify for your needs. </p>
+</div>
+<div class="readable-text" id="p19">
+<h2 class="readable-text-h2"><span class="num-string">1.1</span> Django’s parts</h2>
+</div>
+<div class="readable-text" id="p20">
+<p>Let’s start with a high-level view of what makes up Django, knowing that each of these topics is covered in detail later in the book. One way to understand Django is to think about it in three parts:</p>
+</div>
+<ol>
+<li class="readable-text" id="p21"> A mapper between URLs and view code </li>
+<li class="readable-text" id="p22"> An abstraction for interacting with a database </li>
+<li class="readable-text" id="p23"> A templating system to manage your HTML-like code </li>
+</ol>
+<div class="readable-text" id="p24">
+<p>Of course, Django is way more than just three parts, but all the other parts are built using these three concepts. Django includes tools like a web interface for modifying content in the database and the code needed to write multiuser sites. Each of these is built on those same three ideas. This means once you’ve learned the key concepts, you can incorporate the tools into your site and customize them using the same knowledge you use to write your web application.</p>
+</div>
+<div class="readable-text intended-text" id="p25">
+<p>The first of the three ideas is about how code gets invoked when a user visits a web page. When a browser hits a URL, a web server is responsible for replying. Django isn’t a web server; it is a framework called by a web server. The web server is configured to map certain URLs to certain content, and in the case of Django, some of the URLs get passed to the framework. This handoff is completed through a generic Python web interface called the <em>Web Server Gateway Interface</em> (WSGI). </p>
+</div>
+<div class="readable-text intended-text" id="p26">
+<p>When you visit a Django URL, the web server calls the framework through WSGI, at which point Django is responsible for generating the page response. The first core part of Django determines what code to call based on the URL. This is done through a mapping in your Django project. The mapping is between URLs and response handlers, known as <em>views</em>. A view is a function or class that generates content, which Django then parcels as a response to the web browser. You’ll write your first view in chapter 2, shortly after you’ve created your first Django project. </p>
+</div>
+<div class="readable-text intended-text" id="p27">
+<p>The complete request flow from browser to response is shown in figure 1.1. It starts with the browser interacting with the web server, the web server calling Django through WSGI, Django mapping the visited URL to a view, and the view formulating a response.</p>
+</div>
+<div class="browsable-container figure-container" id="p28">
+<img alt="figure" height="1330" src="../../OEBPS/Images/CH01_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.1</span> Django handling a page visit</h5>
+</div>
+<div class="readable-text intended-text" id="p29">
+<p>The mapping between URLs and views is accomplished through a list data structure inside a Python file. Each mapping gets defined through the construction of a <code>path</code> object, which contains the URL to map and a reference to a view function. Mappings can be given names, so you can reference them elsewhere in your code; you use the name in your code, or in your HTML, and Django replaces it for you. This way, changing a URL only needs to be done in one place. </p>
+</div>
+<div class="readable-text intended-text" id="p30">
+<p>Visiting a URL causes Django to loop through all its mappings and look for a match. If a match is found, the corresponding view gets invoked. If no match is found, Django shows a 404 error page.</p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>The vast majority of code you write for a Django project is the actual view code. Views return a response object that encapsulates the information to send back to the browser. The most common of these objects is <code>HttpResponse</code>, which returns text over HTTP, the body of which is typically HTML.</p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>Inside your view, you determine what your visitor sees on the web page. This may involve interacting with a database. Your database might contain the inventory in your warehouse, a list of the books in your library, or the names of users who can access particular pages. To facilitate communication with a database, Django includes an<span class="aframe-location"></span> <em>object relational mapping</em> (ORM), the second of the three core parts. This is an abstraction that allows you to manage content in a database through Python classes and objects. If your web page requires information from the database, the ORM is used to look up a <code>QuerySet</code> object that contains database results. How to use the ORM as well as how it maps to a database are covered in chapter 4. </p>
+</div>
+<div class="readable-text intended-text" id="p33">
+<p>The third core part of Django is the templating engine, which helps you create and manage the HTML within your page response. HTML is a fairly verbose text format often containing a lot of repeated content. Using the templating engine, you define HTML templates that describe parts of a web page. The parts get assembled, composed, and reused to form the response to the user.</p>
+</div>
+<div class="readable-text intended-text" id="p34">
+<p>For example, navigation bars or footers that appear on every page only need to be defined once, and then the template engine helps you include them everywhere. Templates are not HTML-specific; they also get used for populating email content and anywhere else you wish to manage text, like reusable code. Figure 1.2 shows a view in more detail and its interactions with the ORM, database, and templating engine.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p35">
+<img alt="figure" height="800" src="../../OEBPS/Images/CH01_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.2</span> A view interacting with the database and template engine.</h5>
+</div>
+<div class="readable-text" id="p36">
+<p>Consider a web page that shows the songs released in a given year. The URL for all the songs in 1942 might be http://example.com/song_by_year/1942/. The code for displaying this page starts with a mapping between the /song_by_year/ portion of the URL and a function to handle the response. The mapping is capable of parsing the /1942/ portion of the URL as a parameter and passing it into the view function that generates the page. Figure 1.3 shows the parts of the URL handled by the view and how the view interacts with the ORM.</p>
+</div>
+<div class="browsable-container figure-container" id="p37">
+<img alt="figure" height="794" src="../../OEBPS/Images/CH01_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.3</span> A song-by-year view rendering a web page based on an argument</h5>
+</div>
+<div class="readable-text intended-text" id="p38">
+<p>The <code>song_by_year</code> view does a look-up in the database for all the songs in 1942. The database query gets abstracted through a <code>Song</code> class in the ORM, and a query gets performed by invoking a function on that class. The result from the database gets encapsulated in a <code>QuerySet</code> response object containing all the corresponding songs. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>With the data in hand, the view creates the HTML response. It loads the songs.xhtml template, which inherits from a common template that defines the look-and-feel for the website. This means songs.xhtml only contains the parts that are unique to that page. The template engine has a tag language, which includes a feature<span class="aframe-location"></span> that lets you loop over content, generating the rows in an HTML <code>&lt;table&gt;</code>, populating each row with the information from a song from 1942. You’ll learn all about Django templates, their tags, and how to compose them together in chapter 3. </p>
+</div>
+<div class="readable-text intended-text" id="p40">
+<p>Once the HTML has been rendered, it gets packaged in an <code>HttpResponse</code> object and sent back to the Django framework. The loading and rendering of a template is so common that Django provides shortcuts to do this. </p>
+</div>
+<div class="readable-text intended-text" id="p41">
+<p>Django uses the response object to construct the data the web server needs for the browser. This includes all the HTTP headers and the body containing the HTML. The content gets returned to the web server through WSGI, and the server sends it down to the browser. That’s how you see your page full of songs.</p>
+</div>
+<div class="readable-text" id="p42">
+<h3 class="readable-text-h3"><span class="num-string">1.1.1</span> Mapping URLs, Django views, and the MVC model</h3>
+</div>
+<div class="readable-text" id="p43">
+<p>The simplest form of any website is a mapping between a file and a URL. A web page that shows a picture of a kitten is at least two files: one for the HTML document and one for the image of the kitten. Simple file-to-URL mapped sites like this are called <em>static sites</em>. If you want your users to be able to upload their own images or add comments to your page, your site can no longer be just static files. A <em>dynamic site</em> is one that determines a page’s content when it gets visited. </p>
+</div>
+<div class="readable-text intended-text" id="p44">
+<p>Dynamic sites are more complicated than static ones; they need an interface for the users to interact with, somewhere to store data like uploaded pictures and comments, and logic for knowing how to combine these into content. Django’s primary purpose is building dynamic websites. In doing so, it uses a common architectural pattern for user interfaces known as the <em>model—view—controller</em> (MVC) method. This method breaks software into three pieces, as shown in the following list and figure 1.4:<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p45">
+<img alt="figure" height="565" src="../../OEBPS/Images/CH01_F04_Trudeau.png" width="500"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.4</span> Model—view—controller architectural pattern</h5>
+</div>
+<ol>
+<li class="readable-text" id="p46"> <em>Model</em><em> </em>—Represents the logic and data of an application independent of its user interface </li>
+<li class="readable-text" id="p47"> <em>View</em><em> </em>—Presents data to the user, possibly with multiple views for the same data </li>
+<li class="readable-text" id="p48"> <em>Controller</em><em> </em>—An input and control mechanism the user uses to interact with models and views </li>
+</ol>
+<div class="readable-text" id="p49">
+<p>The MVC is a good way of thinking about how software interacts with users, but Django is more inspired by it than strictly governed by it. The line between what is a view and a controller is a little fuzzy. This fuzziness provides the added benefit of creating entertaining debate on the internet.</p>
+</div>
+<div class="readable-text intended-text" id="p50">
+<p>When a web server passes a URL request to Django through WSGI, Django looks that URL up in its master mapping file, named urls.py, and as the name implies, it is just Python. The file can be renamed, but there really isn’t any reason to do so. The urls.py file contains a variable called <code>urlpatterns</code>, which is a <code>list</code> containing Django <code>path</code> objects. Each <code>path</code> object either maps a URL to a Django view or loads another file containing more mappings. </p>
+</div>
+<div class="readable-text intended-text" id="p51">
+<p>A Django view is just Python code. It can be a function that returns a response document or a class with methods that do the same. Each view takes at least one argument, called the <code>request</code>. This variable contains information about the HTTP Request that was made. The request object includes the URL that was hit; any query parameters in the URL; HTTP method information; HTTP headers; and in the case of pages with forms, the data the user filled in. Not every view needs all this information, but it is there when you require it.</p>
+</div>
+<div class="readable-text intended-text" id="p52">
+<p>Key steps in Django’s request handling process straddle the boundaries defined by the MVC. Django mapping a URL to the code that handles it is considered an MVC controller. Django’s view, which returns the HTML document, is a hybrid of the MVC view and controller. Inside a Django view, models get queried, which makes it an MVC controller, but it also returns HTML, which makes it an MVC view. Just because Django names it <em>view</em> doesn’t mean it is an MVC view—don’t let the overlapping names confuse you.</p>
+</div>
+<div class="readable-text intended-text" id="p53">
+<p>Consider the prior song-by-year page example. The same Django view outputs different results, depending on the year passed in. The HTML template used in the Django view is an MVC view; it is responsible for formatting the look and feel of the response. The database lookup in the Django view is an MVC controller, changing what data gets rendered by the MVC view based on the year argument.</p>
+</div>
+<div class="readable-text intended-text" id="p54">
+<p>Each page in your web application is generated by a view. Most are views that you write, but some are views you configure, taking advantage of tools built into Django. Figure 1.5 shows four web pages—two of which are views you would write, one is a Django tool view, and the other is a hybrid of the two. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p55">
+<img alt="figure" height="874" src="../../OEBPS/Images/CH01_F05_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.5</span> Most pages will be your views with your templates, but Django provides tools to reduce your work</h5>
+</div>
+<div class="readable-text" id="p56">
+<p>A typical view is responsible for querying data out of a database; making logic decisions about output; and then loading, rendering, and returning the result of a template. In the “Songs By Year” page, the view reads all the years from the song database and groups them by decade. The grouped data is sent to the template engine that renders the page, including links to each corresponding detail page with “Songs in 1942” being just one example. The same view generates all “Songs in” pages, with the year being passed as an argument. The argument changes how the MVC controller works but uses the same MVC view for the output.</p>
+</div>
+<div class="readable-text" id="p57">
+<h3 class="readable-text-h3"><span class="num-string">1.1.2</span> Databases: Dynamic sites need data</h3>
+</div>
+<div class="readable-text" id="p58">
+<p>Views are key to the <em>dynamic</em> part of a dynamic website. They can create what is on a page based on data or input from the user. That data might be products in a catalog, the score of last night’s game, or your latest recipe for gnocchi. In all these cases, your data has to live somewhere. Enter the database. </p>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>Databases are a field in computing in their own right. There are different kinds, each with its advantages and disadvantages. There are many implementations of each kind and specialty languages written just for communicating with them. All of this can be a little overwhelming. Django implements an ORM to abstract this away.</p>
+</div>
+<div class="readable-text intended-text" id="p60">
+<p>Consider a database containing information about books, like the one shown in figure 1.6. You are going to have different kinds of data: an author (that’s me), a publisher (that’s Manning), and a book (that’s what you’re holding). There are many authors, many books, and many publishers. Some books have multiple authors, and some authors have written multiple books. A relational database stores this information in tables similar to a sheet in an Excel spreadsheet. It then expresses relationships between these items with keys. The Author table might reference the Book table using a key that is a unique identifier for a Book.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p61">
+<img alt="figure" height="921" src="../../OEBPS/Images/CH01_F06_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.6</span> Tables store either item information or relationship information</h5>
+</div>
+<div class="readable-text" id="p62">
+<p>An ORM is an object-oriented way of representing different data elements and the relationships between them. Each row in a database table gets expressed as an object. Instead of thinking about the Book table, you think about the <code>Book</code> class. An ORM lets you query a specific book as well as link to the book’s associated author and publisher, which themselves are objects. Django automatically creates reverse relationships, so if you have an <code>Author</code> object, you can query all the author’s books without having to write any additional code. The relationships between the <code>Book</code>, <code>Author</code>, and <code>Publisher</code> objects are shown in figure 1.7, along with their corresponding database table representations. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p63">
+<img alt="figure" height="803" src="../../OEBPS/Images/CH01_F07_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.7</span> ORM Models are data objects that map to underlying item and relationship tables</h5>
+</div>
+<div class="readable-text" id="p64">
+<p>Django’s ORM allows you to define data models that map to tables in a database. You create rows in those tables by creating and saving objects. You can create, read, update, and delete data using the ORM, never having to touch the database itself.</p>
+</div>
+<div class="readable-text intended-text" id="p65">
+<p>Django’s ORM comes with support for multiple databases, including PostgreSQL, MariaDB, MySQL, Oracle, and SQLite. There are also many third-party plugins for other databases. There are even plugins for non-relational databases, like the MongoDB NoSQL server. One of the beauties of an ORM is that it abstracts this away; your code is the same regardless of what database is connected underneath.</p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>When a Django view requires information out of the database it uses one or more ORM classes that have been defined by the programmer. Each class inherits from an ORM base class called <code>Model</code>. The base class provides methods for querying the database. For example, calling <code>.objects.filter(last_name__startswith="A")</code> on <code>Author</code> returns all the authors with a last name beginning with <code>"A"</code>. Query results get represented by a common Django object called a <code>QuerySet</code>. The <code>QuerySet</code> can be passed as part of a data context to the template engine. The template engine generates HTML using the results. A list of authors might generate a bullet-point list in the output. Django also provides a way to deal with the database directly if the abstraction is insufficient in specific cases. </p>
+</div>
+<div class="readable-text" id="p67">
+<h3 class="readable-text-h3"><span class="num-string">1.1.3</span> Structuring HTML for reuse</h3>
+</div>
+<div class="readable-text" id="p68">
+<p>Your Django view is responsible for returning content to the browser, which most of the time is HTML. HTML was originally designed for physicists to write easily accessible articles for other physicists. Modern web pages have more in common with marketing brochures than physics articles. Each page in a website tends to include a lot of repetition—for example, the navigation header that appears on every page. </p>
+</div>
+<div class="readable-text intended-text" id="p69">
+<p>Django includes a templating engine. The engine’s job is to compose pieces of content together into a page. Using it, you only have to write the navigation header once, and then it can be included in every page of your site. To change the navigation header, you only have to do it in one place.</p>
+</div>
+<div class="readable-text intended-text" id="p70">
+<p>Your view likely wants to show some of that previously mentioned data on your page. Lists of things can get quite repetitive. In Python, if you want to print a long list, you don’t hardcode it. Instead, you put a <code>print</code> statement inside a <code>for</code> loop that iterates on the list. The templating engine lets you do the same using <em>tags</em> and <em>filters</em>. Tags are instructions to the engine for conditional rendering, while filters change how data is displayed. Using these, you can create loops, conditionally render blocks, print a date in your user’s format, and much more. Figure 1.8 shows how templates are composed and how to use tags, denoted by <code>{% %}</code>. All of this is covered in detail in the chapter on the template engine. </p>
+</div>
+<div class="readable-text intended-text" id="p71">
+<p>Django is able to interact with different template engines. The original templating language that ships with Django, understandably, is called the <em>Django Templating Language</em> (DTL). Django also ships with the popular third-party templating language Jinja2. This isn’t maintained by the Django core team, and won’t be covered in this book, but is included in the framework for the convenience of those familiar with it. </p>
+</div>
+<div class="readable-text intended-text" id="p72">
+<p>The DTL interface has three concepts: variable rendering, tags, and filters. Variable rendering replaces values in the template with data sent into the engine. Tags are like functions and provide looping, conditional blocks, and a number of operations on your templated text. Filters are variable modifiers changing values before they are displayed. For example, one filter takes a date object and formats it to a desired output. The DTL is also pluggable, allowing you to write your own tags and filters.</p>
+</div>
+<div class="browsable-container figure-container" id="p73">
+<img alt="figure" height="1352" src="../../OEBPS/Images/CH01_F08_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 1.8</span> Composing HTML templates into a rendered page<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p74">
+<p>The output from a Django view is a response object—a web page uses one called <code>HttpResponse</code>. Django provides shortcut functions that wrap the process of loading and rendering a template and embedding the result in an <code>HttpResponse</code> object. The view returns an object to Django, and Django then uses the object to formulate the content that is sent back to the browser. This includes any HTTP headers along with the body containing the HTML. </p>
+</div>
+<div class="readable-text" id="p75">
+<h3 class="readable-text-h3"><span class="num-string">1.1.4</span> Multiuser sites</h3>
+</div>
+<div class="readable-text" id="p76">
+<p>From the very beginning, Django was meant for multiple users. The <em>Lawrence Journal-World’s</em> web application consists of views for the readers, showing the newspaper pages as well as views for the journalists. The journalists’ views are the tools they use to write articles. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>Both the readers and the journalists are users, each using a different part of the web application. A regular reader should not be able to edit articles; they should only be able to read them. Controlling who can do what in a website can be broken into two parts: authentication and authorization. <em>Authentication</em> is the process of the user proving who they are, and <em>authorization</em> refers to the permissions associated with that user. Django provides tools for managing all of this. </p>
+</div>
+<div class="readable-text intended-text" id="p78">
+<p>User identities really are just another kind of data, so a multiuser Django site uses the ORM to track user accounts. Authentication compares a username and password from a login page with a known set of values in the database. Because users tend to be forgetful, you need more than just a login page—you also need a password reset screen. To manage users, you want tools for listing and editing them. You need pages for creating new users, either by an administrator or through self-sign-up. As users are people, you likely need to occasionally block one of them from logging in. Temporarily, of course—I’m sure they’ll see the error of their ways. Django comes with tools to help you do all of these things. You’ll learn all about users and the complications they cause in chapter 6.</p>
+</div>
+<div class="readable-text intended-text" id="p79">
+<p>In addition to providing user-management tools, Django includes a general tool called the Django Admin, which is a web-based administration interface for the database. Anything that you construct with the ORM can be managed through the Django Admin, including all of your user accounts. Having the Django Admin is a huge advantage and can save a large amount of time when building sites. The Django Admin is built on the same coding concepts as your own site: Django views, the ORM, and a series of templates. The tools that come with Django are built using the core parts of Django. You’ll see how quickly you can create a site with a full administration interface in chapter 5. </p>
+</div>
+<div class="readable-text" id="p80">
+<h2 class="readable-text-h2"><span class="num-string">1.2</span> What can you do with Django?</h2>
+</div>
+<div class="readable-text" id="p81">
+<p>Django’s original purpose at the <em>Lawrence Journal-World</em> was as a tool allowing journalists to upload articles to the web. The generic term for this kind of software is a <em>content management system</em>. Django is a general web framework, but it has a heavy leaning toward content management. For the journalists, the content in question is newspaper articles. For a blog site, the content is a blog post. In both of these cases, the content is text that makes up the page, but that isn’t the only choice. </p>
+</div>
+<div class="readable-text intended-text" id="p82">
+<p>An e-commerce website has pages of items for sale, a shopping cart, and payment processing. This isn’t really considered a content management system, but it does have some things in common. The catalog pages query the database for available items and display them—the “content” here is the merchandise. A shopping cart is a special case of this, where the contents of the cart are specific to the user and this visit.</p>
+</div>
+<div class="readable-text intended-text" id="p83">
+<p>Consider what blog and e-commerce sites have in common: there are “things” stored in the database (blog posts or merchandise), and users visit pages that display one or more of those things. The Django ORM provides an object-oriented abstraction for database storage, making it easier to code and manage these things, and the Django Admin provides a web interface for interacting with instances of them. Django views use the ORM to show the user either the blog posts or merchandise appropriate to the page and construct the page through the template engine. Its general approach of objects plus views rendering templates makes Django a good fit for any multipage website.</p>
+</div>
+<div class="readable-text" id="p84">
+<h3 class="readable-text-h3"><span class="num-string">1.2.1</span> Server-side, single-page, and mixed-page applications</h3>
+</div>
+<div class="readable-text" id="p85">
+<p>As web applications have evolved, the architectural choices in building them has grown. Inside a Django view, the template engine gets called to render HTML to be sent to the browser. This is called <em>server-side rendering</em>. By contrast, a <em>single-page application</em> (SPA) moves this rendering and some application logic into the browser itself. An SPA’s approach to the MVC model is for the view and controller parts to be entirely in the web browser. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p86">
+<h5 class="callout-container-h5 readable-text-h5">Server-Side Rendering vs. SPAs</h5>
+</div>
+<div class="readable-text" id="p87">
+<p>The phrase <em>server-side rendering</em> can be a little confusing. Of course, in all situations, your browser displays the HTML. However, the distinction between server-side rendering and SPAs is where the HTML is composed. In server-side rendering, the server is responsible for assembling all of the pieces of the HTML and sending it down to the browser. The template engine runs on the server side, composing the parts of the template into a result, like in figure 1.8.</p>
+</div>
+<div class="readable-text" id="p88">
+<p>By contrast, SPAs create the HTML in the browser. All the logic for page creation happens in the browser, so you can think of this as a browser-based template engine. The server sends the code for building the templates to the browser as well as the data necessary, but all page composition happens on the client side.</p>
+</div>
+</div>
+<div class="readable-text" id="p89">
+<p>This doesn’t mean Django can’t be used to build SPAs. When a user visits an SPA-based site, a JavaScript bundle gets downloaded. The bundle contains the complete user interface and a lot of the business logic for the application. The JavaScript presents a dynamic interface hosted in a single web page, hence the name. The application still needs the web server as a data store and to execute certain kinds of business logic, and this part of the architecture can be done with Django.</p>
+</div>
+<div class="readable-text intended-text" id="p90">
+<p>In a Django-based SPA, a view doesn’t render HTML; instead, it serves data to the SPA. This is typically done using JSON. Plugin libraries like the <em>Django REST Framework</em> and <em>Django Ninja</em> provide features for building APIs based on views as well as tools for serializing your ORM data objects into a form the JavaScript application can consume. </p>
+</div>
+<div class="readable-text intended-text" id="p91">
+<p>The world isn’t binary. There are degrees between a traditional server-side application and a full single-page application. Using libraries like Vue.js, to trigger API calls, or HTMX, which uses pieces of HTML, you can augment server-side rendering with client-side flexibility. Django fits this naturally, with views rendering full pages, supporting APIs, and HTML snippets, as required. </p>
+</div>
+<div class="readable-text" id="p92">
+<h3 class="readable-text-h3"><span class="num-string">1.2.2</span> When and where you should use it</h3>
+</div>
+<div class="readable-text" id="p93">
+<p>There are lots of choices in the Python world for writing web applications. A popular alternative to Django is <em>Flask</em>. Flask is smaller than Django and only directly offers the routing and view portion. Flask tends to require other libraries to build out a full system. It is often paired with SQLAlchemy for an ORM and Jinja2, for templating. By contrast, Django comes with an ORM and templating engine already. You may be able to get going with Flask a little faster than Django, but if your application grows, you’re going to need the other pieces as well. With the routing, views, template rendering, and ORM all coming in one package, you don’t have to worry about how and whether things will work together. </p>
+</div>
+<div class="readable-text intended-text" id="p94">
+<p>The flip side of this argument is that Django isn’t really meant to be used in pieces. Although the ORM is fantastic, if you’re not building a web application and only want the ORM, Django isn’t the best fit. Django is intended to build web projects. You can use it as a tool for other things, but you’ll find you’re fighting it.</p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>SPAs are designed with a backend server that only provides data, while the GUI component gets handled by the browser. The FastAPI library specializes in providing REST APIs and is a popular choice if you are using Python for the backend of an SPA.</p>
+</div>
+<div class="readable-text intended-text" id="p96">
+<p>If you are writing SPAs, there is a strong argument for using Node.js on the server side. Having JavaScript as both the client and server language has advantages. If you write your server in Python, you’re going to have to duplicate some code, usually code for object to data conversion. Personally, my preference for Python far outweighs this extra work.</p>
+</div>
+<div class="readable-text intended-text" id="p97">
+<p>Django is sometimes viewed as a server-side only technology because that was what it was originally written for. The URL-maps-to-views approach has come full circle. Originally, it was how you built web pages. Then, single-page applications came along, and this approach was considered older tech. The same site structure works well for APIs though. This means Django can be used as a backend for single-page applications, as the server component for mobile apps, and when machine-to-machine communication is important. The availability of libraries like the Django Rest Framework and Django Ninja (heavily inspired by FastAPI) make writing APIs with Django relatively quick and painless. Being able to have both web pages and APIs in the same project means less code for you to write and maintain. How to use APIs with Django is covered in chapter 11.</p>
+</div>
+<div class="readable-text intended-text" id="p98">
+<p>Django has been around for a long time; its first release at the <em>Lawrence Journal-World</em> was in 2003. It can no longer be described as “the new kid on the block.” The programming world has a tendency toward rejecting the old, but a distinction should be made between dinosaurs and sharks. Dinosaurs are extinct. Sharks were around with the dinosaurs, but they are still mean, eating machines today. Django is actively being developed and still releases major versions annually. Recent releases have focused on redesigning the underlying technology to better support asynchronous coding, making Django competitive with newer web development stacks.</p>
+</div>
+<div class="readable-text intended-text" id="p99">
+<p>Django isn’t just a shark but a shark with accessories; it’s modular in design and supports plugins. There are thousands of plugins available—one of which may already do what you were going to code for yourself. The Django Packages site (<a href="https://djangopackages.org/">https://djangopackages.org/</a>) has over 4,000 installable libraries that cover topics such as analytics, data tools, e-commerce, feed aggregation, forums, payment processing, polls, reporting, and social media. Whatever web application you want to build, there is likely a package that can help you.</p>
+</div>
+<div class="readable-text intended-text" id="p100">
+<p>Django’s vast ecosystem is a real advantage, but even outside the Python world, there are things making Django better. HTMX is a JavaScript library that allows you to replace part of an active page with a snippet of HTML. You do this without having to write any JavaScript at all. Suddenly, Django’s ability to serve and handle pieces of HTML, when combined with HTMX, means a resurgence of dynamic webpages without resorting to heavier, single-page application frameworks. Making your pages more dynamic using HTMX is covered in chapter 12. </p>
+</div>
+<div class="readable-text" id="p101">
+<h3 class="readable-text-h3"><span class="num-string">1.2.3</span> Potential projects</h3>
+</div>
+<div class="readable-text" id="p102">
+<p>There are many types of websites out there, and depending on what you’re building, you may end up using different parts of the Django framework. The following is an incomplete list of the types of projects you might be interested in:</p>
+</div>
+<ul>
+<li class="readable-text" id="p103"> <em>Blogs</em><em> </em>—These are a natural fit for Django, with the ORM storing article content and views responsible for showing articles and table-of-contents pages. Wiki sites and newspapers are a variation on this, where instead of blog posts, you have encyclopedic information or newspaper articles as content. </li>
+<li class="readable-text" id="p104"> <em>e-commerce sites</em><em> </em>—These sites are all about the catalog. The ORM stores information about your merchandise, while the views present them to the users. In complex sites, you may be interacting with an inventory backend instead or exporting shopping patterns for data analysis. The Django Admin provides an out-of-the-box inventory management system by working in conjunction with the ORM. </li>
+<li class="readable-text" id="p105"> <em>Content sites</em><em> </em>—Many websites are repositories of specialty information. Consider the Internet Movie Database (IMDB); it is really a frontend to a database entry describing information about a movie. Django’s ORM and the Django Admin make it a good tool for these kinds of sites. </li>
+<li class="readable-text" id="p106"> <em>Document management</em><em> </em>—This is a broad class of sites where some content gets served from the filesystem instead of in the ORM. Typically, the ORM contains a lightweight object that points to the file on the server or CDN. Users then interact with pages to see or download the documents. Video sites are a version of this, where the document is a movie file. Data scientists use this kind of site for presenting reports or results from their analysis. </li>
+<li class="readable-text" id="p107"> <em>Utility sites</em><em> </em>—It is quite common for developers and system administrators to create utility scripts solving specific problems in an organization. Often, these scripts are difficult to share, as they’re environment specific. Creating a web frontend for these kinds of utilities makes them useful to a wider audience within an organization. Similarly, most companies have share folders full of Excel files that are ad-hoc solutions to a problem. Excel can be a fragile beast; there is seldom any input validation, and a small change in the wrong cell can produce the wrong result. Processes like this that are used by many people call out for a web version, converting the logic in Excel into a web application providing input validation and robustness. </li>
+</ul>
+<div class="readable-text" id="p108">
+<p>Orthogonal to the type of site, is your architectural approach. Your project may use one or more of the following design concepts:</p>
+</div>
+<ul>
+<li class="readable-text" id="p109"> <em>Single-page applications</em><em> </em>—Not so much a type of project but a design approach, SPAs can be built with Django as their API backend. Third-party libraries, like Django Ninja, simplify the creation of these kinds of projects. </li>
+<li class="readable-text" id="p110"> <em>Multiuser sites</em><em> </em>—Django includes user account management out of the box. The Django Admin can be used to administer user accounts, and Django provides views for login and password management. </li>
+<li class="readable-text" id="p111"> <em>Multilingual sites</em><em> </em>—Django includes mechanisms for handling multiple written languages and localization, such as date and currency format. This can be especially powerful when mixed in with multiuser capabilities, as users see the site in their native language. </li>
+<li class="readable-text" id="p112"> <em>Static-page sites</em><em> </em>—For speed of interaction, nothing beats a static website, where the server feeds the user straight HTML. Of course, maintaining these kinds of sites can be painful, unless you use tools that allow you to compose the page. The third-party library django-distill is a site generator; you build a Django site like you normally would then use distill to output it as a static site. This gives you all the advantages of the Django template engine while keeping the performance gain of a static site. </li>
+</ul>
+<div class="readable-text" id="p113">
+<h3 class="readable-text-h3"><span class="num-string">1.2.4</span> The RiffMates project</h3>
+</div>
+<div class="readable-text" id="p114">
+<p>Books are great (you should buy multiple copies for your friends), but practice is where you really learn things. This book presents a project called <em>RiffMates</em>, where you help your cousin build a musicians-seeking-musicians personals site. This project is primarily the content site type, but it mixes in some document management aspects, all in a multiuser context. Coding along will help you better understand how to build your own projects. Each chapter includes exercises to test your progress, and sample code and answers are available online at <a href="https://github.com/cltrudeau/django-in-action">https://github.com/cltrudeau/django-in-action</a>. </p>
+</div>
+<div class="readable-text intended-text" id="p115">
+<p>This book is divided into three parts. The first part covers Django’s core components, the second part delves into Django’s built-in tools, and the third part covers how to use third-party libraries to build different kinds of sites.</p>
+</div>
+<div class="readable-text intended-text" id="p116">
+<p>In part 1, you start to build RiffMates. You will write views and register them against URLs. You’ll learn about the template engine and how to load and render templates in your views to output HTML to the browser. You will also learn how to interact with the database doing queries on musician and venue data, while using the Django Admin to manage it all.</p>
+</div>
+<div class="readable-text intended-text" id="p117">
+<p>Part 2 shows you the power of Django and all the nifty stuff built into it. You’ll turn RiffMates into a multiuser site and learn how to customize the provided views dealing with logins and password management. Once you’ve got user accounts happening, you will add the ability to get input from your users, including uploaded files.</p>
+</div>
+<div class="readable-text intended-text" id="p118">
+<p>Part 3 focuses on how key third-party libraries can help you extend the functionality of your website. Django was originally designed as a content management system framework, but its community has created all sorts of pluggable tools to do other things. You can build websites with REST APIs; deal with data import and export; and interact with popular JavaScript frameworks, like HTMX.</p>
+</div>
+<div class="readable-text intended-text" id="p119">
+<p>Happy web coding!</p>
+</div>
+<div class="readable-text" id="p120">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p121"> Django maps a URL to a view, which is either a function or a class that returns a document to the browser. </li>
+<li class="readable-text" id="p122"> A Django view can render a document by composing pieces of HTML through a template engine. </li>
+<li class="readable-text" id="p123"> The model—view—controller architectural pattern divides the parts of a program into three pieces. The model contains data and business logic, the view is for visualizing the data, and the controller is for interacting with it. </li>
+<li class="readable-text" id="p124"> An object relational mapping is a way of abstracting database tables with programming classes. </li>
+<li class="readable-text" id="p125"> Django includes tools for managing multiuser websites. </li>
+<li class="readable-text" id="p126"> Single-page applications move the view and controller parts of the MVC into the browser. </li>
+<li class="readable-text" id="p127"> Django can be used as the backend for a single-page application.  </li>
+</ul>
+</div></body>
+</html>

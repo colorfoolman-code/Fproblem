@@ -1,0 +1,633 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>2 Your first Django site</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">2</span> </span> <span class="chapter-title-text">Your first Django site</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Creating a Django project</li>
+<li class="readable-text" id="p3">Django projects and apps</li>
+<li class="readable-text" id="p4">Creating a Django app</li>
+<li class="readable-text" id="p5">Running the development server</li>
+<li class="readable-text" id="p6">Writing a Django view</li>
+</ul>
+</div>
+<div class="readable-text" id="p7">
+<p>In this chapter, you’ll start your Django coding journey by taking the first steps toward building a website for musicians and bands. You’ll create your first web page using the Django framework: a credits page showing who built the site.</p>
+</div>
+<div class="readable-text" id="p8">
+<h2 class="readable-text-h2"><span class="num-string">2.1</span> The RiffMates project</h2>
+</div>
+<div class="readable-text" id="p9">
+<p>Your cousin Nicky is a guitarist, and she has a great idea for a website: classifieds for musicians. The site will cater to musicians looking for bands, bands looking for musicians, venues looking for bands, and bands looking for gigs. Nicky even has a name picked out, <em>RiffMates</em>. Over coffee, you and Nicky have talked at great length about what the site needs, including the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p10"> Profile pages for musicians, bands, and venues </li>
+<li class="readable-text" id="p11"> Classified ad listings </li>
+<li class="readable-text" id="p12"> Announcement listings for tryouts </li>
+<li class="readable-text" id="p13"> Search capabilities based on instruments played and style of music </li>
+<li class="readable-text" id="p14"> Messaging between potential matches </li>
+</ul>
+<div class="readable-text" id="p15">
+<p>Nicky has confidence in your coding skills because you’ve talked excitedly about the Python you’ve learned in the past. As you think about the problem, you realize that those features are just the business requirements. To build a working website that can do all those things, you’ll also need features that are common to most websites, such as</p>
+</div>
+<ul>
+<li class="readable-text" id="p16"> Public-facing and private-only web pages </li>
+<li class="readable-text" id="p17"> Logins </li>
+<li class="readable-text" id="p18"> Ability for users to submit both text and image content </li>
+<li class="readable-text" id="p19"> User sign-up </li>
+<li class="readable-text" id="p20"> Password management </li>
+<li class="readable-text" id="p21"> A database for storage </li>
+<li class="readable-text" id="p22"> Admin pages for managing the site </li>
+</ul>
+<div class="readable-text" id="p23">
+<p>A lot goes into what seems like a simple website. Asking around, you’ve heard that Django provides all those capabilities for you, so you’ve decided to learn Django to help you build RiffMates.</p>
+</div>
+<div class="readable-text intended-text" id="p24">
+<p>Django is a <em>framework</em>. Programming with a framework is different than programming with a library. In the case of a library, your code determines the order of execution. By contrast, when you’re building inside a framework, execution control belongs to the framework. If you were building a house, a library would contain the pieces you needed for the house, whereas a framework is already the rough outline of the house. Working within a framework means your application designs are more constrained, but what you lose in flexibility, you gain in efficiency—there is less code for you to write.</p>
+</div>
+<div class="readable-text intended-text" id="p25">
+<p>The partially completed building that you get with Django is the structure of a website. Django calls this a <em>project</em>. A Django project is what interacts with a web server to respond when a user visits a URL. Your code lives inside the project and gets invoked by Django. Each time you want to create a new site, you create a new project, and you need to have the project in place before you can start adding pages to it. The rest of this chapter covers creating a project and writing your first web page inside it. </p>
+</div>
+<div class="readable-text" id="p26">
+<h2 class="readable-text-h2"><span class="num-string">2.2</span> Creating a Django project</h2>
+</div>
+<div class="readable-text" id="p27">
+<p>The Django framework includes a command-line tool that is used for creating new projects, called <code>django-admin</code> (not to be confused with the Django Admin, the web tool for managing your data). Django is published on PyPI (<a href="https://pypi.org/">https://pypi.org/</a>) and can be installed in a Python virtual environment using the command <code>python -m pip install django</code>. Once you’ve got the package installed, you use the command <code>django-admin</code> to create a skeleton framework for your project. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p28">
+<h5 class="callout-container-h5 readable-text-h5">Using virtual environments</h5>
+</div>
+<div class="readable-text" id="p29">
+<p>Each time you install a package in Python, you’re making it available to the entire system. As different projects have different needs, this can cause conflicts. To deal with this, Python uses <em>virtual environments</em>, which are self-contained Python setups that are isolated from each other. It is important to use a virtual environment when writing Python to avoid packaging conflicts. </p>
+</div>
+<div class="readable-text" id="p30">
+<p>Appendix A contains a brief overview of installing packages in Python virtual environments. For a full explanation on the technology, see <a href="http://mng.bz/JZVZ">http://mng.bz/JZVZ</a>.</p>
+</div>
+</div>
+<div class="readable-text" id="p31">
+<p>Each Django project is a Python program, but because it is built using a framework, the project provides the execution paths. When you create a new project, Django installs the bare minimum you need inside a new directory with the name that you give it.</p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>At the heart of a Django project is a file named wsgi.py. WSGI, a Python specification that describes how code interacts with a web server, stands for <em>Web Server Gateway Interface</em>. You really don’t need to know much about this, especially when you’re working in your development environment; the file gets generated for you. Inside wsgi.py is a short program responsible for interfacing between your code and the web server. When you’re ready to put your project in production, you’ll configure your web server to point at this application in your project. This is why Django is considered a framework rather than a library: wsgi.py is the entry point, and most of the code you write will be called through it. Figure 2.1 shows you how the WSGI protocol acts as a bridge to your code through the wsgi.py file. </p>
+</div>
+<div class="readable-text intended-text" id="p33">
+<p>When you build RiffMates, or any other website, what you’re really trying to do is make web pages. Each page lives at a URL, and each time a user visits a URL, you’re going to want some code called to generate the page. In Django, this code is called a <em>view</em>. </p>
+</div>
+<div class="readable-text intended-text" id="p34">
+<p>When you load a page, or in some cases interact with one, your web browser is communicating with a web server. In the case of a Django project, the web server communicates with the WSGI application defined in wsgi.py. The WSGI application triggers the Django framework code. Django runs a view that is responsible for returning content that Django turns into an HTTP response for the browser.</p>
+</div>
+<div class="readable-text intended-text" id="p35">
+<p>Django needs to know what view to call for each URL on the website. This is done by mapping URLs to views. Within the framework, a URL sometimes is known as a <em>route</em>. Each Django project has a main urls.py file that contains a list of URL mappings, called <code>urlpatterns</code>. The list contains <code>django.urls.path</code> objects that specify a pattern that matches one or more URLs and what view to call when that URL gets visited. </p>
+</div>
+<div class="readable-text intended-text" id="p36">
+<p>The wsgi.py and urls.py files are key to your Django project. Every new website you build with Django requires its own copy of these files. To make your life easier, the <code>django-admin</code> command that comes with the package creates these files for you, customizing them based on your project name. </p>
+</div>
+<div class="browsable-container figure-container" id="p37">
+<img alt="figure" height="1510" src="../../OEBPS/Images/CH02_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 2.1</span> A web server invokes Django through WSGI, Django calls your code, and then it formats the response for a browser<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p38">
+<p>The <code>django-admin</code> program is actually the entry point for a number of configuration activities. Each activity gets invoked using a command provided as an argument to <code>djago-admin</code>. To create a new Django project, you use the <code>startproject</code> command, giving it the name of your project. By default, <code>startproject</code> creates a new directory for your project, copies a script called manage.py inside, and creates a configuration directory. The manage.py script is similar to <code>django-admin</code> and is used to run various control and configuration actions in the project. The configuration directory contains wsgi.py, urls.py, and other files. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>The configuration directory is confusingly named: it has the same name as your project. When you create RiffMates, you’re going to get both a RiffMates directory and a RiffMates/RiffMates directory. It is unclear to me why the Django folks didn’t name this something like <em>config</em>, as this causes confusion when you’re talking to someone else about the code: Are you in the RiffMates directory? “Yes.” Which one?</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p40">
+<h5 class="callout-container-h5 readable-text-h5">Naming your project</h5>
+</div>
+<div class="readable-text" id="p41">
+<p>Python modules are typically named using <em>snake case</em>, or lowercase words separated by underscores. I’m not sure where I picked up the habit of naming my Django projects in violation of this convention—it may be because I’m an ex-Java programmer. If seeing <em>RiffMates</em> makes you cringe, feel free to name your project in a more “Pythonic” fashion. </p>
+</div>
+</div>
+<div class="readable-text" id="p42">
+<p>Because your Django project is a directory itself, you have some flexibility about where you put your Python virtual environment. Some virtual environment tools prefer keeping all the environments together in a common directory, whereas others keep the environment with the project. In this latter case, you can put your virtual environment inside your project folder, which is what I’ll be doing in the example here.</p>
+</div>
+<div class="readable-text intended-text" id="p43">
+<p>To create your first Django project, you’re going to do the following:</p>
+</div>
+<ol>
+<li class="readable-text" id="p44"> Create a virtual environment. </li>
+<li class="readable-text" id="p45"> Install Django into that virtual environment. </li>
+<li class="readable-text" id="p46"> Use the Django <code>django-admin</code> tool to create your RiffMates project. </li>
+</ol>
+<div class="readable-text" id="p47">
+<p>Once you’ve done all of this, you will be able to start the development server and point your browser at your new site. Open a command-line terminal, and change to the directory where you normally keep your code. Inside the terminal, create a directory for your project and a virtual environment inside of it:</p>
+</div>
+<div class="browsable-container listing-container" id="p48">
+<div class="code-area-container">
+<pre class="code-area">$ mkdir RiffMates <span class="aframe-location"></span> #1
+$ cd RiffMates
+RiffMates$ python3.12 -m venv ./venv <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Create a directory for your project.
+     <br/>#2 Create a virtual environment.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p49">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>Most of this book will be spent in Python, but to get going, you need to run some command-line scripts. All command-line examples use Unix syntax with dollar-sign ($) denoting the prompt. The value before the dollar-sign indicates the current directory and whether a virtual environment has been activated. For details on how to install Unix-compatible tools on Windows, see appendix A.</p>
+</div>
+<div class="readable-text" id="p50">
+<p>With the project directory and virtual environment in place, the next step is to install Django. Activate the virtual environment, and then run <code>pip install</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p51">
+<div class="code-area-container">
+<pre class="code-area">RiffMates$ source venv/bin/activate  <span class="aframe-location"></span> #1
+(venv) RiffMates$ python -m pip install django  <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Activate your virtual environment.
+     <br/>#2 Install Django.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p52">
+<p>Django is dependent on a couple of other packages. The <code>pip install</code> command will install the dependencies. Your results will look something like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p53">
+<div class="code-area-container">
+<pre class="code-area">Collecting django
+  Using cached Django-5.0.2-py3-none-any.whl.metadata (4.1 kB)
+Collecting asgiref&lt;4,&gt;=3.7.0 (from django)
+  Using cached asgiref-3.7.2-py3-none-any.whl.metadata (9.2 kB)
+Collecting sqlparse&gt;=0.3.1 (from django)
+  Using cached sqlparse-0.4.4-py3-none-any.whl (41 kB)
+Using cached Django-5.0.2-py3-none-any.whl (8.2 MB)
+Using cached asgiref-3.7.2-py3-none-any.whl (24 kB)
+Installing collected packages: sqlparse, asgiref, django
+Successfully installed asgiref-3.7.2 django-5.0.2 sqlparse-0.4.4</pre>
+</div>
+</div>
+<div class="readable-text" id="p54">
+<p>Now that you have Django installed, the last step is actually creating your project. Run the <code>startproject</code> command:</p>
+</div>
+<div class="browsable-container listing-container" id="p55">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ django-admin startproject RiffMates . <span class="aframe-location"></span> #1</pre>
+<div class="code-annotations-overlay-container">
+     #1 Create your Django project.
+     <br/>
+</div>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p56">
+<h5 class="callout-container-h5 readable-text-h5">Virtual environment placement and Django projects</h5>
+</div>
+<div class="readable-text" id="p57">
+<p>The previous steps created the RiffMates project directory manually. It was done this way so that the virtual environment directory could be in the project directory.</p>
+</div>
+<div class="readable-text" id="p58">
+<p>By default, the <code>django-admin startproject</code> command creates your project directory for you. Some coders prefer to keep their virtual environments in a central location, rather than putting them inside the project. If you prefer this organization, you can skip the project directory creation step and use <code>django-admin startproject RiffMates</code> without the period at the end, instead:</p>
+</div>
+<div class="browsable-container listing-container" id="p59">
+<div class="code-area-container">
+<pre class="code-area">code$ source ~/wherever-your-RiffMates-venv-is/bin/activate
+(RIFF) code$ python -m pip install django
+Collecting django
+  Using cached Django-5.0.2-py3-none-any.whl.metadata (4.1 kB)
+Collecting asgiref&lt;4,&gt;=3.7.0 (from django)
+  Using cached asgiref-3.7.2-py3-none-any.whl.metadata (9.2 kB)
+Collecting sqlparse&gt;=0.3.1 (from django)
+  Using cached sqlparse-0.4.4-py3-none-any.whl (41 kB)
+Using cached Django-5.0.2-py3-none-any.whl (8.2 MB)
+Using cached asgiref-3.7.2-py3-none-any.whl (24 kB)
+Installing collected packages: sqlparse, asgiref, django
+Successfully installed asgiref-3.7.2 django-5.0.2 sqlparse-0.4.4
+(RIFF) code$ django-admin startproject RiffMates<span class="aframe-location"></span> #1
+(RIFF) code$ ls
+RiffMates/</pre>
+<div class="code-annotations-overlay-container">
+      #1 startproject without the trailing period (.)
+      <br/>
+</div>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p60">
+<p>Running the <code>django-admin startproject</code> command creates a skeleton of your project. The new RiffMates project directory looks like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p61">
+<div class="code-area-container">
+<pre class="code-area">RiffMates/
+├── RiffMates
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+└── manage.py</pre>
+</div>
+</div>
+<div class="readable-text" id="p62">
+<p>The project directory (RiffMates) contains the confusingly named configuration directory (RiffMates/RiffMates), the virtual environment, and the manage.py command. The manage.py command does pretty much the same things as <code>django-admin</code>, except it is connected to, and aware of, your project.</p>
+</div>
+<div class="readable-text intended-text" id="p63">
+<p>The RiffMates/RiffMates configuration directory contains the previously mentioned wsgi.py and urls.py files, along with a few others. Your project is a Python program, so the configuration directory is a module, meaning it contains an __init__.py file.</p>
+</div>
+<div class="readable-text intended-text" id="p64">
+<p>The asgi.py file is an asynchronous version of WSGI. Depending on the kind of web server you’re using, you might point to asgi.py instead of wsgi.py. More details on when these two files get used is covered in appendix B.</p>
+</div>
+<div class="readable-text intended-text" id="p65">
+<p>The final file in the configuration directory is settings.py; it contains configuration values for changing the behavior of Django. (We’ll have more on that in a bit.)</p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>You’ve created your first Django project, and now, you actually have a website! Albeit, it’s a very small, rather boring website, but it exists. You haven’t built any pages yet, but Django provides a default one for you, and it has a fancy rocket ship on it! To see the website and bask in the glory of the rocket ship, you need a web server. Django ships with one, and when you’re developing your site, this is the server to use.</p>
+</div>
+<div class="readable-text intended-text" id="p67">
+<p>You start the Django development server using the manage.py script and the <code>runserver</code> command. Note that you do this inside the RiffMates project directory, not the RiffMates/RiffMates configuration directory! Start the Django development server by running the following command:</p>
+</div>
+<div class="browsable-container listing-container" id="p68">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py runserver</pre>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p69">
+<h5 class="callout-container-h5 readable-text-h5">Type less on Unix</h5>
+</div>
+<div class="readable-text" id="p70">
+<p>Throughout this book, when it is time to run a Django management command, the instructions are to type python manage.py, as this is compatible across all operating systems. On Unix systems, including Linux and macOS, manage.py is executable, so you can use <code>./</code> execution. For example, the development server command gets shortened to the following:</p>
+</div>
+<div class="browsable-container listing-container" id="p71">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ ./manage.py runserver</pre>
+</div>
+</div>
+<div class="readable-text" id="p72">
+<p>There are a number of management commands you’ll be using frequently, so you may want to add tab completion to your shell. On bash, run the following (or add it to your .bash_profile or .bash_rc file):</p>
+</div>
+<div class="browsable-container listing-container" id="p73">
+<div class="code-area-container">
+<pre class="code-area">$ complete -f -d -W "runserver createsuperuser test shell dbshell \
+migrate makemigrations loaddata dumpdata" ./manage.py</pre>
+</div>
+</div>
+<div class="readable-text" id="p74">
+<p>This allows you to type manage.py, the first letter of a management command, and then press <code>TAB</code> to auto-complete the name of the command, saving even more typing. Other shells have equivalent completion mechanisms; in fact, some versions of zsh ship with auto-completion for the Django command built-in.</p>
+</div>
+</div>
+<div class="readable-text" id="p75">
+<p>Once going, the development server shows you some debug info and then tells you its base URL. By default, the server listens on port 8000 of your local machine. If you prefer a different port number, you can provide it as part of the <code>runserver</code> command (e.g., <code>python</code> <code>manage.py</code> <code>runserver</code> <code>8800</code>). The output from the server command looks like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p76">
+<div class="code-area-container">
+<pre class="code-area">Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+
+You have 18 unapplied migration(s). Your project may not work properly <span class="aframe-location"></span> #1
+until you apply the migrations for app(s): admin, auth, contenttypes,
+sessions. Run 'python manage.py migrate' to apply them.
+
+Django version 5.0.2, using settings 'RiffMates.settings'
+Starting development server at http://127.0.0.1:8000/ <span class="aframe-location"></span> #2
+Quit the server with CONTROL-C.</pre>
+<div class="code-annotations-overlay-container">
+     #1 A warning that can be ignored for now
+     <br/>#2 Listening on port 8000
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p77">
+<p>Don’t worry about the <code>18</code> <code>unapplied</code> <code>migration(s)</code> message—you’ll deal with it shortly. Remember that <code>localhost</code> is an alias to the IP address 127.0.0.1, so you can also use the English alias http://localhost:8000/ to visit your site. Enter the base URL into your browser and see the rocket ship on the default Django project page (figure 2.2).</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p78">
+<h5 class="callout-container-h5 readable-text-h5">Dev servers are for development</h5>
+</div>
+<div class="readable-text" id="p79">
+<p>For convenience, Django includes a web server. This means you don’t need to install and manage one when you’re creating and maintaining your website. This is not a hardened web server though, and it should never be put into an untrusted environment.</p>
+</div>
+<div class="readable-text" id="p80">
+<p>Do not expose the Django development server directly to the internet, and if you’re using it internally at a company, speak with your IT department about whether it should be hosted behind your firewall. Furthermore, the default configuration for a Django project is in debug mode, which also should not be used in production. Appendix B discusses what you need to know to put your Django project into a hardened production environment. It is right there in the name: the <em>development server</em> should only be used for <em>development</em>!</p>
+</div>
+</div>
+<div class="browsable-container figure-container" id="p81">
+<img alt="figure" height="908" src="../../OEBPS/Images/CH02_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 2.2</span> Django Rocket Page<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p82">
+<p>At the moment, your website only responds to the base URL (/) because you haven’t defined any views. Without views, Django shows you its version of “Hello, World!”: the Django rocket ship. It is a pretty small site, but maybe boring was under-selling it—rocket ships are fun!</p>
+</div>
+<div class="readable-text intended-text" id="p83">
+<p>As fun as rocket ships are, they have nothing to do with musicians. Nicky might be happy to see you’ve built something, but you’re going to want to replace that ship with your own content. To do that, you’ll have to write your own view. In Django, views go inside modules called <em>apps</em>. Exit the Django development server with CTRL-C, and let’s go create an app. </p>
+</div>
+<div class="readable-text" id="p84">
+<h2 class="readable-text-h2"><span class="num-string">2.3</span> Projects vs. apps</h2>
+</div>
+<div class="readable-text" id="p85">
+<p>Each page in your website is likely to have its own view. I’ve mentioned the main urls.py file where routes get registered, mapping a URL pattern to code. In theory, you can write a view, or use a built-in one, right inside the urls.py file. Your entire website could be inside the files the <code>startproject</code> command created for you. In practice, this is a horrible way of organizing things, and urls.py would quickly become unwieldy. </p>
+</div>
+<div class="readable-text intended-text" id="p86">
+<p>To help organize your code, Django has a concept built on top of Python modules: apps. This term was used by Django before it became the common name of programs on your phone. In Django’s terminology, your site is a <em>project</em> and your modules are <em>apps</em>.</p>
+</div>
+<div class="readable-text intended-text" id="p87">
+<p>You need at least one app in your project. For smaller projects containing a single app, the name of that app isn’t all that important. I often call mine <em>core</em>. With larger projects that have multiple apps, you want to name your apps something descriptive of what they do. This is no different from a larger Python program containing multiple module directories.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p88">
+<h5 class="callout-container-h5 readable-text-h5">Apps in projects in web servers</h5>
+</div>
+<div class="readable-text" id="p89">
+<p>Even small sites can benefit from the organization principle of having several apps within a project. And although the most common configuration is for a single project in a web server, this isn’t a requirement. A web server can host multiple Django projects, as long as it is clear which URLs go to which projects. This decision might be based on a host name in web servers configured to support multiple hosts, or based on part of the URL, with the first segment of the URL path pointing to different projects. The figure shows an example of multiple Django projects, each of which has multiple Django apps.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p90">
+<img alt="sidebar figure" height="603" src="../../OEBPS/Images/CH02_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5">Multiple apps per project, multiple projects per server</h5>
+</div>
+</div>
+<div class="readable-text" id="p91">
+<p>You should design your Django apps to be self-contained. The idea of an app even extends to third-party libraries. You can install apps written by other people, and there are thousands of them available to you out there. How you organize your apps and how much they reference each other is up to you, but the structure is in place to help you stay organized.</p>
+</div>
+<div class="readable-text intended-text" id="p92">
+<p>Similar to creating a project, there is a command for creating an app. When you create a new app, Django automatically creates skeleton files inside the app directory. The files have the following names expected by Django:</p>
+</div>
+<ul>
+<li class="readable-text" id="p93"> <em>apps.py</em>—App-specific configuration </li>
+<li class="readable-text" id="p94"> <em>views.py</em>—Code that outputs web page content </li>
+<li class="readable-text" id="p95"> <em>models.py</em>—Code that defines database objects </li>
+<li class="readable-text" id="p96"> <em>tests.py</em>—Unit tests for your app </li>
+<li class="readable-text" id="p97"> <em>admin.py</em>—Code for managing your database objects </li>
+<li class="readable-text" id="p98"> <em>migrations/</em>—A folder containing scripts to manage the database </li>
+</ul>
+<div class="readable-text" id="p99">
+<p>Figure 2.3 provides an overview of the files that are generated.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p100">
+<img alt="figure" height="654" src="../../OEBPS/Images/CH02_F04_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 2.3</span> Anatomy of a Django app</h5>
+</div>
+<div class="readable-text" id="p101">
+<p>The apps.py file contains default configuration for the app which helps Django identify your directory as an app, and you’ll likely never need to touch it. The other four Python files are stubs that contain an <code>import</code> statement for the Django module most commonly used in that type of file.</p>
+</div>
+<div class="readable-text intended-text" id="p102">
+<p>Every time you create a new app, you get these files, but not every app needs all of them. If your app doesn’t interact with the database, you don’t need models.py, admin.py, or the migrations directory. If you’re not a fan of tests, you can remove tests.py, but if you do, somewhere, a kitten might die. You should always have tests. For the sake of the kittens, writing good tests for your Django project gets covered in a later chapter.</p>
+</div>
+<div class="readable-text intended-text" id="p103">
+<p>Your first app, containing your first view, will be named <em>home</em>. It will contain your project’s Home page, About page, and other similar content. </p>
+</div>
+<div class="readable-text" id="p104">
+<h2 class="readable-text-h2"><span class="num-string">2.4</span> Your first Django app</h2>
+</div>
+<div class="readable-text" id="p105">
+<p>Normally, when building software, it is a good idea to build a minimally viable product (MVP). You want feedback on your code as quickly as possible, and the sooner you get in front of users, the sooner you can adapt to their needs. Instead of taking an MVP approach, here you’ll be taking an MUT approach. What’s MUT (besides something I just made up)? It is <em>minimal understanding of technology</em>. Instead of approaching your site with the best bit of customer functionality, here, you’ll be taking an approach based on the minimal amount of understanding you need to get things going. As such, the first web page you’re going to build for RiffMates is the Credits page. It’s not terribly exciting, but it requires the least amount of work to build. </p>
+</div>
+<div class="readable-text intended-text" id="p106">
+<p>You’ve already got the RiffMates project in place, but almost all your project’s code goes in a Django app, so you’ll need to create one. The manage.py script in your project folder is the entry point to Django <em>management commands</em>. A management command is something you’d like to do with Django on the command line. Django comes with many commands. You can even write your own—there’s an entire chapter on how to do this!</p>
+</div>
+<div class="readable-text intended-text" id="p107">
+<p>To create an app in your project, you use the <code>startapp</code> management command. This command creates a directory for your app and the needed stub files, including views.py, where you will be writing your first view. Inside your project directory, create the home app by running the following:</p>
+</div>
+<div class="browsable-container listing-container" id="p108">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py startapp home</pre>
+</div>
+</div>
+<div class="readable-text" id="p109">
+<p>The <code>startapp</code> command is the strong silent type and returns without any response—it did do the work though. Your project directory tree now contains the home directory and the app skeleton files:</p>
+</div>
+<div class="browsable-container listing-container" id="p110">
+<div class="code-area-container">
+<pre class="code-area">RiffMates/
+├── RiffMates
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── home
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── migrations
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+└── manage.py</pre>
+</div>
+</div>
+<div class="readable-text" id="p111">
+<p>Your home app is a Python module, hence the __init__.py file. The other skeleton files for the app got created as well. Unfortunately, creating the app is not sufficient. You also need to tell Django about it. The settings.py file in your RiffMates/RiffMates configuration directory is a Python script containing variable declarations that define Django’s behavior.</p>
+</div>
+<div class="readable-text intended-text" id="p112">
+<p>The settings.py file comes with dozens of configuration values, and you can add your own and access them through the <code>django.config.settings</code> module. To register your app, modify the <code>INSTALLED_APPS</code> configuration value, which is a <code>list</code> of strings that are the names of all the apps in your project. </p>
+</div>
+<div class="readable-text intended-text" id="p113">
+<p>The developers of Django have consciously made a choice here: instead of auto-discovering all the modules and treating them like apps, you have to explicitly register an app. Although this is an extra step, it means Django doesn’t have to differentiate between regular Python modules and Django apps, which are also modules. By doing it this way, your project can contain modules that aren’t apps, if you wish.</p>
+</div>
+<div class="readable-text intended-text" id="p114">
+<p>Django has its own apps, which come with the framework. A new project has several of them already included in <code>INSTALLED_APPS</code>. To register your newly created home app, open RiffMates/RiffMates/settings.py and add your app’s name to the <code>list</code>, as in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p115">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 2.1</span> Tell Django about your home app</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+... <span class="aframe-location"></span> #1
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'home', <span class="aframe-location"></span> #2
+]
+...</pre>
+<div class="code-annotations-overlay-container">
+     #1 Throughout the book, you’ll see … to indicate this listing has code before or after it. Conveniently, this is also valid Python, and your compiler will ignore it if you copy it into your source.
+     <br/>#2 Add the home app to the INSTALLED_APPS list.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p116">
+<p>Django is now aware of your app. You’re ready to add a view to show your Credits page. </p>
+</div>
+<div class="readable-text" id="p117">
+<h2 class="readable-text-h2"><span class="num-string">2.5</span> Your first Django view</h2>
+</div>
+<div class="readable-text" id="p118">
+<p>Each view is responsible for creating content that Django returns when the view’s corresponding URL gets visited. Django provides some built-in views, but most of the time, you’re going to want your own. You can write views as either functions or classes. I prefer function-based views, as I find it clearer to understand a URL calling a function than it corresponding to one or more methods in a class. I’ll be sticking with function-based views throughout the book. </p>
+</div>
+<div class="readable-text intended-text" id="p119">
+<p>Recall that when you visit a URL, your web browser is opening up a network connection to a web server. It knows which web server based on the host portion of the URL (known as the <em>domain</em>). The language that the browser uses to speak to the web server is called the <em>HTTP protocol</em>; it’s a set of rules specifying how the browser and web server communicate. The HTTP protocol is split into two parts: the request from the browser to the server and the response from the server to the browser. Django encapsulates both of these in objects, helpfully named <code>django.http.HttpRequest</code> and <code>django.http.HttpResponse</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p120">
+<p>A function-based view has two requirements: it takes at least one argument, an <code>HttpRequest</code> object, and returns an <code>HttpResponse</code> data structure (or something like it). Django uses the <code>HttpResponse</code> to produce the response document, including headers and HTML body for your browser. </p>
+</div>
+<div class="readable-text intended-text" id="p121">
+<p>By convention, the <code>HttpRequest</code> argument gets called <code>request</code> and contains many of the headers your browser sent the web server, including the URL. Your view function can take more arguments than just the request. Django supports a way of specifying multiple parameters inside a URL and mapping these to your function arguments. It also supports query parameter—that’s everything after the question mark (?) in a URL. Query parameters get embedded in the request object. You’ll learn more about both these techniques in future chapters.</p>
+</div>
+<div class="readable-text intended-text" id="p122">
+<p>To keep it simple, your Credits page will contain your name and Nicky’s, and not much else. To keep it really simple, it will be plain text, rather than HTML. Your view is only a few of lines of code: a function that takes a <code>request</code> object, declares a string, and returns an <code>HttpResponse</code> object. Figure 2.4 shows the files that need to be changed to declare your view. </p>
+</div>
+<div class="readable-text intended-text" id="p123">
+<p>The <code>HttpResponse</code> you return needs two arguments: the content to return, and the type of that content. The content, in this case, is a string containing your credits. The second argument is <code>content_type</code>, and it changes the MIME type of the response.</p>
+</div>
+<div class="readable-text intended-text" id="p124">
+<p>Web browsers are capable of displaying all kinds of different content: HTML, images, CSS, and more. An HTTP response can contain a MIME-type header that indicates just what the content is. MIME stands for <em>multipurpose internet mail extensions</em> and, as the name implies, originally came about to define how to attach different kinds of content to an email message. By default, the <code>HttpResponse</code> object uses a MIME type that indicates HTML, as the credits page returns plain text, the <code>HttpResponse</code> object needs to be told this by setting <code>content_type="text/plain"</code>. To write your first view, open RiffMates/home/views.py, and replace the stub code with the content of the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p125">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 2.2</span> Credits view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/home/views.py
+from django.http import HttpResponse <span class="aframe-location"></span> #1
+
+def credits(request): <span class="aframe-location"></span> #2
+    content = "Nicky\nYour Name" <span class="aframe-location"></span> #3
+
+    return HttpResponse(content, content_type="text/plain") <span class="aframe-location"></span><span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the HttpResponse object Django uses to respond to web requests.
+     <br/>#2 Define a function used as a view, taking an HttpRequest object as a parameter.
+     <br/>#3 The content to be displayed as two lines separated by the carriage return symbol (\n)
+     <br/>#4 Return an HttpResponse object with the content and its mimetype.
+     <br/>
+</div>
+</div>
+</div>
+<div class="browsable-container figure-container" id="p126">
+<img alt="figure" height="1118" src="../../OEBPS/Images/CH02_F05_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 2.4</span> The <code>credits()</code> view within your <em>RiffMates</em> Django project</h5>
+</div>
+<div class="readable-text" id="p127">
+<p>You’re not quite done yet. Although you have a view, you haven’t mapped it to a URL. You do that by modifying urls.py. </p>
+</div>
+<div class="readable-text" id="p128">
+<h2 class="readable-text-h2"><span class="num-string">2.6</span> Registering a route</h2>
+</div>
+<div class="readable-text" id="p129">
+<p>When a user visits a URL controlled by Django, the web server calls the WSGI application defined in wsgi.py with the HTTP request information. Django uses its list of URL patterns defined in urls.py and tries to find a match. If a match gets found, the view associated with the URL pattern gets called. You have defined the home app with the <code>credits()</code> view in its views.py file; now, you need to register a URL route with that view. </p>
+</div>
+<div class="readable-text intended-text" id="p130">
+<p>The URL mappings in urls.py are contained in a list called <code>urlpatterns</code>. You define a mapping using a <code>path</code> object. When you used the <code>startproject</code> command to create your project, a bare-bones urls.py file got created. That generated file includes the import for <code>path</code> objects. Each <code>path</code> object requires at least two arguments: a URL pattern and a mapping. The mapping, in this case, is a reference to your <code>credits()</code> function. Mappings can also be references to other mapping files, giving the ability to create hierarchies of maps. </p>
+</div>
+<div class="readable-text intended-text" id="p131">
+<p>Your path object requires an actual reference to the <code>credits()</code> view—yes, the callable view function itself. Importing every view in your project would take up a lot of space, so it is common practice to import the view module and then dot-reference the function inside. </p>
+</div>
+<div class="readable-text intended-text" id="p132">
+<p>RiffMates/RiffMates/urls.py is the central place for all URL definitions. All apps register routes in this file, and because every app names its view file views.py, this can get confusing. To make your urls.py clearer, use the <code>import … as</code> pattern to rename your imported module. For example, instead of using <code>from</code> <code>home</code> <code>import</code> <code>views</code>, you rename the imported module as <code>from home</code> <code>import</code> <code>views</code> <code>as</code> <code>home_views</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p133">
+<p>Django includes a management tool called the Django Admin—not to be confused with the <code>django-admin</code> command, which is completely unrelated. By default, the <code>urlpatterns</code> list includes a mapping for the Django Admin. When you register your credits view, you’ll be adding this along with the existing mapping. To do this, open RiffMates/RiffMates/urls.py and change it to look like the following listing. A future chapter covers the Django Admin in detail. </p>
+</div>
+<div class="browsable-container listing-container" id="p134">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 2.3</span> Register your view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+from django.contrib import admin
+
+from django.urls import path
+
+from home import views as home_views <span class="aframe-location"></span> #1
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path('credits/', home_views.credits), <span class="aframe-location"></span> #2
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the home app, aliasing it.
+     <br/>#2 Register the credits view function in the home app against the 'credits/' path.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p135">
+<p>Note the lack of a leading slash (/) in the <code>path</code> pattern. Django prefixes the leading slash for you. The URL /credits/ is registered using <code>path("credits/")</code>. To register that URL subpath against your view, you pass a reference to the <code>credits</code> function to the <code>path</code> object. Remember, as it is a reference to a function, you aren’t calling it, and don’t use parentheses—it is <code>credits</code>, not <code>credits()</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p136">
+<p>In this code, I import the module and use a dotted reference to the view: <code>home_views.credits</code>. Instead, you could import the view from the module, but as you add more views to home/views.py, that would require a lot of importing.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p137">
+<h5 class="callout-container-h5 readable-text-h5">Other ways of specifying paths</h5>
+</div>
+<div class="readable-text" id="p138">
+<p>Older versions of Django provided a different mechanism for specifying the structure of a URL to register against that looked like a regular expression. Some programmers still prefer the power of regular expressions when registering routes, so <code>re_path</code> exists if you prefer that style or have a particularly fancy route not covered by <code>path</code>. I recommend switching to the newer style, as it is generally easier to read and use. For more information on <code>re_path</code>, see <a href="http://mng.bz/wxy5">http://mng.bz/wxy5</a>. </p>
+</div>
+</div>
+<div class="readable-text" id="p139">
+<h2 class="readable-text-h2"><span class="num-string">2.7</span> Visiting your view</h2>
+</div>
+<div class="readable-text" id="p140">
+<p>You’re almost ready to go. The last time you ran the development server, you got a warning message: <code>18</code> <code>unapplied</code> <code>migrations</code>. Django tracks when you make changes to database models and creates special scripts, called <em>migrations</em>, for making database changes. The <code>unapplied</code> <code>migrations</code> are scripts for built-in apps, like the Django Admin. In later chapters, you’ll write your own database objects, but for now, you can run a migration to get rid of the warning. </p>
+</div>
+<div class="readable-text intended-text" id="p141">
+<p>The management command to run database migrations is <code>migrate</code>. Before running the development server, run <code>python</code> <code>manage.py</code> <code>migrate</code> to remove the <code>unapplied</code> <code>migrations</code> warning:</p>
+</div>
+<div class="browsable-container listing-container" id="p142">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py migrate</pre>
+</div>
+</div>
+<div class="readable-text" id="p143">
+<p>Running <code>migrate</code> produces a lot of output; you will see a list of the apps that required migration (<code>Apply</code> <code>all</code> <code>migrations:</code> <code>admin,</code> <code>auth,</code> <code>contenttypes,</code> <code>sessions</code>), along with the output from each migration app. The output will include the full name of the app and migration script. For example, <code>Applying admin.0001_initial… OK</code> indicates the script <code>0001_initial</code> for the <code>admin</code> app was run successfully. </p>
+</div>
+<div class="readable-text intended-text" id="p144">
+<p>The <code>migrate</code> command applies migration scripts across several modules. You’ll learn all about this in detail in a future chapter. </p>
+</div>
+<div class="readable-text intended-text" id="p145">
+<p>Restart the development server. This time, you won’t get the warning:</p>
+</div>
+<div class="browsable-container listing-container" id="p146">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py runserver
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+
+Django version 5.0.2, using settings 'RiffMates.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.</pre>
+</div>
+</div>
+<div class="readable-text" id="p147">
+<p>With the development server running, you can see the results of your hard work by visiting: http:// localhost:8000/credits/. If you’ve wired everything together correctly, it should look like figure 2.5. When you’re done admiring your accomplishment, press CTRL-C to exit the development server.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p148">
+<img alt="figure" height="470" src="../../OEBPS/Images/CH02_F06_Trudeau.png" width="814"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 2.5</span> Your first Django view</h5>
+</div>
+<div class="readable-text intended-text" id="p149">
+<p>You’ve got your first project built and your first view written, and you have enough information to build an entire website. Everything else is about how to make fancier and fancier views, but the cornerstone has been laid. Each page you add to your site will be another view. Instead of your view returning plain text, you can return HTML. HTML is verbose. Because of this, Django includes tools to manage it more like code, through the use of templates. You can write reusable parts and compose them together. That is the next step. </p>
+</div>
+<div class="readable-text" id="p150">
+<h2 class="readable-text-h2"><span class="num-string">2.8</span> Exercises</h2>
+</div>
+<div class="readable-text" id="p151">
+<p>For a bit of practice, try to adapt your code to do the following:</p>
+</div>
+<ol>
+<li class="readable-text" id="p152"> Add an About page to the site, using the same techniques as you did for the Credits page. Instead of using plain text, have the content block contain valid HTML content. </li>
+<li class="readable-text" id="p153"> Add a Version Info page that contains the version number of your site. Instead of using plain text, return valid JSON. You can do this by adapting the MIME type or using a <code>django.http.JsonResponse</code> object instead. Details on the <code>JsonResponse</code> object can be found in the documentation: <a href="http://mng.bz/qOox">http://mng.bz/qOox</a>.  </li>
+</ol>
+<div class="readable-text" id="p154">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p155"> Django is a framework, rather than a library, meaning your code gets called by Django, not the other way around. </li>
+<li class="readable-text" id="p156"> Django calls a website a <em>project</em>. </li>
+<li class="readable-text" id="p157"> You create a Django project using the <code>django-admin startproject</code> command. This creates skeleton files for your website.  </li>
+<li class="readable-text" id="p158"> Django projects contain a configuration directory that has the same name as the project directory. This directory includes the URL mapping file (urls.py) and a script that specifies configuration settings (settings.py). </li>
+<li class="readable-text" id="p159"> The code for your website goes in modules that Django calls <em>apps</em>. </li>
+<li class="readable-text" id="p160"> You create a new app using the <code>python</code> <code>manage.py</code> <code>startapp</code> command. This creates skeleton files for your app. </li>
+<li class="readable-text" id="p161"> Your app must be registered by adding it to the <code>INSTALLED_APPS</code> value in settings.py.  </li>
+<li class="readable-text" id="p162"> URLs get mapped to functions, known as <em>views</em>, responsible for returning web content. </li>
+<li class="readable-text" id="p163"> To write a view, add a function to the views.py file in an app. The function takes at least one argument, an <code>HttpRequest</code> object, named <code>request</code> by convention. The function returns an <code>HttpResponse</code> object specifying the content returned to the browser. Your view gets registered in urls.py, using a <code>path</code> object to map a URL to a reference to the view function.  </li>
+</ul>
+</div></body>
+</html>

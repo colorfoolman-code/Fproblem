@@ -1,0 +1,950 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>3 Templates</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">3</span> </span> <span class="chapter-title-text">Templates</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Managing HTML-like code through templates</li>
+<li class="readable-text" id="p3">Rendering templates based on context data</li>
+<li class="readable-text" id="p4">Template tags and filters</li>
+<li class="readable-text" id="p5">Using the <code>render()</code> shortcut inside views</li>
+<li class="readable-text" id="p6">Composing and inheriting templates for HTML reuse</li>
+</ul>
+</div>
+<div class="readable-text" id="p7">
+<p>This chapter introduces you to adding HTML content to your website. Django includes a templating engine that can compose and control text content, allowing you to create reusable pieces of HTML, managing it like you would manage your code.</p>
+</div>
+<div class="readable-text" id="p8">
+<h2 class="readable-text-h2"><span class="num-string">3.1</span> Where to use templates</h2>
+</div>
+<div class="readable-text" id="p9">
+<p>In the previous chapter, you learned how to start a simple website by creating a Django project. Inside the project, you created your first app and your first view. To keep things simple, an important thing got left out: HTML. A website isn’t much of a website without it. The purpose of a Django view is to return content, typically for a single web page. Your first view was the Credits page, showing the website’s authors. This view used plain text; however, instead of returning plain text, most of your views will return HTML. </p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>The Django Template Engine is a collection of tools that allow you to compose and control text in a way similar to how inheritance works in object-oriented programming. A header or footer can be declared in a separate file and then included in each page that is rendered. This isolates the text, and any changes automatically get propagated throughout your site.</p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>On a web page with a navigation menu, you might want to highlight the current page. Instead of different header blocks for each page, Django includes conditional rendering. It supports the equivalent of Python <code>if</code> and <code>else</code> statements, allowing you to change the rendering of the navigation bar based on Python objects passed as arguments to the template engine.</p>
+</div>
+<div class="readable-text print-book-callout" id="p12">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>The template engine is not HTML specific—it operates on any text. The vast majority of the time, you will be using it to manage HTML, but you can also templatize email messages, personalize prefilled text in forms, or perform any other text manipulation you come up with.</p>
+</div>
+<div class="readable-text" id="p13">
+<p>The interface to the template engine is composed of two key objects, both found in the <code>django.template</code> module: <code>Template</code> and <code>Context</code>. The <code>Template</code> object represents a piece of text written in the template language, while the <code>Context</code> object provides data to the template engine for rendering the result. </p>
+</div>
+<div class="readable-text" id="p14">
+<h2 class="readable-text-h2"><span class="num-string">3.2</span> Context objects and the parts of a Template</h2>
+</div>
+<div class="readable-text" id="p15">
+<p>Using the Django Template Engine breaks down into three steps:</p>
+</div>
+<ol>
+<li class="readable-text" id="p16"> Create or load a template. </li>
+<li class="readable-text" id="p17"> Define the context. </li>
+<li class="readable-text" id="p18"> Render a template using the context. </li>
+</ol>
+<div class="readable-text" id="p19">
+<p>When you create or load a template, you get a <code>django.template.Template</code> object as a result. The contents of this object are actually a compiled version of the text you want in the template. To get the output from the template, you need to render it. Rendering requires a <code>django.template.Context</code> object that contains any data used in the template. For example, if you are using a template for a navigation menu and want to highlight the current page, the context might contain a variable indicating the name of the current page. Inside the template, a conditional block checks the value of the current page variable and changes the rendering of the menu as needed. Pieces of templates can be composed together, so a template is often part of a page—it doesn’t have to be the whole thing. </p>
+</div>
+<div class="readable-text intended-text" id="p20">
+<p><code>Context</code> objects get built using dictionaries. Anything you can put inside a Python dictionary can be used as context. If the template references something not found within the context, it is rendered as an empty string. The effect is that errors are handled silently. This is both a feature and a frustration. Blank spots on the page are less problematic for your users, but it may be a bit trickier to find bugs, as the evidence is sneakily silent.</p>
+</div>
+<div class="readable-text intended-text" id="p21">
+<p>The simplest possible template is text containing no special characters. When rendered, you will get exactly the text you gave the template—what you put in is what you get out. This is of limited value. To have your template change based on the context, Django provides four constructs:</p>
+</div>
+<ul>
+<li class="readable-text" id="p22"> <em>Variable rendering via matched double braces</em><em> </em>—<code>{{ name }}</code> </li>
+<li class="readable-text" id="p23"> <em>Script actions, like conditionals and loops using tags</em><em> </em>—<code>{% now "Y" %}</code> </li>
+<li class="readable-text" id="p24"> <em>Comments</em><em> </em>—<code>{# a comment #}</code> </li>
+<li class="readable-text" id="p25"> <em>Output modification via filtering data</em><em> </em>—<code>{{ name | upper }}</code> </li>
+</ul>
+<div class="readable-text" id="p26">
+<p>A set of matched braces, sometimes known as <em>mustache braces</em>, gets used to display a variable. The name given inside the braces is used as a key in the context dictionary and replaced with the corresponding value. </p>
+</div>
+<div class="readable-text intended-text" id="p27">
+<p>A variable can be referenced using dot-notation to get at the contents of an object. Consider a <code>Person</code> class with a <code>last_name</code> attribute. If the context contained an object named <code>person</code>, then <code>{{ person.last_name</code> <code>}}</code> uses the person object and dereferences the <code>last_name</code> attribute on that object. </p>
+</div>
+<div class="readable-text intended-text" id="p28">
+<p>Tags in the template language get used to perform logic actions inside the template. Some tags get used on their own, and some are paired. The <code>{%</code> <code>now</code> <code>%}</code> tag renders as the current date. This tag takes a parameter that indicates the format of the date. Rendering <code>{%</code> <code>now</code> <code>"Y"</code> <code>%}</code> results in the current year. </p>
+</div>
+<div class="readable-text intended-text" id="p29">
+<p>Paired tags typically control the rendering of the block between the tags. One such pair is <code>{%</code> <code>if</code> <code>%}</code> and <code>{%</code> <code>endif</code> <code>%}</code>, which surround a block that is conditionally rendered. The <code>{%</code> <code>if</code> <code>%}</code> tag takes a condition to be evaluated as an argument and behaves similarly to the <code>if</code> statement in Python. For example, <code>{%</code> <code>if</code> <code>num</code> <code>&gt;</code> <code>3</code> <code>%}</code> <code>Lots</code> <code>{%</code> <code>endif</code> <code>%}</code> renders <code>Lots</code> if the key <code>num</code> exists in the context dictionary, is a number, and has a value greater than 3. A variety of common tags are covered later in this chapter. </p>
+</div>
+<div class="readable-text intended-text" id="p30">
+<p>Filters are a way of modifying data in a variable. Remember, variables get displayed via paired double braces. You apply a filter to a variable by using the pipe (<code>|</code>) operator. For example, <code>{{</code> <code>name</code> <code>|</code> <code>upper }}</code> applies the <code>|</code> <code>upper</code> filter to the value contained within <code>name</code>. The <code>| upper</code> filter is similar to <code>str.upper()</code>, returning the contents of <code>name</code> in capital letters. Several filters and their use are covered later in this chapter. </p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>There are over 80 tags and filters built into the Django template language. Appendix C is a glossary of the tags and filters built into Django and points you to the online documentation. The template language is also extensible, meaning you can even write your own tags and filters (<a href="https://docs.djangoproject.com/en/5.0/howto/custom-template-tags/">https://docs.djangoproject.com/en/5.0/howto/custom-template-tags/</a>). Many third-party libraries, written and shared by fellow community members, are available to install as Django apps. For example, the Django Packages website has a listing dedicated to template tag packages: <a href="https://djangopackages.org/grids/g/templatetags/">https://djangopackages.org/grids/g/templatetags/</a>. </p>
+</div>
+<div class="readable-text" id="p32">
+<h2 class="readable-text-h2"><span class="num-string">3.3</span> Django shell</h2>
+</div>
+<div class="readable-text" id="p33">
+<p>As templates are typically rendered through a view, learning and experimenting with them might mean having to write a lot of throwaway code. Instead of creating a dummy view, you can use the Python read, evaluate, print loop (REPL). If you haven’t come across the REPL yet, it’s built into Python and allows you to immediately see the results of a line of code. In the REPL, you type some code (the tool <em>reads</em> it), and then the tool <em>evaluates</em> it, <em>prints</em> the results, and <em>loops</em> to do it all over again. </p>
+</div>
+<div class="readable-text intended-text" id="p34">
+<p>For regular Python, you enter the REPL by running <code>python</code> without any arguments. With Django being a framework, you can’t just fire up the Python REPL within a Django context. There are several steps to be performed to get you into “Django land,” including importing and activating the framework. Luckily, Django provides a command, so you don’t have to do this by hand. Instead of calling <code>python</code>, you call the <code>manage.py</code> command named <code>shell</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p35">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py shell</pre>
+</div>
+</div>
+<div class="readable-text" id="p36">
+<p>When you run the command, you get a regular Python REPL, except it is Django aware. Because Django is a framework, if you used the default Python REPL on its own, you’d have to run some commands to get it to load and understand the Django environment; instead, the <code>shell</code> command takes care of this for you. When started, the command reports version information and then sends you to the <code>&gt;&gt;&gt;</code> prompt, awaiting your instructions:</p>
+</div>
+<div class="browsable-container listing-container" id="p37">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py shell
+Python 3.12.1 [Clang 13.0.0 (clang-1300.0.29.30)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+(InteractiveConsole)
+&gt;&gt;&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p38">
+<p>If you need to experiment with some Django code, using the <code>shell</code> command to enter the REPL is less work than trying to implement your idea in a view. It is also less error prone; you don’t have to remember to remove your experiment afterward. Now, let’s use the <code>shell</code> to play with some templates. </p>
+</div>
+<div class="readable-text print-book-callout" id="p39">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>The REPL supports the use of the up arrow to retrieve previous commands. This can save a lot of typing if you’re doing repetitive work. If you are using the REPL a lot, you may want to search for third party replacements, such as <code>bpython</code>, <code>IPython</code>, and <code>ptpython</code>, that include advanced code editing tools and macro capabilities. </p>
+</div>
+<div class="readable-text" id="p40">
+<h2 class="readable-text-h2"><span class="num-string">3.4</span> Rendering a Template</h2>
+</div>
+<div class="readable-text" id="p41">
+<p><code>Template</code> objects are, well, objects. You can instantiate them like any other object. In practice, you’re more likely to use a shortcut that loads a file containing the template content, but let’s deal with the objects directly first to better understand how they work. You’ll learn about using shortcuts to load and render template content from file a little later in the chapter.</p>
+</div>
+<div class="readable-text intended-text" id="p42">
+<p><code>Context</code> objects contain the data that is used by the template when it is rendered. They take a dictionary containing the data you want in the context as an argument. To render a template, you call <code>Template.render()</code>, which returns the resulting string.</p>
+</div>
+<div class="readable-text intended-text" id="p43">
+<p>In keeping with a grand programming tradition, your first template is "Hello, World!". Figure 3.1 illustrates the concept. A <code>Template</code> object is instantiated with a template string, <code>Hello {{ name }}</code>; then a <code>Context</code> object is created with a dictionary with the key <code>name</code>; and then the <code>Template</code> object’s <code>.render()</code> method is called with the <code>Context</code> as an argument. The result is the rendered template. Figure 3.1 shows this interaction. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p44">
+<img alt="figure" height="503" src="../../OEBPS/Images/CH03_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 3.1</span> The <code>render()</code> shortcut saves you code</h5>
+</div>
+<div class="readable-text" id="p45">
+<p>Double braces indicate variable replacement in a template. In this example, the <code>{{</code> <code>name</code> <code>}}</code> causes the template engine to look for a key called <code>name</code> in the <code>Context</code>. The contents of the corresponding value are used to replace the double-brace content in the template.</p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>Let’s play with this in the Django REPL. Use the <code>shell</code> management command like you did earlier to start a new session. Once in the REPL, import the <code>Template</code> and <code>Context</code> from <code>django.template</code>. Instantiate a <code>Template</code> object, passing in <code>"Hello {{ name }}"</code> as the template to be rendered. This is the same as in figure 3.1. Now, instantiate a <code>Context</code> object, passing in a <code>dict</code> with key <code>name</code> and a corresponding value for your name. Call the <code>.render()</code> method on the <code>Template</code> object, passing in your <code>Context</code> object. This will render the template, returning the output string. The following listing shows just that. </p>
+</div>
+<div class="browsable-container listing-container" id="p47">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.1</span> Rendering a template in the Django REPL</h5>
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; from django.template import Template, Context
+&gt;&gt;&gt; t = Template("Hello {{name}}") <span class="aframe-location"></span> #1
+&gt;&gt;&gt; c = Context({"name":"Rumpelstiltskin"})<span class="aframe-location"></span> #2
+&gt;&gt;&gt; t.render(c) <span class="aframe-location"></span> #3
+'Hello Rumpelstiltskin'</pre>
+<div class="code-annotations-overlay-container">
+     #1 A Template object with the template text Hello {{ name }}
+     <br/>#2 A dictionary containing data for the context
+     <br/>#3 Render the template using the given context. The result replaces {{ name }} with Rumpelstiltskin.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p48">
+<p>The template language allows you to access the attributes on objects, the items in lists and tuples, and the values in dictionaries. All of these are done using a dot notation, even those parts that would require square brackets to access in Python. For example, <code>{{</code> <code>person.name</code> <code>}}</code> works for both a <code>person</code> object and a <code>person</code> dictionary, accessing the <code>name</code> attribute or key, respectively. The third item in a list of fruit is accessed using <code>{{</code> <code>fruit.2</code> <code>}}</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>Dot notation also gets used for callables without arguments. For example, <code>{{</code> <code>perso</code><code>n .show_name</code> <code>}}</code> invokes the <code>person.show_name()</code> method and renders its results. </p>
+</div>
+<div class="readable-text intended-text" id="p50">
+<p>In addition to doing variable replacement with double braces, you can use template tags to control the content of your rendered result. The most common tags are conditional blocks and loops, but some are for straight replacement as well. The <code>{%</code> <code>lorem</code> <code>%}</code> tag gets rendered as <em>lorem ipsum</em> text, a chunk of Latin often used in the printing industry to indicate placeholder text. On your website, you might use the <code>{%</code> <code>lorem</code> <code>%}</code> tag when you’re waiting on someone else to write some copy, dropping the tag in so that the page renders with some content taking up space on the page, instead of just leaving the area blank. This may not be the most popular tag, but it is a good example to help learn how tags work. </p>
+</div>
+<div class="readable-text intended-text" id="p51">
+<p>In the REPL, create a new <code>Template</code> object that uses the <code>{%</code> <code>lorem</code> <code>%}</code> tag. As your template doesn’t have any data, use an empty dictionary to instantiate the <code>Context</code>. The following listing contains the code and the resulting Latin. </p>
+</div>
+<div class="browsable-container listing-container" id="p52">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.2</span> Using the <code>{% lorem %}</code> tag in the Django REPL</h5>
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; t = Template("Cicero said: '{% lorem %}', amongst other things")
+&gt;&gt;&gt; t.render(Context({}))
+"Cicero said: 'Lorem ipsum dolor sit amet, consectetur
+adipisicing elit, sed do eiusmod tempor incididunt ut labore et
+dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+exercitation ullamco laboris nisi ut aliquip ex ea commodo
+consequat. Duis aute irure dolor in reprehenderit in voluptate
+velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
+sint occaecat cupidatat non proident, sunt in culpa qui officia
+deserunt mollit anim id est laborum.', amongst other things"</pre>
+</div>
+</div>
+<div class="readable-text" id="p53">
+<p>Like many tags, <code>{%</code> <code>lorem</code> <code>%}</code> takes optional arguments, allowing you to control how much text results. The first two arguments are a count and a method. The method can be <code>w</code>, <code>p</code>, or <code>b</code>, for <em>words</em>, <em>paragraphs</em>, or <em>blocks</em>. The value of the count tells you how many of the words, paragraphs, or blocks to include. Render another template in the REPL, this time telling <code>{%</code> <code>lorem</code> <code>%}</code> to display five words. The following listing shows the code the and resulting, much shorter, text.</p>
+</div>
+<div class="browsable-container listing-container" id="p54">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.3</span> The <code>{% lorem %}</code> tag with arguments in the Django REPL</h5>
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; t = Template("{% lorem 5 w %}")
+&gt;&gt;&gt; t.render(Context({}))
+'lorem ipsum dolor sit amet'</pre>
+</div>
+</div>
+<div class="readable-text" id="p55">
+<p>Tags are kind of like functions, and like functions, the choice of arguments is specific to the tag. Some tags interpret their arguments as the names of variables, while others, like <code>{%</code> <code>lorem</code> <code>%}</code>, take them verbatim. You’ll see the difference as you learn a few of the more common tags in the next section. </p>
+</div>
+<div class="readable-text" id="p56">
+<h2 class="readable-text-h2"><span class="num-string">3.5</span> Common tags and filters</h2>
+</div>
+<div class="readable-text" id="p57">
+<p>Although Django comes with many tags and filters, there are a few that you will find you use over and over again. Let’s cover a few you’re likely to use while building RiffMates. </p>
+</div>
+<div class="readable-text" id="p58">
+<h3 class="readable-text-h3"><span class="num-string">3.5.1</span> Conditional blocks</h3>
+</div>
+<div class="readable-text" id="p59">
+<p>It was probably early on in your programming journey when you first came across the need for <code>if</code> statements. You’ll find the same need in templates. The basic conditional statement is a block, which means it uses paired tags: <code>{%</code> <code>if</code> <code>%}</code> and <code>{%</code> <code>endif</code> <code>%}</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p60">
+<p>The <code>{%</code> <code>if</code> <code>%}</code> tag takes a condition, which if true means the block gets rendered. The simplest condition is the name of a variable. In this case, the variable gets evaluated for “truthiness,” following the same rules as <code>if</code> statements in Python. The following renders the <code>&lt;h1&gt;</code> content if <code>first_page</code> evaluates to <code>True</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p61">
+<div class="code-area-container">
+<pre class="code-area">{% if first_page %}
+    &lt;h1&gt; Welcome to &lt;i&gt;RiffMates&lt;/i&gt; &lt;/h1&gt;
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p62">
+<p>If <code>first_page</code> contains zero, <code>False</code>, an empty container (<code>list</code>, <code>set</code>, <code>dict</code>, etc.), or doesn’t exist in the context, the block gets excluded from the render. All other values of <code>first_page</code> result in the enclosing block getting shown.</p>
+</div>
+<div class="readable-text intended-text" id="p63">
+<p>Block tags generally don’t care about newlines or spacing. The <code>{%</code> <code>if</code> <code>%}</code> and <code>{%</code> <code>endif</code> <code>%}</code> tags can appear on the same line. I frequently have a conditional block in my <code>&lt;title&gt;</code> tag, optionally appending a page name to a default shorter title:</p>
+</div>
+<div class="browsable-container listing-container" id="p64">
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&lt;title&gt;RiffMates{% if title_suffix %} &amp;mdash; {{title_suffix}}
+<span class="">↪</span> {% endif %}&lt;/title&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p65">
+<p>The <code>{%</code> <code>if</code> <code>%}</code> tag supports the same comparison operators as Python. You can use <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>in</code>, <code>not in</code>, <code>is</code>, and <code>is not</code> to compare variables or values. Comparing the value of <code>num_drummers</code> to a constant is similar to Python:</p>
+</div>
+<div class="browsable-container listing-container" id="p66">
+<div class="code-area-container">
+<pre class="code-area">{% if num_drummers &gt; 1 %}
+    &lt;b&gt;You only need one drummer!&lt;/b&gt;
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p67">
+<p>When the variable in a comparison is not in the context, the condition gets treated as <code>False</code>. If <code>num_drummers</code> is not in the context in the preceding example, the comparison fails and the block does not get shown.</p>
+</div>
+<div class="readable-text intended-text" id="p68">
+<p>Conditional clauses can be combined using Boolean operators, like those in Python. You can use <code>and</code>, <code>or</code>, and <code>not</code> in an <code>{%</code> <code>if</code> <code>%}</code> tag. The same order of precedence as Python gets applied. If <code>and</code> and <code>or</code> are in the same clause, <code>and</code> gets higher precedence. The following code checks for the “truthiness” of <code>musicians</code> and compares <code>num_venues</code> to three:</p>
+</div>
+<div class="browsable-container listing-container" id="p69">
+<div class="code-area-container">
+<pre class="code-area">{% if musicians and num_venues &gt; 3 %}
+    You have lots of choice!
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p70">
+<p>More complex conditional blocks can be constructed by adding <code>{%</code> <code>elif</code> <code>%}</code> and <code>{%</code> <code>else</code> <code>%}</code> tags to your conditional. These tags behave like their Python counterparts. As you might expect, the comparison clauses that work in <code>{%</code> <code>if</code> <code>%}</code> work in <code>{%</code> <code>elif</code> <code>%}</code> as well. The following checks for <code>num_musicians</code> being greater than 0 and less than 6, and then if that condition fails, it checks if <code>num_musicians</code> is greater than or equal to 6, and if that condition fails, you are told that you have zero musicians:</p>
+</div>
+<div class="browsable-container listing-container" id="p71">
+<div class="code-area-container">
+<pre class="code-area">{% if num_musicians &gt; 0 and num_musicians &lt; 6 %}
+    Band sized
+{% elif num_musicians &gt;= 6 %}
+    Big-band sized
+{% else %}
+    Your band needs people
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p72">
+<h3 class="readable-text-h3"><span class="num-string">3.5.2</span> Looping blocks</h3>
+</div>
+<div class="readable-text" id="p73">
+<p>Consider a case in which you have a list of instruments that you want to output in an HTML bullet list. To do this cleanly, you need to loop over your data. The <code>{%</code> <code>for</code> <code>%}</code> tag is similar to a <code>for</code> statement in Python, allowing you to iterate over a container. Just like Python, the tag takes the name of a variable used inside the looping context and an object to iterate over. The value in the looping context gets used like any other variable, often displayed using double braces. </p>
+</div>
+<div class="readable-text intended-text" id="p74">
+<p>One use of the <code>{%</code> <code>for</code> <code>%}</code> tag is to construct <code>&lt;ul&gt;</code>, <code>&lt;ol&gt;</code>, or <code>&lt;table&gt;</code> structures in HTML. In all these cases the <code>{%</code> <code>for</code> <code>%}</code> tag goes inside the containing structure, with the contents of the <code>{%</code> <code>for</code> <code>%}</code> block being what you want to be repeated. The following code outputs a <code>&lt;ul&gt;</code> tag with its insides constructed by looping over the <code>instruments</code> value, rendering <code>&lt;li&gt;</code> tags:</p>
+</div>
+<div class="browsable-container listing-container" id="p75">
+<div class="code-area-container">
+<pre class="code-area">&lt;ul&gt;
+    {% for instrument in instruments %}
+        &lt;li&gt; {{instrument.name}}: {{instrument.cost}}&lt;/li&gt;
+    {% endfor %}
+&lt;/ul&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p76">
+<p>Remember that variable rendering supports dot notation. For the preceding to work, <code>instruments</code> must be iterable and contain objects that have <code>name</code> and <code>cost</code> attributes.</p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>If the iterable given to <code>{%</code> <code>for</code> <code>%}</code> is empty, nothing in the block will be displayed. Depending on your situation, this might result in an empty list or table. You can either wrap the enclosing HTML in an <code>{%</code> <code>if</code> <code>%}</code> block or use the optional <code>{%</code> <code>empty</code> <code>%}</code> feature of the loop. Anything within the <code>{%</code> <code>empty</code> <code>%}</code> section of a <code>{%</code> <code>for</code> <code>%}</code> tag only gets rendered if there was nothing in the iterable being looped over:</p>
+</div>
+<div class="browsable-container listing-container" id="p78">
+<div class="code-area-container">
+<pre class="code-area">&lt;ul&gt;
+    {% for instrument in instruments %}
+        &lt;li&gt; {{instrument.name}}: {{instrument.cost}}&lt;/li&gt;
+    {% empty %}
+        &lt;li&gt; &lt;i&gt;No instruments found&lt;/i&gt; &lt;/li&gt;
+    {% endfor %}
+&lt;/ul&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p79">
+<p>In addition to the loop variable you define in <code>{%</code> <code>for</code> <code>%}</code>, there is an implicit variable as well: <code>forloop</code>. This is an object that contains attributes with information about the state of the loop as it is being iterated. The <code>forloop.counter</code> attribute is a 1-based count of the loop iteration. The Boolean values <code>forloop.first</code> and <code>forloop.last</code> indicate whether it is the first or last iteration of the loop, respectively. You can turn the previous example’s <code>&lt;ul&gt;</code> into a sentence instead:</p>
+</div>
+<div class="browsable-container listing-container" id="p80">
+<div class="code-area-container">
+<pre class="code-area">My favorite instruments are:
+{% for instrument in instruments %}
+
+    {% if forloop.last %} and {% endif %}
+
+    {{ forloop.counter }}. {{instrument.name}}
+
+    {% if forloop.last %}. {% else %}, {% endif %}
+{% endfor %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p81">
+<p>I’ve included extra newlines and indentation in this example to make the template readable—for HTML this wouldn’t matter. If <code>instruments</code> contained two objects named <code>Bassoon</code> and <code>Oboe</code>, the result (stripped of newlines and extra spaces), would be</p>
+</div>
+<div class="browsable-container listing-container" id="p82">
+<div class="code-area-container">
+<pre class="code-area">My favorite instruments are: 1. Bassoon, and 2. Oboe.</pre>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p83">
+<h5 class="callout-container-h5 readable-text-h5">All the forloop attributes</h5>
+</div>
+<div class="readable-text" id="p84">
+<p>The following is a complete list of the attributes available in the internal <code>forloop</code> object:</p>
+</div>
+<ul>
+<li class="readable-text" id="p85"> <code>forloop.counter</code>—The iteration count of the loop, starting at 1 </li>
+<li class="readable-text" id="p86"> <code>forloop.counter0</code>—The iteration count of the loop, starting at 0 </li>
+<li class="readable-text" id="p87"> <code>forloop.revcounter</code>—The number of iterations remaining in the loop, with the last being 1 </li>
+<li class="readable-text" id="p88"> <code>forloop.revcounter0</code>—The number of iterations remaining in the loop, with the last being 0 </li>
+</ul>
+<ul>
+<li class="readable-text" id="p89"> <code>forloop.first</code>—A Boolean that is <code>True</code> for the first iteration </li>
+<li class="readable-text" id="p90"> <code>forloop.last</code>—A Boolean that is <code>True</code> for the last iteration </li>
+<li class="readable-text" id="p91"> <code>forloop.parentloop</code>—The <code>forloop</code> object for the surrounding loop, in the case of nested loops </li>
+</ul>
+</div>
+<div class="readable-text" id="p92">
+<h3 class="readable-text-h3"><span class="num-string">3.5.3</span> Comment blocks</h3>
+</div>
+<div class="readable-text" id="p93">
+<p>There are two ways to write a comment in the Django template language: inline and using a multiline tag. <em>Inline comments</em> use matching <code>{#</code> and <code>#}</code> braces, while <em>multiline comments</em> use a <code>{%</code> <code>comment</code> <code>%}</code> block tag. The multiline form is useful for temporarily commenting out parts of a template while you are debugging. This code has an inline comment beside <code>Guitar</code> and has commented out the <code>Oboe</code> and <code>Bassoon</code> tags:</p>
+</div>
+<div class="browsable-container listing-container" id="p94">
+<div class="code-area-container">
+<pre class="code-area">&lt;ul&gt;
+    &lt;li&gt; Guitar {# cool instrument #} &lt;/li&gt;
+    &lt;li&gt; Drums &lt;/li&gt;
+    {% comment "For orchestras only" %}
+    &lt;li&gt; Oboe &lt;/li&gt;
+    &lt;li&gt; Bassoon &lt;/li&gt;
+    {% endcomment %}
+&lt;/ul&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p95">
+<p>When the preceding HTML gets rendered, the opinion next to <code>Guitar</code> is not shown. Likewise, neither of the symphony instruments appear in the list. The <code>{%</code> <code>comment</code> <code>%}</code> tag takes an optional argument of a string used as a note about the comment. Yes, you can comment your comment. It might seem silly, but if you are commenting out a large block of a template, it is sometimes helpful to leave yourself a note reminding yourself why. </p>
+</div>
+<div class="readable-text" id="p96">
+<h3 class="readable-text-h3"><span class="num-string">3.5.4</span> Verbatim blocks</h3>
+</div>
+<div class="readable-text" id="p97">
+<p>One thing almost every coder enjoys writing about is coding. Many characters that are meaningful in HTML you will also find in your code. This can make for some messy HTML. Writing a Python <code>if</code> statement with comparison operators in a web page requires entities like <code>&gt;</code> and <code>&lt;</code> to display properly. </p>
+</div>
+<div class="readable-text intended-text" id="p98">
+<p>This problem is even worse if you’re writing a website about Django or JavaScript templating. Both of these cases use characters that are special to HTML or the Django Template Engine itself. There is a tag that solves this: <code>{%</code> <code>verbatim</code> <code>%}</code>. This block tells the template engine to render everything contained within exactly how it is. You can even name a <code>{%</code> <code>verbatim</code> <code>%}</code> block so that you can wrap <code>{%</code> <code>verbatim</code> <code>%}</code> blocks. The following code contains <code>{{</code> <code>}}</code> operators and a <code>{%</code> <code>verbatim</code> <code>%}</code> tag that are ignored by the Django Template Engine, as they’re all inside a <code>{%</code> <code>verbatim</code> <code>%}</code> block:</p>
+</div>
+<div class="browsable-container listing-container" id="p99">
+<div class="code-area-container">
+<pre class="code-area">{% verbatim myblock %}
+    Many JavaScript templates use {{ }} operators which overlap
+    with the Django Template Engine. A similar problem exists if
+    you wish to show a tag like {% verbatim %}.
+{% endverbatim myblock %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p100">
+<h3 class="readable-text-h3"><span class="num-string">3.5.5</span> Referencing URLs</h3>
+</div>
+<div class="readable-text" id="p101">
+<p>There are many situations in which URLs appear inside HTML. You may be linking to another page, referencing a CSS file, or showing an image. In most of these cases, your URL will be pointing to another Django view or an asset under Django’s control. You can hardcode the URL in your HTML, but if you decide to refactor your URL mapping, you’ll end up with a lot of work—or worse: some broken links. </p>
+</div>
+<div class="readable-text intended-text" id="p102">
+<p>To help solve this problem, Django provides a way of naming URL mappings. Recall the <code>django.urls.path</code> objects inside urls.py that map a URL to a view. These objects have an optional argument allowing you to name the <code>path</code>. You can reference a URL in your code using this name or in a template via the <code>{%</code> <code>url</code> <code>%}</code> tag.</p>
+</div>
+<div class="readable-text intended-text" id="p103">
+<p>To see this in action, first, you will need to name one of your URLs. Open RiffMates/RiffMates/urls.py and modify the <code>path</code> object for the Credits page, adding the <code>name</code> attribute, like in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p104">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.4</span> Naming a URL mapping</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+from home import views as home_views
+...
+urlpatterns = [
+    ...
+    path('credits/', home_views.credits, name="credits"), <span class="aframe-location"></span> #1
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 Naming the mapping for the credits view
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p105">
+<p>By adding the <code>name="credits"</code> argument to the <code>path</code> object, this URL mapping can now be referenced with the string <code>"credits"</code> elsewhere in your code and templates. To access the resulting URL in a template, use the <code>{%</code> <code>url</code> <code>%}</code> tag, giving it <code>'credits'</code> as an argument. Note the surrounding quotes; the <code>{%</code> <code>url</code> <code>%}</code> can take either a variable or a hardcoded string. The most common use for the <code>{%</code> <code>url</code> <code>%}</code> tag is inside a link in your HTML:</p>
+</div>
+<div class="browsable-container listing-container" id="p106">
+<div class="code-area-container">
+<pre class="code-area">&lt;a href="{% url 'credits' %}"&gt;Credits Page&lt;/a&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p107">
+<p>The preceding anchor tag’s <code>href</code> parameter gets rendered using the URL for your Credits page. If you decide to change the URL for the <code>credits()</code> view, you only do this in the urls.py file, and the <code>{% url %}</code> tag takes care of the rest.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p108">
+<h5 class="callout-container-h5 readable-text-h5">Always name your routes</h5>
+</div>
+<div class="readable-text" id="p109">
+<p>You should always use named URLs in your code. Doing otherwise is like not using constants in your code.</p>
+</div>
+</div>
+<div class="readable-text" id="p110">
+<p>Take careful note of the use of the single and double quotes in this example. As HTML uses double quotes to demark a tag’s attributes, you need to use single quotes inside the <code>{%</code> <code>url</code> <code>%}</code> tag. </p>
+</div>
+<div class="readable-text" id="p111">
+<h3 class="readable-text-h3"><span class="num-string">3.5.6</span> Common filters</h3>
+</div>
+<div class="readable-text" id="p112">
+<p>Tags are sometimes used to render a specific value, like with <code>{%</code> <code>now</code> <code>%}</code> or <code>{%</code> <code>url</code> <code>%}</code>, but are mostly used for control flow, like <code>{%</code> <code>if</code> <code>%}</code> and <code>{%</code> <code>for</code> <code>%}</code>. Often, you want to perform an action on some data, modifying how it will be displayed. Consider a <code>datetime</code> object in Python: it stores date and time information, but when you want to print it out, you have a large number of choices for formatting the display. By changing the arguments to the <code>.strftime()</code> method, you change how the date is shown. Filters in Django templates are a generic way of doing this kind of action on all kinds of data. </p>
+</div>
+<div class="readable-text intended-text" id="p113">
+<p>Filters apply inside double-brace surrounded variables with the filter’s change applied to the variable before it is rendered. You use a filter through the pipe (<code>|</code>) operator within the double braces. The input to a filter is the contents of the variable, while its output is an action applied to the data.</p>
+</div>
+<div class="readable-text intended-text" id="p114">
+<p>Two commonly used filters are <code>|</code> <code>upper</code> and <code>|</code> <code>lower</code>. These behave like the <code>str.upper()</code> and <code>str.lower()</code> calls, changing the case of the corresponding string. The template <code>{{</code> <code>word</code> <code>|</code> <code>upper</code> <code>}}</code> results in rendering the contents of <code>word</code> after changing all its letters to upper case. </p>
+</div>
+<div class="readable-text intended-text" id="p115">
+<p>The following are some other common filters:</p>
+</div>
+<ul>
+<li class="readable-text" id="p116"> <code>{{ num | pluralize }}</code>—Returns <code>s</code> if the value of <code>num</code> is greater than 1 </li>
+<li class="readable-text" id="p117"> <code>{{ words | first }}</code>—Returns the first item in a <code>list</code> </li>
+<li class="readable-text" id="p118"> <code>{{ words | last }}</code>—Returns the last item in a <code>list</code> </li>
+</ul>
+<div class="readable-text" id="p119">
+<p>The <code>{{</code> <code>|</code> <code>pluralize</code> <code>}}</code> filter is useful for composing counting sentences. For example, the template text <code>You</code> <code>have</code> <code>{{</code> <code>num</code> <code>}}</code> <code>message{{</code> <code>num</code> <code>|</code> <code>pluralize</code> <code>}}</code> gets rendered as ”You have 3 messages.” when <code>num</code> contains three. The <code>{{</code> <code>|</code> <code>first</code> <code>}}</code> and <code>{{</code> <code>|</code> <code>last</code> <code>}}</code> filters are handy when you need items out of a list. You can always use <code>{{ words.0 }}</code> to also get the first, but as the template language doesn’t support negative indexing, the only way to get the last item is with this filter. </p>
+</div>
+<div class="readable-text intended-text" id="p120">
+<p>Like tags, filters can take arguments. You pass arguments to a filter using the colon (<code>:</code>) character. The <code>|</code> <code>join</code> filter works like Python’s <code>str.join()</code> method, taking a <code>list</code> and constructing a string from the result. This filter takes an argument specifying the separator between the joined items, most commonly a comma (<code>,</code>). The template <code>{{</code> <code>words</code> <code>|</code> <code>join:","</code> <code>}}</code> is equivalent to the Python <code>",".join(words)</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p121">
+<p>You’ve now seen how to create <code>Template</code> objects, how to render them using a <code>Context</code>, and an overview of some key tags and filters. Doing all of this in a view would make your Python code rather unwieldy. Almost every view you write is going to want to render a template to return some HTML to your user. Because this is such a frequent activity, Django provides a shortcut method, called <code>render()</code>. This shortcut loads a template from a file, creates a <code>Context</code> object based on a dictionary, and returns an <code>HttpResponse</code> object, all in a single line of code. </p>
+</div>
+<div class="readable-text" id="p122">
+<h2 class="readable-text-h2"><span class="num-string">3.6</span> Using render() in a view</h2>
+</div>
+<div class="readable-text" id="p123">
+<p>Each time someone visits a page on <em>RiffMates</em> your view will return some HTML to their browser. The vast majority of your views will do a bit of logic processing and then load and render a template containing the HTML for their page. The <code>django .shortcuts.render()</code> function encapsulates most of what you need to render some HTML in a single call. Figure 3.2 shows the code savings you get by using the shortcut. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p124">
+<img alt="figure" height="336" src="../../OEBPS/Images/CH03_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 3.2</span> The <code>render()</code> shortcut saves you code</h5>
+</div>
+<div class="readable-text" id="p125">
+<p>The <code>render()</code> function has two required arguments: the <code>HttpRequest</code> object passed into the view and the name of a template to load from disk. You tell Django where to look for templates by changing configuration in settings.py—more on that in a moment. The <code>render()</code> function also has optional arguments for providing a context dictionary, specifying the MIME type of the response and changing the HTTP status code. </p>
+</div>
+<div class="readable-text intended-text" id="p126">
+<p>The view for your Credits page consisted of a hardcoded string using plain text. You want RiffMates to contain more complicated pages than that. Let’s add a view that shows your users the latest happenings on the site with a News page, this time using HTML.</p>
+</div>
+<div class="readable-text intended-text" id="p127">
+<p>You’ll need a view for your News page. Call it <code>news()</code>, and put it in RiffMates/home/views.py along with your views for the Credits and About pages (if you did the exercises at the end of chapter 2). The <code>news()</code> view uses the <code>render()</code> shortcut, which needs to be imported at the top of the file. </p>
+</div>
+<div class="readable-text intended-text" id="p128">
+<p>The signature for <code>news()</code> is the same as <code>credits()</code>, taking a <code>request</code> object as an argument. Inside the view, a dictionary holds a list containing the news shown on the page. This dictionary gets passed to <code>render()</code> as context for the template. The result from <code>render()</code> is an <code>HttpResponse</code> object, which the view then returns. The <code>render()</code> shortcut takes three arguments:</p>
+</div>
+<ul>
+<li class="readable-text" id="p129"> The <code>request</code> object </li>
+<li class="readable-text" id="p130"> The name of an HTML page, news.xhtml in this case </li>
+<li class="readable-text" id="p131"> A reference to the data dictionary to be used as the template context </li>
+</ul>
+<div class="readable-text" id="p132">
+<p>Modify RiffMates/home/views.py, adding the import for <code>render()</code> and the new code for <code>news()</code>, as in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p133">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.5</span> Adding a view for the news page</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/home/views.py
+from django.shortcuts import render
+...
+def news(request):
+    data = {
+        'news':[
+            "RiffMates now has a news page!",
+            "RiffMates has its first web page",
+        ],
+    }
+
+    return render(request, "news.xhtml", data)</pre>
+</div>
+</div>
+<div class="readable-text" id="p134">
+<p>Like all views, <code>news()</code> must be registered as a route. You need a <code>path</code> object inside RiffMates/RiffMates/urls.py for the <code>news()</code> view, similar to how you did for <code>credits()</code>. Add the new <code>path</code> object to <code>urlpatterns</code>, like in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p135">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.6</span> Registering the <code>news()</code> view as a route</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+urlpatterns = [
+    ...
+    path('news/', home_views.news, name="news"),<span class="aframe-location"></span> #1
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 New path object mapping "/news/" to the news() view
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p136">
+<p>The <code>render()</code> shortcut in the <code>news()</code> view looks for an HTML template named news.xhtml. Before creating that template, you must tell Django where to look for templates. You do this by modifying the <code>TEMPLATES</code> configuration in RffMates/RiffMates/settings.py. The <code>TEMPLATES</code> value is a dictionary containing four keys that control how templates work in Django:</p>
+</div>
+<ul>
+<li class="readable-text" id="p137"> <code>BACKEND</code><em> specifies which template engine to use in your project.</em> Django ships with the original Django Template Engine as well as a popular third-party template engine, named Jinja2. You can also install other third-party engines if you prefer. I’ll be sticking with the default throughout this book. </li>
+<li class="readable-text" id="p138"> <code>DIRS</code><em> is a list of directories in which Django looks for templates.</em> </li>
+<li class="readable-text" id="p139"> <code>APP_DIRS</code><em> is a Boolean value.</em> When <code>True</code> (the default), Django will look for template directories within the app directories. Note that the apps are searched in order of their appearance in the <code>INSTALLED_APPS</code> configuration value. </li>
+<li class="readable-text" id="p140"> <code>OPTIONS</code><em> is a nested dictionary to pass configuration options to the template engine.</em> The default values for this are sufficient. </li>
+</ul>
+<div class="readable-text" id="p141">
+<p>By default, the <code>DIRS</code> property is an empty <code>list</code> and needs to be changed to wherever you decide to put your templates. The most common place to put your templates is in your project folder in a directory named <em>templates</em>. Use your file explorer or the command line to add such a directory. Note that this goes in your project folder, since it is a sibling of your home app directory; it does <em>not</em> go in the RiffMates/RiffMates configuration folder. The following listing shows the complete folder structure so far. </p>
+</div>
+<div class="browsable-container listing-container" id="p142">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.7</span> The new templates directory and the soon-to-be-created news.xhtml</h5>
+<div class="code-area-container">
+<pre class="code-area">RiffMates/
+├── RiffMates
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── home
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── manage.py
+└── templates
+    └── news.xhtml</pre>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p143">
+<h5 class="callout-container-h5 readable-text-h5">Template locations: A common location vs. app directories</h5>
+</div>
+<div class="readable-text" id="p144">
+<p>The <code>APP_DIRS</code> option in the <code>TEMPLATES</code> configuration allows you to tell Django to look inside your apps for templates. When <code>APP_DIRS</code> is <code>True</code>, Django will look for a directory named templates in each of your app directories. Whether you keep all of your templates with their corresponding apps or put them in a common location is a matter of style. </p>
+</div>
+<div class="readable-text" id="p145">
+<p>When I first started writing Django, I tended to keep my templates with their corresponding apps. I only used the common folder for reusable template blocks. Over time, I have drifted in the other direction. For most projects I have found it simpler to keep all the HTML in one place.</p>
+</div>
+<div class="readable-text" id="p146">
+<p>The one exception is if the app itself is reusable. Reusable apps are beyond the scope of this book, but you can write Django apps that can be installed like other Python projects. In this case, any templates the app needs must be shipped with the app and, thus, go in the app’s templates directory.</p>
+</div>
+</div>
+<div class="readable-text" id="p147">
+<p>The <code>DIRS</code> property list expects a fully qualified path to your template directory. Paths like this are common in the settings.py file. As most paths in your project will be relative to the project directory, Django declares a configuration option near the top of settings.py, called <code>BASE_DIR</code>. By default, the value of <code>BASE_DIR</code> is the fully qualified path of your project directory inside a <code>pathlib.Path</code> object. Older versions of Django used <code>os.join()</code> and strings to specify a path, so be careful if you are dealing with older code. Modify the <code>DIRS</code> option of the <code>TEMPLATES</code> configuration in settings.py to point your newly created RiffMates/templates directory. The resulting configuration for <code>TEMPLATES</code> is shown in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p148">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.8</span> Change your settings to point at the new templates directory</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+...
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [ BASE_DIR / 'templates', ],  <span class="aframe-location"></span> #1
+        'APP_DIRS': True, <span class="aframe-location"></span> #2
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add your templates directory to the list of directories where Django looks for templates.
+     <br/>#2 If APP_DIRS is used at the same time as DIRS, the app directories will be searched after the DIRS directories.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p149">
+<p>Your view is in place, and you have told Django where to look for news.xhtml. The only thing left is to create <code>news.xhtml</code>. This template is relatively small, containing a header and a <code>{% for %}</code> loop inside a <code>&lt;ul&gt;</code> tag. The <code>{% for %}</code> loop iterates over the <code>newslist</code> in the context dictionary and creates an <code>&lt;li&gt;</code> item for each list entry. Create RiffMates/templates/news.xhtml according to the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p150">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.9</span> HTML template to be rendered by the <code>news</code> view</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/news.xhtml --&gt;
+&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;title&gt;RiffMates News&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;RiffMates News&lt;/h1&gt;
+
+  &lt;ul&gt;
+    {% for item in news %}
+      &lt;li&gt;{{ item }}&lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p151">
+<p>With all these changes in place, it is time to see the results. Run the development server using <code>python manage.py</code> <code>runserver</code>, and then visit http://localhost:8000/news/. It should look something like figure 3.3.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p152">
+<img alt="figure" height="470" src="../../OEBPS/Images/CH03_F03_Trudeau.png" width="814"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 3.3</span> Your <code>news()</code> view</h5>
+</div>
+<div class="readable-text intended-text" id="p153">
+<p>You’re much closer to having a real website now. Each web page you wish to host gets its own view. Each view gets a corresponding URL as a registered route and an HTML page. The HTML gets rendered from a template in your project’s RiffMates/RiffMates/templates folder. However, there are two more things that will make your HTML writing easier: escaping special characters and composing templates. Let’s start by dealing with those pesky special characters. </p>
+</div>
+<div class="readable-text" id="p154">
+<h2 class="readable-text-h2"><span class="num-string">3.7</span> Escaping special characters</h2>
+</div>
+<div class="readable-text" id="p155">
+<p>HTML uses angle brackets to make tags. Unfortunately, angle brackets can also function as greater-than and less-than signs. Your text may need to include these symbols, so HTML provides entities to work around this. If you want to write a greater than symbol in HTML, you use <code>&amp;gt;</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p156">
+<p>Template variables are data. Data comes from all sorts of places and may contain characters special to HTML. To display your data on the page as it is meant to appear, a transformation has to happen. Django has your back and automatically does the transformation. This is known as <em>escaping characters</em>.</p>
+</div>
+<div class="readable-text intended-text" id="p157">
+<p>To play with escaping, you’re going to need another template. Earlier, you used the Django REPL to directly instantiate a <code>Template</code> object; for historical reasons, this version of the object does not do auto-escaping. When you load a template file into the engine through the <code>render()</code> shortcut, you are actually using a different version of a <code>Template</code> object that does auto-escape. To build a realistic experiment, you need a little snippet of a template file in your RiffMates/RiffMates/templates directory—I named mine experiment.xhtml. Create your own experimental file, like in the following listing. My version renders a single variable. </p>
+</div>
+<div class="browsable-container listing-container" id="p158">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.10</span> Mini-template experiment.xhtml for playing with auto-escape</h5>
+<div class="code-area-container">
+<pre class="code-area">I love the sound a {{ instrument }} makes.</pre>
+</div>
+</div>
+<div class="readable-text" id="p159">
+<p>With this template in place, you can load and render it in the REPL. You’re going to do that a bunch using different values of <code>instrument</code> to see the results of auto-escaping.</p>
+</div>
+<div class="readable-text intended-text" id="p160">
+<p>Remember, you can get to Django’s version of the REPL using the <code>manage.py shell</code> command. This time, instead of creating a <code>Template</code> object, load one using the template engine based on your experiment.xhtml file. </p>
+</div>
+<div class="readable-text intended-text" id="p161">
+<p>Django supports multiple template engines. You retrieve the one currently configured in your settings using <code>Engine.get_default()</code>. <code>Engine</code> objects have a <code>get_template()</code> method that loads a template similar to the <code>render()</code> shortcut. </p>
+</div>
+<div class="readable-text intended-text" id="p162">
+<p>Once you have a <code>Template</code> object, call <code>.render()</code>, passing in a <code>Context</code> object, like you did earlier in the chapter. Do this with different values for <code>instrument</code> to see the results of auto-escaping. The following listing renders the template twice, once with <code>trombone</code> and once with <code>tuba &gt; baritone</code>. </p>
+</div>
+<div class="browsable-container listing-container" id="p163">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.11</span> Experimenting with special HTML characters in the Django REPL</h5>
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; from django.template import Engine, Context
+&gt;&gt;&gt; engine = Engine.get_default()
+&gt;&gt;&gt; t = engine.get_template("experiment.xhtml")
+&gt;&gt;&gt; data = {"instrument":"trombone"}
+&gt;&gt;&gt; t.render(Context(data))
+'I love the sound a trombone makes.\n'
+&gt;&gt;&gt; data = {"instrument":"tuba &gt; baritone"}
+&gt;&gt;&gt; t.render(Context(data))
+'I love the sound a tuba &amp;gt; baritone makes.\n'</pre>
+</div>
+</div>
+<div class="readable-text" id="p164">
+<p>Note how changing the value of <code>instrument</code> from <code>trombone</code> to <code>tuba &gt; baritone</code> causes auto-escaping to execute. The greater-than symbol (<code>&gt;</code>) is rendered as <code>&amp;gt;</code>, making it safe to display in HTML.</p>
+</div>
+<div class="readable-text intended-text" id="p165">
+<p>Django gives you several ways to control auto-escaping. The <code>| safe</code> filter indicates that a value should not be escaped. You do this if what you’re rendering has HTML in it and you want it to display as HTML rather than be escaped. The <code>| escape</code> filter does the opposite, causing the filtered value to be auto-escaped. The <code>{% autoescape %}</code> tag allows you to turn auto-escaping on or off for a block. To see these in action, add a few more lines to experiment.xhtml:</p>
+</div>
+<div class="browsable-container listing-container" id="p166">
+<div class="code-area-container">
+<pre class="code-area">I love the sound a {{ instrument }} makes.
+A shiny {{ instrument | safe }} is good.
+
+{% autoescape off %}
+Don't put a {{ instrument }} too close to your ear.
+{% endautoescape %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p167">
+<p>The template engine compiles and caches templates; if you modify experiment.xhtml, you may or may not get the latest copy in the REPL. The Django development server watches your files and will reload edited templates, but that isn’t guaranteed in the REPL. Exit the REPL after making the previous changes, and then run it again to see the effect of your new tags. Your results should look like those in the following listing. When you’re done, don’t close your REPL session; you’re going to play around some more, using the same template in a moment.</p>
+</div>
+<div class="browsable-container listing-container" id="p168">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.12</span> Rendering experiment.xhtml after your changes in the Django REPL</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&gt;&gt;&gt; from django.template import Engine, Context
+&gt;&gt;&gt; engine = Engine.get_default()
+&gt;&gt;&gt; t = engine.get_template("experiment.xhtml")
+&gt;&gt;&gt; data = {"instrument":"flute"}
+&gt;&gt;&gt; t.render(Context(data))
+"I love the sound a flute makes.\n
+<span class="">↪</span> A shiny flute is good.\n\\n\\n
+<span class="">↪</span> Don't put a flute too close to your ear.\n\\n"
+&gt;&gt;&gt; data = {"instrument":"&lt;b&gt;sax&lt;/b&gt;"}
+&gt;&gt;&gt; t.render(Context(data))
+"I love the sound a &amp;lt;b&amp;gt;sax&amp;lt;/b&amp;gt; makes.\n
+<span class="">↪</span> A shiny &lt;b&gt;sax&lt;/b&gt; is good.\n\\n\\n
+<span class="">↪</span> Don't put a &lt;b&gt;sax&lt;/b&gt; too close to your ear.\n\\n"</pre>
+</div>
+</div>
+<div class="readable-text" id="p169">
+<p>Without modification, the <code>&lt;b&gt;</code> tags get escaped. Using either the <code>| safe</code> filter or the <code>{%</code> <code>autoescape</code> <code>%}</code> tag allows you to include HTML inside your data. </p>
+</div>
+<div class="readable-text intended-text" id="p170">
+<p>There is one more way to affect auto-escaping behavior: change the data. Django has a subclass of a Python <code>str</code> called <code>SafeString</code>. You get a <code>SafeString</code> by calling the <code>mark_safe()</code> utility method on a string. Alternatively, If you are dynamically building snippets of HTML, you can use <code>format_html()</code>, which also returns a <code>SafeString</code>. Any string marked as safe will not be escaped. Operations on <code>SafeString</code> objects return regular <code>str</code> objects; if you need to modify a <code>SafeString</code>, you will have to mark it as safe again. </p>
+</div>
+<div class="readable-text intended-text" id="p171">
+<p>Let’s play with these utilities in the same REPL session. Use the same template as before, but this time, modify the context data to contain a string marked as safe. The <code>mark_safe()</code> function takes the string you want to mark safe as an argument. Add a safe string with a <code>&lt;br/&gt;</code> tag to the <code>instruments</code> context, and then render it, as in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p172">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.13</span> Using <code>mark_safe()</code> to mark data as safe in the Django REPL</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&gt;&gt;&gt; from django.utils.safestring import mark_safe
+&gt;&gt;&gt; instrument = mark_safe("drum&lt;br/&gt;")
+&gt;&gt;&gt; data = {"instrument":instrument}
+&gt;&gt;&gt; t.render(Context(data))
+"I love the sound a drum&lt;br/&gt; makes.\n
+<span class="">↪</span> A shiny drum&lt;br/&gt; is good.\n\\n\\n
+<span class="">↪</span> Don't put a drum&lt;br/&gt; too close to your ear.\n\\n"</pre>
+</div>
+</div>
+<div class="readable-text" id="p173">
+<p>The <code>format_html()</code> function works like <code>str.format()</code>, using braces as placeholders and passing in arguments used to populate the string. The <code>format_html()</code> method can save a lot of typing if you’re building a chunk of HTML, where you’d otherwise need to compose and use <code>mark_safe()</code> on individual pieces. In the same REPL session, build a phrase that contains paired <code>&lt;i&gt;</code> tags with a placeholder between them, like in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p174">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.14</span> Using <code>format_html()</code> to mark data as safe in the Django REPL</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&gt;&gt;&gt; from django.utils.xhtml import format_html
+&gt;&gt;&gt; instrument = "bass"
+&gt;&gt;&gt; instrument = format_html("big &lt;i&gt;{}&lt;/i&gt;", instrument)
+&gt;&gt;&gt; data = {"instrument":instrument}
+&gt;&gt;&gt; t.render(Context(data))
+"I love the sound a big &lt;i&gt;bass&lt;/i&gt; makes.\n
+<span class="">↪</span> A shiny big &lt;i&gt;bass&lt;/i&gt; is good.\n\\n\\n
+<span class="">↪</span> Don't put a big &lt;i&gt;bass&lt;/i&gt; too close to your ear.\n\\n"</pre>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p175">
+<h5 class="callout-container-h5 readable-text-h5">User input and the safety of strings</h5>
+</div>
+<div class="readable-text" id="p176">
+<p>Escaping strings becomes that much more important when you start dealing with user input. Malicious users could input data that intentionally damages your web pages. Be careful using any of the tools that turn off escaping, and make sure you know what you will be allowing on your page.</p>
+</div>
+<div class="readable-text" id="p177">
+<p>There are even more string management utilities in <code>django.utils.xhtml</code>, which deal with rendering JSON, doing tag processing, and addressing those pesky strings input by users. See the documentation for more details: <a href="http://mng.bz/7dZQ">http://mng.bz/7dZQ</a>. </p>
+</div>
+</div>
+<div class="readable-text" id="p178">
+<p>Escaping is all about the micro level of HTML: making sure your data gets rendered as you intended. At the macro level, you have a different problem: HTML is repetitive. The Django template language includes a way to compose and inherit blocks to help you write less HTML. </p>
+</div>
+<div class="readable-text" id="p179">
+<h2 class="readable-text-h2"><span class="num-string">3.8</span> Composing templates out of blocks</h2>
+</div>
+<div class="readable-text" id="p180">
+<p>Modern HTML pages tend to have a lot of moving parts, navigation bars, footers, sidebars, breadcrumbs, and more. In addition to having lots of pieces, the structure of web pages can be complex so that it’s responsive across different platforms and browsers. Much of the source used to manage this complexity gets repeated on most pages across a website. To help with this, the Django Template Engine allows you to define a system of reusable components, called <em>blocks</em>. </p>
+</div>
+<div class="readable-text intended-text" id="p181">
+<p>A template block labels a section of a page with a name using paired <code>{% block %}</code> and <code>{% endblock %}</code> tags. Template pages can be composed together in an inheritance hierarchy with children gaining the structure of their parent. Any blocks in a child page with the same name as the parent page replace the block in the parent page.</p>
+</div>
+<div class="readable-text intended-text" id="p182">
+<p>Consider the <code>&lt;title&gt;</code> tag in head section of an HTML page. General pages in your site might set the title “RiffMates,” while some pages may want to replace this with more specific information. In a parent template, you could declare a block with the name <code>title</code>, and then any inheriting child page could override this block with the specific name.</p>
+</div>
+<div class="readable-text intended-text" id="p183">
+<p>You perform inheritance with the <code>{% extends %}</code> tag. A child page declares that it extends a parent and inherits its parent’s structure. The most common use of this is to have a base page that defines the look of your site with some placeholder blocks for content. Regular pages then extend the base page and only declare the blocks that need overriding. I typically call my main parent page base.xhtml. This main parent page contains all the boilerplate HTML that defines the look and feel of a site. Included in the boilerplate is a block named <code>content</code>, which is empty. Any other page on the site then extends the base page, declaring a <code>content</code> block that contains the details for that page. </p>
+</div>
+<div class="readable-text intended-text" id="p184">
+<p>For more complicated sites, you may want to have a couple of variations on the main page. A common pattern is to have a main page without navigation, a page that inherits from that with navigation, and then your actual site pages. Figure 3.4 shows an About page using this hierarchy.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p185">
+<img alt="figure" height="432" src="../../OEBPS/Images/CH03_F04_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 3.4</span> Page inheritance for component reuse</h5>
+</div>
+<div class="readable-text" id="p186">
+<h3 class="readable-text-h3"><span class="num-string">3.8.1</span> Writing a base template file</h3>
+</div>
+<div class="readable-text" id="p187">
+<p>To put all this into practice let’s write a parent page for your website. This page contains the HTML common to all pages on the site. It defines two blocks: one for the title area, and a second for content. Call the file base.xhtml and put it with your other templates in the RiffMates/templates directory. Listing 3.15 shows example content for this parent. If you want prettier web pages, this is the place to insert code for your favorite web style framework, like Bootstrap or Tailwind. </p>
+</div>
+<div class="browsable-container listing-container" id="p188">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.15</span> Base HTML template for inheritance</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/base.xhtml --&gt;
+&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;title&gt;
+    {% block title %}RiffMates{% endblock %}
+  &lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  {% block content %}
+  {% endblock content %}
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p189">
+<p>The closing <code>{%</code> <code>endblock</code> <code>%}</code> can optionally include the same name as its corresponding <code>{%</code> <code>block</code> <code>%}</code> tag. If you don’t specify the name, the most recent block gets closed. By including the name of the block in the closing tag, you make your code clearer in the case of nested blocks.</p>
+</div>
+<div class="readable-text intended-text" id="p190">
+<p>To use your new base.xhtml, you create a child page containing the <code>{%</code> <code>extends</code> <code>%}</code> tag. This tag takes a single argument: the name of the template it is extending. Inside the child file, you override the blocks declared in the parent and insert the corresponding content. Create news2.xhtml, a new version of the News page. This file declares two blocks: one to override the title and the other to override the content.</p>
+</div>
+<div class="readable-text intended-text" id="p191">
+<p>Inside a block, there is a handy context variable named <code>{{</code> <code>block.super</code> <code>}}</code>. This variable contains the content of the parent block. This is useful if you want to add to the parent block rather than completely replace it. Inside news2.xhtml write content similar to that in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p192">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.16</span> A new 'News' file</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/news2.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block title %}
+  {{block.super}}: News
+{% endblock %}
+
+{% block content %}
+  &lt;h1&gt;RiffMates News (2)&lt;/h1&gt;
+
+  &lt;ul&gt;
+    {% for item in news %}
+      &lt;li&gt;{{ item }}&lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p193">
+<p>Because you added a new template file instead of modifying the existing one, you need to update your <code>news()</code> view. Edit <code>RiffMates/home/views.py</code> and change the <code>render()</code> call to point to the newly created news2.xhtml file.</p>
+</div>
+<div class="readable-text intended-text" id="p194">
+<p>Once you have done that, run the development server and visit http://localhost :8000/news/ again to see the change. The page will be similar to before but this time with the <code>2</code> tacked onto the <code>&lt;h1&gt;</code> tag to prove it worked. Although the result in the browser is the same, news2.xhtml is shorter than news.xhtml, and if you start styling to your base page, it will be applied across every template that inherits from base.xhtml.</p>
+</div>
+<div class="readable-text intended-text" id="p195">
+<p>Inheritance is useful for creating common base files and reusing structure throughout your web pages, but you may want to have a chunk of HTML repeated within your page instead. A nice companion to inheritance is the ability to include other templates inside your HTML. </p>
+</div>
+<div class="readable-text" id="p196">
+<h3 class="readable-text-h3"><span class="num-string">3.8.2</span> Including an HTML snippet</h3>
+</div>
+<div class="readable-text" id="p197">
+<p>I heard you want to have templates in your templates. Well, there is a tag for that. The <code>{%</code> <code>include</code> <code>%}</code> tag loads a subtemplate into your template. There are two common uses for this: organizing your template files and reusable components. HTML files have a tendency to get overly long. If you want to organize them in pieces, you can compose a page from a series of included subtemplates. The simplest use of <code>{%</code> <code>include</code> <code>%}</code> takes a single argument: the name of the template to be included. The following listing shows a sample file that includes two subtemplates. </p>
+</div>
+<div class="browsable-container listing-container" id="p198">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.17</span> An HTML file that includes two subtemplates</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- Sample template using include --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+
+    &lt;h1&gt;Nicky's Blog&lt;/h1&gt;
+
+    {% include "blog1.xhtml %}
+
+    {% include "musicians_list.xhtml" %}
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p199">
+<p>Once you have subtemplates, you can include them in multiple files, giving you reusable components. This is similar to a function call in your code: you encapsulate some HTML together and then compose it into other templates as needed. Like a function, you can even declare arguments to your subtemplate. The <code>{%</code> <code>include</code> <code>%}</code> tag has an alternate form that uses the keyword <code>with</code>. This form gives you the ability to declare key–value pairs as context in the subtemplate. </p>
+</div>
+<div class="readable-text intended-text" id="p200">
+<p>Consider a case in which you are using a third-party comment section, such as Disqus, on your website or including page view tracking JavaScript. In both cases, you need to include some HTML that is parameterized for the given page. You can build this in a reusable fashion by creating a subtemplate with a variable and then use the <code>with</code> clause when instantiating the <code>{%</code> <code>include</code> <code>%}</code> tag. </p>
+</div>
+<div class="readable-text intended-text" id="p201">
+<p>The following is a subtemplate that is part of a pagination footer. The view rendering the template takes a query string specifying a page number. You’ll learn how to write this kind of view in a later chapter. For now, imagine a view that renders different content based on a query parameter named <code>page</code>. Each instance of the subtemplate contains links to the previous and next page. The subtemplate in listing 3.18 has two links, based on variables named <code>prev</code> and <code>next</code>. All of this is wrapped in <code>{%</code> <code>if</code> <code>%}</code> tags; each link only shows for nonempty values. Remember that empty values are treated as <code>False</code> for the purposes of the <code>{%</code> <code>if</code> <code>%}</code> tag.</p>
+</div>
+<div class="browsable-container listing-container" id="p202">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.18</span> A pagination footer</h5>
+<div class="code-area-container">
+<pre class="code-area">{% if prev %} <span class="aframe-location"></span> #1
+    &lt;a href="?page={{prev}}"&gt;Prev&lt;/a&gt; <span class="aframe-location"></span> #2
+{% endif %}
+{% if next %}
+    &lt;a href="?page={{next}}"&gt;Next&lt;/a&gt;
+{% endif %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Check if there is a previous page.
+     <br/>#2 If so, link to the current page with a new query parameter containing the page number.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p203">
+<p>The preceding subtemplate can be reused in any web page via <code>{%</code> <code>include</code> <code>%}</code>. To populate the values, the tag uses the <code>with</code> format providing numbers for <code>prev</code> and <code>next</code>. The following listing shows the use of the subtemplate for page 5.</p>
+</div>
+<div class="browsable-container listing-container" id="p204">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 3.19</span> Including a subtemplate with values</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;h3&gt; More Content &lt;/h3&gt;
+
+{% include "pagination.xhtml" with prev=4 next=6 %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p205">
+<p>Normally, the first argument to <code>{%</code> <code>include</code> <code>%}</code> is a string containing the name of the subtemplate to include. The tag also supports the use of variables to specify the subtemplate name. If you’re doing something particularly dynamic, you can get the subtemplate name from the data context. That means you can include different subtemplates, based on the context set in your view.</p>
+</div>
+<div class="readable-text intended-text" id="p206">
+<p>Templates are a powerful tool to manage HTML in a manner similar to Python. Instead of writing large files with lots of repetition, you build composable parts. Instead of hardcoding content, you build segments that include conditional rendering and loops that change the page based on the context data passed in from a view. All of this results in more maintainable code. The next step is to extend this power to your views: instead of using hardcoded data dictionaries, you retrieve content from a database. </p>
+</div>
+<div class="readable-text" id="p207">
+<h2 class="readable-text-h2"><span class="num-string">3.9</span> Exercises</h2>
+</div>
+<div class="readable-text" id="p208">
+<p>Practice makes perfect. Here are some activities you can try on your own:</p>
+</div>
+<ol>
+<li class="readable-text" id="p209"> Create a new base HTML file using your favorite web style framework, such as Bootstrap or Tailwind. Once you have something pretty, test it out by changing news2.xhtml to extend from it. </li>
+<li class="readable-text" id="p210"> Write a more advanced version of the News page by adding a <code>news_advanced()</code> view to home/views.py. Each data item in this view is a tuple containing the date and subject of the news. Create a news_adv.xhtml template that shows the data in a table. Look-up the <code>{%</code> <code>cycle</code> <code>%}</code> tag and the <code>|date</code> filter in appendix C, and apply them to your table, using <code>{%</code> <code>cycle</code> <code>%}</code> to apply striping to the table and <code>|</code> <code>date</code> to format the news item’s date.  </li>
+</ol>
+<div class="readable-text" id="p211">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p212"> The Django Template Engine is a system that allows you to compose and render text (typically HTML) like code. </li>
+<li class="readable-text" id="p213"> Django has its own templating language that supports rendering variables, conditional segments, looping, inheritance, and composition. </li>
+<li class="readable-text" id="p214"> Templates get rendered using a context that provides data for the result. </li>
+<li class="readable-text" id="p215"> <code>Template</code> objects can be created directly, but the more common case is to use the <code>render()</code> shortcut in your views </li>
+<li class="readable-text" id="p216"> Tags provide a way to control how your content gets rendered (like conditionals or loops), or they can act as function calls returning data (like inserting a named URL). </li>
+<li class="readable-text" id="p217"> Filters work in conjunction with rendered variables, modifying them in place. This allows you to change the appearance of data inside the template itself, rather than in the view. </li>
+<li class="readable-text" id="p218"> URLs can be named and then referenced in your code or in a template without hardcoding a value. </li>
+<li class="readable-text" id="p219"> The <code>TEMPLATES</code> section in settings.py controls which template engine gets used and where that engine looks for template files. </li>
+<li class="readable-text" id="p220"> The Django Template Engine automatically escapes characters that are meaningful to HTML. You can control what is an isn’t escaped through a variety of tags, filters, and the <code>SafeString</code> object.  </li>
+<li class="readable-text" id="p221"> Templates can inherit from other templates. This gives you a way to create a common base file with your boilerplate HTML and keeps your actual pages smaller. </li>
+</ul>
+</div></body>
+</html>
