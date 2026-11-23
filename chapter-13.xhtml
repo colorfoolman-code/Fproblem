@@ -1,0 +1,367 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>13 Django power tools</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">13</span> </span> <span class="chapter-title-text">Django power tools</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Django Debug Toolbar</li>
+<li class="readable-text" id="p3">General-utility libraries</li>
+<li class="readable-text" id="p4">Django Admin beautification</li>
+<li class="readable-text" id="p5">Prettier forms</li>
+<li class="readable-text" id="p6">Favicons</li>
+<li class="readable-text" id="p7">Feature flags</li>
+<li class="readable-text" id="p8">Generating static sites</li>
+</ul>
+</div>
+<div class="readable-text" id="p9">
+<p>One of Python’s mantras is <em>batteries included</em>, meaning the language should include everything you need to build your project. Ironically, Python has an incredibly rich ecosystem of add-ons. The batteries may be included, but there is a pretty big battery store with all sorts of variety. Django embraces this same attitude: the framework contains everything you need to build a website. Like with Python, Django has plenty of third-party tools to make your life easier. This chapter covers a few of the libraries I just can’t live without. Before writing any kind of code, you should always check <a href="https://djangopackages.org/">https://djangopackages.org/</a> to see if someone else has done it for you.</p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>Most third-party packages for Django are installable Django apps. To install one, you use the <code>pip</code> tool and typically add the app’s name to your <code>INSTALLED_APPS</code> configuration in settings.py. Some packages have other things you need to do to get them to work, like add additional configuration or run the <code>migrations</code> command. Appendix A contains general instructions for installing packages: in this chapter, I’ll only be highlighting the key parts. If you’re going to use a package, you should check its documentation. Some packages’ instructions may have changed since this book was published, or there may be variations, depending on the versions of Python and Django you are using. </p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>This chapter covers a variety of tools I’ve found useful over the years. The first section is on the Django Debug Toolbar, an add-on that shows an overlay on top of your view, giving you loads of information about the performance of the view and what resources were used to build it. The second section covers a couple of toolboxes. There are many libraries that are collections of small tools and <code>Model</code>s you can take advantage of; I’ve covered Django Extensions and Django Awl here. After that, I delve into look-and-feel tools, things that make your Django prettier.</p>
+</div>
+<div class="readable-text intended-text" id="p12">
+<p>The fourth section is on feature flags: the ability to turn code on and off in production, depending on who is using it. This is a great way to beta test new code in a production environment. And finally, I go full circle by returning to static sites, which were introduced in chapter 1. Django Distill is a great tool that uses Django templating techniques to create a static site generator. </p>
+</div>
+<div class="readable-text" id="p13">
+<h2 class="readable-text-h2"><span class="num-string">13.1</span> Django Debug Toolbar</h2>
+</div>
+<div class="readable-text" id="p14">
+<p>What’s in a name? Well, the Django Debug Toolbar (<a href="https://pypi.org/project/django-debug-toolbar/">https://pypi.org/project/django-debug-toolbar/</a>) doesn’t require any debate about the smell of roses—it is what it claims. The Debug Toolbar is an overlay for your development server that tells you all sorts of interesting information about what is going on in a page. </p>
+</div>
+<div class="readable-text intended-text" id="p15">
+<p>The Debug Toolbar is a third-party library and can be installed using <code>python</code> <code>-m pip install django-debug-toolbar</code>. It requires a bit more configuration than your typical app. It needs the <code>django.contrib.staticfiles</code> app with its corresponding <code>STATIC_URLS</code> setting, and the <code>APP_DIRS</code> value of the <code>TEMPLATES</code> setting must be <code>True</code>. If your project is configured like RiffMates, you already have both of these settings.</p>
+</div>
+<div class="readable-text intended-text" id="p16">
+<p>The toolbar itself is an app, so you must register <code>"debug_toolbar"</code> in <code>INSTALLED_APPS</code> and add <code>"debug_toolbar.middleware.DebugToolbarMiddleware"</code> in <code>MIDDLEWARE</code>. The order of the middleware is important; it needs to be included as high as possible on the list but after any encoding middleware, like <code>GZipMiddleware</code>. The toolbar is a series of views, and the corresponding routes need to be added to your urls.py file. The typical prefix used for the toolbar’s routes is <em>double-underscore debug</em>: <code>path("__debug__/",</code> <code>include("debug_toolbar.urls"))</code>. Finally, for security reasons, the toolbar only works on your local environment, and it needs <code>"127.0.0.1"</code> added to the <code>INTERNAL_IPS</code> setting. For complete details on installing the toolbar, see <a href="https://django-debug-toolbar.readthedocs.io/en/latest/installation.xhtml">https://django-debug-toolbar.readthedocs.io/en/latest/installation.xhtml</a>.</p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>That’s a lot of configuration, but once you’ve got it going, you can run your development server and visit any page in your project. Try going to http:localhost:8000/bands/musicians/. If you got all that config right, you’ll see a callout on the right side of the page showing all the tools that come with the Debug Toolbar. Figure 13.1 shows the result.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p18">
+<img alt="figure" height="966" src="../../OEBPS/Images/CH13_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 13.1</span> Django Debug Toolbar on the musician listing page</h5>
+</div>
+<div class="readable-text" id="p19">
+<p>The toolbar is composed of a series of reports, with each showing information about the page. The Debug Toolbar calls these mini-reports <em>panels</em>, and in fact, you can customize what panels show in your toolbar and even install third-party additions. Gathering debug information can take a bit of time, so for performance reasons, you can turn off any panel using the corresponding check mark.</p>
+</div>
+<div class="readable-text intended-text" id="p20">
+<p>Some panels show quick information; for example, the Time panel indicates how long it took for the page to show, while the SQL panel tells you how many database queries got run. Clicking a panel opens it, covering your page and revealing detailed information. Table 13.1 describes each of the panels that come with the Debug Toolbar by default.</p>
+</div>
+<div class="browsable-container browsable-table-container framemaker-table-container" id="p21">
+<h5 class="browsable-container-h5"><span class="num-string">Table 13.1</span> Django Debug Toolbar panels</h5>
+<table>
+<thead>
+<tr>
+<th>
+<div>
+         Panel 
+       </div></th>
+<th>
+<div>
+         Description 
+       </div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>  History <br/></td>
+<td>  History of requests made, which also includes the ability to view the debug info for past visits <br/></td>
+</tr>
+<tr>
+<td>  Versions <br/></td>
+<td>  Shows the versions of Django, Python, and installed apps (if possible) <br/></td>
+</tr>
+<tr>
+<td>  Timer <br/></td>
+<td>  Shows page load time information, including CPU time, system time, and a graph showing the timing for each step in processing the page <br/></td>
+</tr>
+<tr>
+<td>  Settings <br/></td>
+<td>  Shows your current project configuration values <br/></td>
+</tr>
+<tr>
+<td>  Headers <br/></td>
+<td>  Request and response headers along with WSGI environment information <br/></td>
+</tr>
+<tr>
+<td>  Request <br/></td>
+<td>  Information about the HTTP request, including the view function invoked, any cookies, session data, and data for the GET or POST <br/></td>
+</tr>
+<tr>
+<td>  SQL <br/></td>
+<td>  SQL queries run to get the page’s data along with timing information <br/></td>
+</tr>
+<tr>
+<td>  Static files <br/></td>
+<td>  Information on the static files used on the page along with all the possible files available to the {% static %} tag <br/></td>
+</tr>
+<tr>
+<td>  Templates <br/></td>
+<td>  Shows the template path and all templates involved in rendering this page <br/></td>
+</tr>
+<tr>
+<td>  Cache <br/></td>
+<td>  Whether the cache got used along with hit-and-miss counts and response times <br/></td>
+</tr>
+<tr>
+<td>  Signals <br/></td>
+<td>  All the Django signals registered and their associated handlers <br/></td>
+</tr>
+<tr>
+<td>  Intercept redirects <br/></td>
+<td>  If a page issues a redirect, the toolbar catches it and shows a page with the resulting link (panel off, by default) <br/></td>
+</tr>
+<tr>
+<td>  Profiling <br/></td>
+<td>  Complete profile information on the request, including all the functions called and their timings (panel off by default) <br/></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="readable-text" id="p22">
+<p>If you click on a panel to open it, you can close it again with the cancellation <em>X</em> in the top right corner. The panel I personally find most useful is the one showing the SQL queries. Examining the details for the <code>musicians()</code> view reveals that two queries got run. The first counted all the musicians in the database, while the second queried using the musicians limiting the number of results. This two-step process occurs because the musicians view uses the <code>Paginator</code> object; the first call checks how many items there are in the entire database, while the second limits how many come back in a page.</p>
+</div>
+<div class="readable-text intended-text" id="p23">
+<p>The most likely performance bottleneck you’ll have on a page is from the database. One of the downsides of an ORM is you’re not always cognizant of your query’s complexity. If you’re finding your page load is slow, the Time and SQL panels can help you get to the bottom of it.</p>
+</div>
+<div class="readable-text" id="p24">
+<h2 class="readable-text-h2"><span class="num-string">13.2</span> Tool libraries</h2>
+</div>
+<div class="readable-text" id="p25">
+<p>Django is a large framework with lots of features, but there are always situations where there could be more. Often, these features are small and not worthy of their own library. As a result, there are several third-party libraries that are collections of miscellaneous tools. This section covers two of these tool kits: Django Extensions and Django Awl. </p>
+</div>
+<div class="readable-text" id="p26">
+<h3 class="readable-text-h3"><span class="num-string">13.2.1</span> Django Extensions</h3>
+</div>
+<div class="readable-text" id="p27">
+<p>The Django Extensions (<a href="https://pypi.org/project/django-extensions/">https://pypi.org/project/django-extensions/</a>) library is one of the most popular tool kits out there. Installation is simple: run <code>python</code> <code>-m pip</code> <code>install django-extensions</code>, then add <code>"django_extensions"</code> to <code>INSTALLED_APPS</code>. This library is quite large and is broken down by feature area, with extensions for the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p28"> Commands </li>
+<li class="readable-text" id="p29"> Signals </li>
+<li class="readable-text" id="p30"> Debugging </li>
+<li class="readable-text" id="p31"> Fields </li>
+<li class="readable-text" id="p32"> Job scheduling </li>
+<li class="readable-text" id="p33"> Models </li>
+<li class="readable-text" id="p34"> Permissions </li>
+<li class="readable-text" id="p35"> Validators </li>
+</ul>
+<div class="readable-text" id="p36">
+<p>Even with that extensive list, there is still another section called Utilities, the miscellaneous area of the ultimate miscellaneous tool kit. There is way too much in here to cover it all in detail, so I’ll highlight a couple of key items.</p>
+</div>
+<div class="readable-text intended-text" id="p37">
+<p>Inside the Commands section, you’ll find <code>shell_plus</code>: a management command that adds features to Django’s <code>shell</code>. The key differentiator here is that it pre-imports many of the modules, classes, and functions you are likely to use when interacting with a Django shell, including <code>settings</code>, <code>reverse</code>, <code>Q</code>, and more. You can configure what gets imported, allowing you to include your own frequently used models. This can save a lot of typing. </p>
+</div>
+<div class="readable-text intended-text" id="p38">
+<p>Another useful command is <code>validate_templates</code>. This checks for syntax errors in any of your template files, allowing you to verify them first, rather than catching the error at run time. This command can be particularly useful as part of your continuous integration process, or as a commit hook, disallowing invalid templates in your repo. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>The Fields section of the Extensions library has new Django Fields for your models. It includes fields for automatically generating a slug, creating random values, and using timestamps to track object creation and modification as well as a short UUID container. Along with the fields are some premade <code>Model</code> classes. When you inherit from one of them, you automatically get collections of fields that work together. For example, the <code>ActivatorModel</code> is an abstract model class that has a status field and two date fields. The status field indicates whether the object is “active,” while the date fields track when an object was made active or inactive. Using this <code>Model</code>, you can quickly query only active items. This can be useful for things like blog posts, allowing you, for example, to hide a post that isn’t ready for launch yet. </p>
+</div>
+<div class="readable-text" id="p40">
+<h3 class="readable-text-h3"><span class="num-string">13.2.2</span> Django Awl</h3>
+</div>
+<div class="readable-text" id="p41">
+<p>Similar to Django Extensions is Django Awl (<a href="https://pypi.org/project/django-awl/">https://pypi.org/project/django-awl/</a>). Full disclosure, this is one of my own extensions. On one hand, you can mock the hubris of me including it here; on the other hand, I’m open to pull requests, so if you’ve got something you think should be there, drop me a line. When building Django projects for clients, I frequently found that there were certain kinds of code I was writing over and over, so eventually, I stuck it all in a library, with the result being Awl. Features found here include the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p42"> Models </li>
+<li class="readable-text" id="p43"> Admin tools </li>
+<li class="readable-text" id="p44"> View decorators </li>
+<li class="readable-text" id="p45"> Context processors </li>
+<li class="readable-text" id="p46"> Commands </li>
+<li class="readable-text" id="p47"> Template tags and filters </li>
+<li class="readable-text" id="p48"> Testing utilities </li>
+</ul>
+<div class="readable-text" id="p49">
+<p>You install Awl by running <code>python -m pip install django-awl</code> and adding <code>"awl"</code> to <code>INSTALLED_APPS</code>. As with Django Extensions, there is too much here to go through it all, but I’ll describe a few things I use most often. There is an abstract <code>Model</code> you can inherit that adds create and update timestamp fields, <code>Model</code> classes for counters and locks, and a specialty <code>Model</code> for including a rank number for situations when your objects need an order. The ranked <code>Model</code> includes plugins for the Django Admin, providing you with up and down buttons to change an object’s rank.</p>
+</div>
+<div class="readable-text intended-text" id="p50">
+<p>Often, when I’m playing around in Python, I create a quick script to test out an algorithm or double-check that weird syntax thing I just can’t recall. The REPL is good for this, but it doesn’t have the friendliest interface for typing a lot of code, so a quick script is often the answer. With Django, that’s problematic. You can’t just run a script within a Django context—you have to complete extra setup for the script to work. Enter the <code>run_script</code> command. It takes a Python file as an argument and loads and runs it, but within a Django context. This can be faster than writing a custom Django command and useful if you need a quick one-off. </p>
+</div>
+<div class="readable-text intended-text" id="p51">
+<p>Writing <code>ModelAdmin</code> classes can require a fair amount of boilerplate code, especially if you want to include cross-object links, like you were shown in chapter 5. The <code>awl.admintools.FancyModelAdmin</code> is a factory for <code>ModelAdmin</code> classes that supports additional features for the <code>list_display</code>. With a single line of code, you can add columns that have a default value when empty, links to related objects, and columns populated based on a template. </p>
+</div>
+<div class="readable-text intended-text" id="p52">
+<p>The feature I use most in Awl is a module called <em>Waelsteng</em>, an Anglo-Saxon word for <em>spear</em>. This module is a helper for testing; it includes tools for testing your Django Admin code and an object for faking requests if you want to call a view directly. It also has a custom test runner that supports managing dummy directories for uploads and, my personal favorite, a shortcut for running a specific test. The default Django test runner allows you to run a test with its full module name—for example, <code>python manage.py</code> <code>test</code> <code>bands.tests.TestBands.test_musician_view</code>. That’s a lot of typing. Awl’s replacement runner supports shortcutting with an equal sign (<code>=</code>). The same test could be run with <code>python manage.py test =musician_view</code>. </p>
+</div>
+<div class="readable-text" id="p53">
+<h2 class="readable-text-h2"><span class="num-string">13.3</span> Look and feel</h2>
+</div>
+<div class="readable-text" id="p54">
+<p>The web is an ever-changing place, and new tools pop up all the time, especially to make your site look more interesting. There are many third-party packages that integrate UI tool kits and other web goodness into Django. This section covers two tools and one technique. Django Grappelli is a drop-in replacement for the Django Admin, bringing pretty to your favorite administration tool. Crispy Forms is a series of libraries offering fine-grained control over form rendering with reusable components. Favicons are those funky little icons in your browser’s tabs, and as they’re a little messy; you’ll need a couple of tricks to make it easier to serve them from Django. </p>
+</div>
+<div class="readable-text" id="p55">
+<h3 class="readable-text-h3"><span class="num-string">13.3.1</span> Django Grappelli</h3>
+</div>
+<div class="readable-text" id="p56">
+<p>One of the common complaints about the Django Admin is its lack of visual appeal. OK, let’s be blunt: it’s ugly. The Django Admin is only meant as a support tool. Its lack of aesthetic appeal isn’t important, but you can do something about it. Django Grappelli (<a href="https://pypi.org/project/django-grappelli/">https://pypi.org/project/django-grappelli/</a>) is a drop-in replacement for the Django Admin’s templates. </p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>You install Grappelli using <code>python -m pip install django-grappelli</code>. Note that if you’re using an older version of Django (prior to to 4.0), you will need a different version of Grappelli. Check the docs for specific information. Once you’ve got it installed, add <code>"grappelli"</code> to <code>INSTALLED_APPS</code>, ensuring you put it before the line for <code>"django.contrib.admin"</code>. Grappelli has a few of its own views that need to be registered as routes: <code>path("grappelli/",</code> <code>include("grappelli.urls"))</code>, which also needs to be included before the admin routes. You also need to make sure the <code>context_processors</code> configuration in <code>TEMPLATES/OPTIONS</code> includes <code>django.template .context_processors.request</code>, which it does by default. </p>
+</div>
+<div class="readable-text intended-text" id="p58">
+<p>That’s pretty much it; once configured, your Django Admin has a more modern look. It uses a grid based layout, changes the side panels into drop-down menus, and adds a cleaner header and footer. Figures 13.2 and 13.3 show you the difference between the default and Grappelli styling, so you can decide which appeals to you more. </p>
+</div>
+<div class="readable-text" id="p59">
+<h3 class="readable-text-h3"><span class="num-string">13.3.2</span> Crispy forms</h3>
+</div>
+<div class="readable-text" id="p60">
+<p>Let’s face it, the look and feel of vanilla web forms is so yesterday—in fact, it’s probably more like yesterday’s yesterday. Most websites use frontend frameworks, such as Bootstrap and Tailwind to help with both layout and styling. Django’s form tools are built around vanilla forms, and although you can add styling, it is a bunch of extra work. Django Crispy Forms (<a href="https://pypi.org/project/django-crispy-forms/">https://pypi.org/project/django-crispy-forms/</a>) is a third-party library that helps you write reusable web forms. </p>
+</div>
+<div class="readable-text intended-text" id="p61">
+<p>Crispy Forms is broken into separate packages: the main package contains the form helper, while secondary template packs are for particular UI tool kit libraries. To install Crispy Forms, you need to run <code>python -m pip install django-crispy-forms</code> and register <code>"crispy_forms"</code> in <code>INSTALLED_APPS</code>. Then, depending on your choice of</p>
+</div>
+<div class="browsable-container figure-container" id="p62">
+<img alt="figure" height="618" src="../../OEBPS/Images/CH13_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 13.2</span> Default styling of the Django Admin</h5>
+</div>
+<div class="browsable-container figure-container" id="p63">
+<img alt="figure" height="618" src="../../OEBPS/Images/CH13_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 13.3</span> Grappelli styling of the Django Admin</h5>
+</div>
+<div class="readable-text" id="p64">
+<p>UI tool kit, you install another package. For example, to use Bootstrap 5, run <code>python -m pip install crispy-bootstrap5</code>, add <code>"crispy_bootstrap5"</code> to <code>INSTALLED_APPS</code>, and add two new configuration values: <code>CRISPY_ALLOWED_TEMPLATE_PACKS</code> <code>=</code> <code>"bootstrap5"</code> and <code>CRISPY_TEMPLATE_PACK = "bootstrap5"</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p65">
+<p>There are two ways to use Crispy Forms in your Django templates. The first is the <code>|</code> <code>crispy</code> filter. This filter gets applied to a form object inside your template, so instead of using <code>form.as_p</code> to output the form, you use <code>form |</code> <code>crispy</code>. This filter outputs a canned layout and style based on the installed template pack. There is no extra control over the look; you can’t customize it at all. Consider it an opinionated layout, like <code>.as_p</code>, but with your template pack add-on. </p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>The second way to use Crispy Forms is with the <code>{% crispy %}</code> tag. This is more complicated than the filter but more powerful as well. Within the template, you use the tag, giving the form object as an argument. To fully take advantage of the tag, you add Crispy Form’s <code>FormHelper</code> class to your <code>ModelForm</code> class. Between the helper and an associated <code>Layout</code> object you get fine-grained control over the form’s HTML, including tag IDs, CSS classes, the form action, and the HTTP method. Specific template packs also have their own tool-kit-specific attributes, which you can modify. For example, when using the Bootstrap pack, you can change whether error messages get rendered inline or as a block by setting <code>.error_text_inline=False</code>. As all this customization is done in your Python code, rather than in your templates, you can programmatically control the form inside a view. Crispy Forms provides as much or as little control as you want, with helpful defaults to make things prettier with little effort. </p>
+</div>
+<div class="readable-text intended-text" id="p67">
+<p>As mentioned in chapter 7, Django 5 has added a feature to make it easier to override and control the templates associated with a form field. This feature makes it easier to do the things Crispy Forms does for you, but it still means you have to write the underlying template widgets. Unless you’re using a UI tool kit that isn’t supported by a Crispy Forms template pack, you’re better off using Crispy Forms, as someone else has done all the work of creating those templates for you. </p>
+</div>
+<div class="readable-text" id="p68">
+<h3 class="readable-text-h3"><span class="num-string">13.3.3</span> Favicons</h3>
+</div>
+<div class="readable-text" id="p69">
+<p>The little icon that appears on your browser’s tab next to the page title is known as a <em>favicon</em>. This is another one of those nonstandard standards. It came about as a feature in Microsoft’s Internet Explorer 5, which checked for the existence of a file named favicon.ico in the root directory of a website. Eventually, enough browsers adopted this practice that it became a World Wide Web Consortium (W3C) standard. As part of the standard, you can use a <code>&lt;link&gt;</code> tag in your HTML document’s head to specify where to look for the image and which image format gets used. Unfortunately, adoption of the standard was a bit spotty, and different browsers support different image types, sizes, and variations of the attributes in that <code>&lt;link&gt;</code> tag. </p>
+</div>
+<div class="readable-text intended-text" id="p70">
+<p>Favicons are images, so from a Django perspective, they should be stored in your static folder. Django serves static files under the URL directory you configured with <code>STATIC_URL</code>, which is typically /static/ (see chapter 7 for more info). You can write your <code>&lt;link&gt;</code> tags to point at files in <code>/static/</code>, or you can define redirects that point to your own routes.</p>
+</div>
+<div class="readable-text intended-text" id="p71">
+<p>Django comes with a series of views as classes, which are handy utilities to quickly serve a file or perform redirects. The <code>RedirectView</code> class found in <code>django.views .generic.base</code> can be used directly inside your urls.py file, specifying the destination of a redirected URL. The following code redirects a request for /favicon.ico, sending it to /static/img/favicon.ico:</p>
+</div>
+<div class="browsable-container listing-container" id="p72">
+<div class="code-area-container">
+<pre class="code-area">from django.urls import path
+from django.views.generic.base import RedirectView
+
+urlpatterns = [
+    path('favicon.ico',
+        RedirectView.as_view(url='/static/img/favicon.ico')),
+    # ...
+]</pre>
+</div>
+</div>
+<div class="readable-text" id="p73">
+<p>HTML 5 recommends you provide multiple sizes for your favicon, so it can be used in different resolutions in different contexts. This can lead to requiring half a dozen <code>&lt;link&gt;</code> tags in your HTML to get all the possible choices. The RealFaviconGenerator website is a free tool that handles all the cases and provides helpful instructions on what you’ll need: <a href="https://realfavicongenerator.net/">https://realfavicongenerator.net/</a>. </p>
+</div>
+<div class="readable-text" id="p74">
+<h2 class="readable-text-h2"><span class="num-string">13.4</span> Feature flags</h2>
+</div>
+<div class="readable-text" id="p75">
+<p>Over time, your Django project may become a product: a site your users are deeply invested in. With this fun comes feature requests. Every code change you make to your site comes with the risk of introducing problems. Of course, like you learned in chapter 8, you should have unit tests, which can help prevent this problem. Even with a good test suite in place, you can still make bad design decisions or misunderstand a requirement. One modern development practice that limits your risk is <em>feature flags</em>. The idea is to wrap new code in a conditional block and then allow only certain users to use that code. This technique means you can have users beta test a feature in your production code: only those with the feature flag turned on get to see it. </p>
+</div>
+<div class="readable-text intended-text" id="p76">
+<p>The cleverly named Django Waffle (<a href="https://pypi.org/project/django-waffle/">https://pypi.org/project/django-waffle/</a>) is a feature flag library. Waffle provides three controls: switches, samples, and flags. A switch is an on–off configuration value; a sample is a control for a percentage of visitors; and a flag goes the whole way, offering fine-grained control over who sees a feature. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>You install Django Waffle with the usual <code>python -m pip</code> <code>install</code> <code>django-waffle</code>. It requires <code>"waffle"</code> in <code>INSTALLED_APPS</code> and needs <code>"waffle.middleware.WaffleMiddle</code><code>- ware"</code> added to the <code>MIDDLEWARE</code> configuration. Waffle has its own database tables, which it uses to track state, so you need to run the <code>migrate</code> command after installation. </p>
+</div>
+<div class="readable-text intended-text" id="p78">
+<p>Waffle’s simplest control is the switch, which it provides as a <code>Model</code>. You can use either the Django Admin or a command management tool to create switches and turn them on or off. Within your code, you query a switch with the <code>switch_is_active()</code> function, passing it the name of your <code>Switch</code> instance. The function returns a Boolean value, which you use to evaluate your conditional feature block. </p>
+</div>
+<div class="readable-text intended-text" id="p79">
+<p>The next step up in complexity is the <code>Sample</code> <code>Model</code>. Like with <code>Switch</code>, you can create instances of it in the Django Admin. Unlike the switch, it isn’t on all the time. Each call to <code>sample_is_active()</code> returns a Boolean based on a random value. When you create a <code>Sample</code>, you specify the percentage of time it is active. Note that subsequent calls to <code>sample_is_active()</code> return a new value, so if you want the same result in a view, you should store the return value and reuse it. </p>
+</div>
+<div class="readable-text intended-text" id="p80">
+<p>Finally, Waffle’s most powerful mechanism is the flag. This allows you to roll out a feature for specific users, groups of users, users that pass a test, or a percentage of visitors. A <code>Flag</code> gets associated with a request and gets accessed within a view. Calling <code>flag_is_active()</code> checks whether a global override is on, whether the flag is in testing mode, whether the current user meets the flag’s criteria, whether the current user has a cookie (they’ve met the criteria in the past), and whether there is a random chance the feature should be enabled. The <code>Flag</code> <code>Model</code> contains the following attributes:</p>
+</div>
+<ul>
+<li class="readable-text" id="p81"> Flag name </li>
+<li class="readable-text" id="p82"> On for everyone </li>
+<li class="readable-text" id="p83"> Testing mode </li>
+<li class="readable-text" id="p84"> Percentage allowed </li>
+<li class="readable-text" id="p85"> On for superusers </li>
+<li class="readable-text" id="p86"> On for staff </li>
+<li class="readable-text" id="p87"> On for authenticated </li>
+<li class="readable-text" id="p88"> On for a specific language </li>
+<li class="readable-text" id="p89"> A list of groups </li>
+<li class="readable-text" id="p90"> A list of users </li>
+</ul>
+<div class="readable-text" id="p91">
+<p>By combining these criteria, you get a lot of control over who sees your conditional feature.</p>
+</div>
+<div class="readable-text intended-text" id="p92">
+<p>In addition to the <code>Model</code> classes, Waffle provides view decorators, mixins, and template tags. There are several other feature flag libraries out there, but Waffle is one of the longest-standing ones and is rock solid. </p>
+</div>
+<div class="readable-text" id="p93">
+<h2 class="readable-text-h2"><span class="num-string">13.5</span> Static sites</h2>
+</div>
+<div class="readable-text" id="p94">
+<p>Way back in chapter 1, I explained the idea of a static site: one where each URL maps directly to a file on the web server’s hard drive. These sites are quite performant, as they require no additional database queries and are easily cacheable. Sometimes, a dynamic site is overkill. Of course, if you’re building a static site, you still want a consistent look and feel, and it would be great to define the nav bar once and re-use it. Static site generators are tools that allow you to compose websites. You define pages that include reusable components, like your nav bar, and then the generator mushes everything together and outputs a set of files for your site. </p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>There are quite a few static site generators out there, and they each have their own syntax and quirks. You’ve just spent a whole lot of time learning Django’s syntax and quirks, so why go somewhere else? Django Distill (<a href="https://django-distill.com/">https://django-distill.com/</a>) is a third-party library that turns your Django project into a static site. You install Distill using the familiar <code>python</code> <code>-m</code> <code>pip</code> <code>install</code> <code>django-distill</code> and add <code>"django _distill"</code> to <code>INSTALLED_APPS</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p96">
+<p>Distill works by replacing the <code>path()</code> function in your urls.py files with its own: <code>distill_path()</code>. This function overrides <code>path()</code>, so your site continues to work as it did before. The new version of the function also allows you to run a management command that outputs a static version of all the URLs mapped by Distill. The <code>distill_path()</code> function takes at least one more argument than the regular kind: the name of the file to generate for the view. </p>
+</div>
+<div class="readable-text intended-text" id="p97">
+<p>As an example, I maintain an online cookbook for my family, containing some of our favorite recipes. Since the site is just for the family to use, and I’m the only one to ever edit it, using a content management system seemed like overkill. The original version of the site was built on a third-party Django project that required Django 2.1. As the library never got updated, maintaining the site became problematic. Instead of rewriting someone else’s project for my own use, I decided to downshift to a static site. The recipes are in data files, and a simple view renders them as HTML. Instead of hosting a Django site, I use Distill to create a static site with all the recipes. As it’s a static site, hosting it is as simple as zipping it up and sending it to a server.</p>
+</div>
+<div class="readable-text intended-text" id="p98">
+<p>There are a few restrictions to what Distill can do. First off, it only works with the GET mode of views. This makes sense, as doing a POST is part of a dynamic site; there won’t be any Django on the backend to handle a POST with statically generated files. Second, if your view takes arguments, you need to specify which of those arguments to use when generating the static site. Distill allows you to pass in a function to generate the arguments, meaning you can dynamically build queries at generation time. In fact, I use this in my cookbook: in that case, the function examines the data directory for each recipe file and calls the view with the recipe name. The result is that Distill generates an HTML static page for each recipe.</p>
+</div>
+<div class="readable-text intended-text" id="p99">
+<p>Appendix B provides an overview of how to put your Django project into a production environment. Part of this process includes taking the static files in your project and deploying them to a web server, letting it serve them. It is inefficient to have Django serve static files, and you should only do it that way during local development. There is a management command called <code>collectstatic</code>, which is responsible for copying your static files to the web server’s required destination. Distill expects this to be set up and working; it uses the same destination to source any static files for the generated site. </p>
+</div>
+<div class="readable-text intended-text" id="p100">
+<p>Once you have your URLs configured and your static files properly organized, you run the <code>distill-local</code> management command. This takes one argument: the output directory for your generated site. Once your site gets generated, you can zip up the output directory and deploy it wherever you plan on hosting your static site. </p>
+</div>
+<div class="readable-text intended-text" id="p101">
+<p>I really like Distill. Being familiar with Django already, it requires very little extra effort to build a static site. I already know Django’s template language; I know how views work; I can test the site using the development server; and, most importantly, I don’t have to learn some other static site generating tool. </p>
+</div>
+<div class="readable-text" id="p102">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p103"> There are many third-party libraries available to help write less code when building your Django project. You can find many of them here: <a href="https://djangopackages.org/">https://djangopackages.org/</a>. </li>
+<li class="readable-text" id="p104"> The Django Debug Toolbar is an add-on that puts an overlay on top of your views to provide you with detailed information about the view’s execution. </li>
+<li class="readable-text" id="p105"> The Debug Toolbar is divided into panels, each providing different information. Some key panels include execution time, SQL queries, HTTP request info, and profiling. </li>
+<li class="readable-text" id="p106"> The timing and SQL panels are key to solving slow page load times. </li>
+<li class="readable-text" id="p107"> Django Extensions is a collection of miscellaneous tools, including management commands, signals, fields, Models, and more. </li>
+<li class="readable-text" id="p108"> The <code>shell_plus</code> management command automatically loads key libraries into a Django-enabled REPL, saving you from having to do it yourself. You can even define what modules get loaded, including your own <code>Model</code> classes. </li>
+<li class="readable-text" id="p109"> Django Extensions comes with several Django fields and <code>Model</code> classes. For example, the <code>ActivatorModel</code> gets used to create objects that can be activated or deactivated, such as a blog page being published or not. </li>
+<li class="readable-text" id="p110"> Django Awl is another collection of useful tools. It also has additional <code>Model</code> classes, admin tools, view decorators, context processors, and commands as well as a custom test runner. </li>
+<li class="readable-text" id="p111"> Awl’s <code>FancyModelAdmin</code> reduces the amount of boilerplate code you need when writing <code>ModelAdmin</code> classes and includes that ability to add columns in the Django Admin for related objects and those based on a rendered template. </li>
+<li class="readable-text" id="p112"> Django Awl comes with a replacement test runner, which has the handy feature of searching for a test using a shortcut to its name. </li>
+<li class="readable-text" id="p113"> Django Grappelli is a drop-in replacement for the Django Admin, providing a grid-based layout and a nicer look and feel. </li>
+<li class="readable-text" id="p114"> Crispy Forms is a collection of libraries that provide tools for writing better forms. </li>
+<li class="readable-text" id="p115"> Crispy Form template packs include HTML based on Bootstrap, Tailwind, and more, allowing you to build forms using the same styling as the rest of your site. </li>
+<li class="readable-text" id="p116"> A Crispy Form gets rendered with either the opinionated <code>|</code> <code>crispy</code> filter or the very flexible <code>{%</code> <code>crispy</code> <code>%}</code> template tag. </li>
+<li class="readable-text" id="p117"> Favicons are the small icons that your browser puts on the tab, showing the page’s title. </li>
+<li class="readable-text" id="p118"> The favicon standard is messy, with lots of different files and sizes. </li>
+<li class="readable-text" id="p119"> Originally, favicons had to be served out of the root of the URL directory. You can accomplish this in Django using the built-in <code>RedirectView</code>. </li>
+<li class="readable-text" id="p120"> Feature flags allow you to conditionally expose a new feature to a subset of your site’s visitors. </li>
+<li class="readable-text" id="p121"> Django Waffle has three kinds of conditional <code>Model</code> classes: switches, samples, and flags. </li>
+<li class="readable-text" id="p122"> A Waffle <code>Switch</code> is a global flag, while a <code>Sample</code> is on for a percentage of visitors. </li>
+<li class="readable-text" id="p123"> A Waffle <code>Flag</code> allows you to determine which visitors see a feature, depending on their role, account, language, group, and additional factors. </li>
+<li class="readable-text" id="p124"> A static website is one for which the URL maps directly to a file getting served. </li>
+<li class="readable-text" id="p125"> Static site generators are tools that use templates to build static sites. </li>
+<li class="readable-text" id="p126"> Django Distill overrides the <code>path()</code> function to allow you to output a subset of your project as a static site. This means you can use your existing knowledge of Django’s templating instead of learning another tool’s syntax.  </li>
+</ul>
+</div></body>
+</html>

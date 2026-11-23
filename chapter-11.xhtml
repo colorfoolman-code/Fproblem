@@ -1,0 +1,1022 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>11 APIs</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">11</span> </span> <span class="chapter-title-text">APIs</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Adding API capabilities to your Django project</li>
+<li class="readable-text" id="p3">REST API interfaces</li>
+<li class="readable-text" id="p4">Using Django Ninja to build APIs</li>
+</ul>
+</div>
+<div class="readable-text" id="p5">
+<p>Adding an API to your project creates a way for other systems to access your data, including alternate frontend interfaces, such as mobile devices and single-page applications (SPAs). The most common API protocol on the web is REST, a mechanism built on top of URLs and HTTP calls. The third-party library Django Ninja allows you to build REST-based APIs using the same view functions you’ve used for your pages.</p>
+</div>
+<div class="readable-text" id="p6">
+<h2 class="readable-text-h2"><span class="num-string">11.1</span> Why use an API?</h2>
+</div>
+<div class="readable-text" id="p7">
+<p>When you think about a web-based software system, your first inclination is that your users are people. You shouldn’t forget the people; they’re definitely your primary audience, but sometimes, they aren’t your only users. All that interesting information stored away in your database might also be useful to another piece of software. Like with people, you want to be able to control what other systems have access to, so you can’t just let them attach to your database. By providing an <em>application programming interface</em> (API), your project can be accessed by other systems. </p>
+</div>
+<div class="readable-text intended-text" id="p8">
+<p>There are two common categories of systems that might use your API: the first is another computer accessing your data, while the second is a user interface. Mobile phone applications on iPhone or Android typically get built with custom software specific to those devices. These applications still need a backend, though, just like your web application does. An API provides a way for mobile apps to talk to your system. Larger projects might have both web and mobile interfaces, and using an API means the user can interact with their data, no matter which frontend they are using.</p>
+</div>
+<div class="readable-text intended-text" id="p9">
+<p>Another kind of frontend has become popular as well: SPAs. These are still web applications, but instead of the backend producing individual web pages, a single user interface that operates in JavaScript gets downloaded to the browser, and all further UI interaction gets done in place. The <em>single</em> in <em>single-page</em> means only one web page gets used: a single, bundled JavaScript application. Frameworks like React and Angular are built using this mechanism. Django can still get used as the backend for an SPA, through the use of an API. Of course, the world isn’t quite that simple. There are mobile applications built using web technologies and multipage web applications that have interactive JavaScript on a page that also might use an API. Figure 11.1 shows this variety.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p10">
+<img alt="figure" height="1002" src="../../OEBPS/Images/CH11_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 11.1</span> Mixing web and API interfaces allows Django to be a backend for multiple types of devices</h5>
+</div>
+<div class="readable-text" id="p11">
+<p>Before discovering HTMX (see chapter 12), my go-to stack was Vue.js and Django. This allowed me to use regular web pages, where it was easiest, and sprinkle in Vue.js for interactivity. For me, at least, this was a faster method of creating applications than a pure SPA. It still needs an API, though. When Vue.js interacts with a page, it sometimes needs information from the backend.</p>
+</div>
+<div class="readable-text" id="p12">
+<h3 class="readable-text-h3"><span class="num-string">11.1.1</span> CRUD and REST</h3>
+</div>
+<div class="readable-text" id="p13">
+<p>Back in chapter 5, you learned about <em>CRUD</em>—that’s <em>create</em>, <em>read</em>, <em>update</em>, and <em>delete</em>. It is still a fun acronym, and it is applicable in more ways than just the context of the Django Admin. Any time you’re dealing with data, those four operations drive the interaction. This applies to APIs as well. All APIs implement at least one of these operations, and many provide an interface for all four. You can think of an API as comprising “nouns” and “verbs,” where the nouns are the objects getting acted upon and the verbs are one or more of the CRUD operations. </p>
+</div>
+<div class="readable-text intended-text" id="p14">
+<p>A noun/object in an API call may not be the same as the object in your backend—in fact, it is almost always different. Usually, a data transformation has to happen between the actual object and its representation in the API. This might seem messy at first, but it is no different from what the ORM does for you: it abstracts away a row in the database. As the consumer of your API may not be using Django, and in fact, they may not even be using Python, an intermediary data representation is necessary. The process of changing your actual object into this representation is known as <em>serialization</em>. </p>
+</div>
+<div class="readable-text intended-text" id="p15">
+<p>The rules that bind the interaction of two machines is called a <em>protocol</em>, and you’re already using one. Your browser on one machine and the web server on another talk using HTTP. The GET and POST HTTP methods you learned about in chapter 7 are part of this protocol. A natural way of building an API is to use the existing HTTP protocol, rather than re-invent the wheel. This isn’t required, as there are APIs out there that have their own protocols, but for a web-based scenario, HTTP makes the most sense.</p>
+</div>
+<div class="readable-text intended-text" id="p16">
+<p>By far, the most common API protocol in the web world is <em>representational state transfer</em> (REST). Calling REST a protocol is actually an overstatement; it is a loosely defined set of conventions that has become a de facto standard. It is built on top of HTTP, though, and its lack of strictness is probably one of the influencing factors of its wide adoption. </p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>REST uses the HTTP methods to enact the verbs in CRUD. You’ve already seen GET for read and POST for create or update within the context of forms. There are other HTTP methods as well, though, and the three that typically get used with REST are PUT, PATCH, and DELETE. When implementing REST, POST typically gets reserved for creation only, with PUT and PATCH being for updates. The difference between the two is based on what information gets provided. PUT expects all an object’s fields, while PATCH expects only those that have changed. HTTP DELETE, quite sensibly, gets used for deleting.</p>
+</div>
+<div class="readable-text intended-text" id="p18">
+<p>Remember when I wrote <em>loosely defined</em> and <em>lack of strictness</em>? Well, POST, PUT, and PATCH are some of the sources of this slipperiness. REST doesn’t enforce anything, and if you decide to use POST for both creating and updating, nothing is going to stop you. You have to read an API’s documentation to know which methods it uses for what operations, but you’d have had to read the docs to implement it anyway, so that’s not that big a deal.</p>
+</div>
+<div class="readable-text intended-text" id="p19">
+<p>That covers the verbs, but how about the nouns? Like with HTTP, REST uses URLs to determine what object is getting acted upon. Again, this isn’t strictly enforced, but there are some best practices that should be followed. Typically, the URL starts with a namespace (e.g. <em>api</em>); optionally, includes a grouping (in Django, this might be the app); and then the noun of the object to interact with. REST URLs should not include verbs, as the HTTP protocol specifies the action. This means the same URL can be used for multiple operations. For example, http://example.com/api/song/42/ indicates the song with ID 42. Running GET fetches the song, running PUT expects data in the call to update the song’s fields, and running DELETE would remove the song. That’s one URL with three different actions.</p>
+</div>
+<div class="readable-text intended-text" id="p20">
+<p>A common practice is to use plural nouns to retrieve listings and singular nouns and an object ID to fetch specifics. For example, http://example.com/api/songs/ fetches a list of songs in the database, while the aforementioned http://example.com/api/song/42/ fetches a single song. The singular form, without an ID, typically gets used for creation. Following our example, http://example.com/api/song/ called using POST creates a new song.</p>
+</div>
+<div class="readable-text intended-text" id="p21">
+<p>The POST, PUT, and PATCH methods all expect data in the body of the request that specifies information about the change. This is typically the fields of the object being created or modified. All five HTTP methods usually include data in the body of the response, with everything except DELETE containing the serialized version of the object getting interacted with. DELETE is a special case; some APIs do return the content of the newly deleted object, while others simply return a flag indicating success or failure of the deletion. I tend to do the latter, but you may want the content of the deleted object if you want the user to be able to undo their operation by re-creating it.</p>
+</div>
+<div class="readable-text intended-text" id="p22">
+<p>REST does not specify the form of all this data getting sent back and forth. The most common format is JSON, while older interfaces still use XML. This is where REST can get a little messy, as there is no mechanism for determining what the body might contain, except making a request. This isn’t as troublesome as it might sound. Nobody randomly queries a server with REST. If you’re writing code that consumes a REST API, there is probably some documentation somewhere telling you what the API expects. Yep, that’s the second reference to reading the docs. Maybe I’m suggesting you’ll need to read the docs? Figure 11.2 summarizes the use of HTTP methods with JSON data to perform CRUD operations through a REST API. </p>
+</div>
+<div class="readable-text intended-text" id="p23">
+<p>This figure has all the operations needed to build a song API. Consider a mobile application where a user can input and modify a database of their favorite songs. The application’s home screen lists all the songs in their database, by calling GET on /api/songs/. When the user clicks on the song “Fire” by Ohio Players, they see the details,</p>
+</div>
+<div class="browsable-container figure-container" id="p24">
+<img alt="figure" height="1657" src="../../OEBPS/Images/CH11_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 11.2</span> GET, POST, PUT, PATCH, and DELETE: HTTP methods for CRUD actions<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p25">
+<p>possibly through another GET call. In this example, all the details are available in the listing call, so the second GET is unnecessary, but sometimes, to save bandwidth, the listing doesn’t contain all the information.</p>
+</div>
+<div class="readable-text intended-text" id="p26">
+<p>A button on the home screen allows the user to create a new song. They enter <em>Booom</em> by the <em>Ambassadors</em>, written in <em>2119</em>, making several mistakes along the way. Few APIs implement both PUT and PATCH, and for most mobile applications, only PUT would get implemented. An Edit Song screen already contains all the fields, so why add the extra programming to determine which fields changed; simply use PUT and send the new version of the object to the server. Using the call to PUT (or PATCH), the user fixes their mistakes, correctly setting song 93 to <em>Boom</em> (two Os), <em>X Ambassadors</em>, and <em>2019</em>. Back on the song detail screen, there is a button for deleting a song. This is implemented with the DELETE HTTP method, using the same URL as the song detail and song update calls.</p>
+</div>
+<div class="readable-text" id="p27">
+<h3 class="readable-text-h3"><span class="num-string">11.1.2</span> Versioning an API</h3>
+</div>
+<div class="readable-text" id="p28">
+<p>When writing a Django project, you don’t typically have to worry too much about other developers. Even if you’re working on a team, the last commit to the repo wins. This can go awry but can usually be handled by good team practices. Adding an API to your project complicates matters. The programmers using your API aren’t going to like breaking changes. Drastic modifications to your API may result in someone else’s program ceasing to work. </p>
+</div>
+<div class="readable-text intended-text" id="p29">
+<p>One solution to this problem is API versioning. This is the idea of including a version number in the call, often inside the URL. Developers using your API write their code against a specific version number. You can update your API as long as the change doesn’t break the API; for example, adding new fields typically doesn’t cause a problem.</p>
+</div>
+<div class="readable-text intended-text" id="p30">
+<p>When you introduce a breaking change, for example removing an available object or adding a required field, you update the version number. As the number is in the URL, this means a completely new URL. Older versions of the API get maintained for some time, giving developers a chance to catch up.</p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>How long you maintain multiple versions is up to you, but the bigger your audience is, the more time you should give them to change. Many years ago, I was building a site that interacted with Facebook’s GraphAPI when they switched from 1.8 to 2.0. They gave 18 months notice before shutting the 1.8 version off completely.</p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>You already have all the knowledge you need to build RESTful APIs in Django. Each API endpoint is just a view. Inside a view, you inspect the HTTP method and perform the requested action. APIs are so common, though, that there are third party libraries to make development simpler for you. </p>
+</div>
+<div class="readable-text" id="p33">
+<h2 class="readable-text-h2"><span class="num-string">11.2</span> Building an API with Django Ninja</h2>
+</div>
+<div class="readable-text" id="p34">
+<p>An API for your project will likely reflect your ORM Model classes. The data you expose through an API is typically the same data in your database but translated into another format. Most API endpoint views query an object out of the database, optionally perform actions on the object, and serialize the object, sending it in response. Consider the main objects in RiffMates: to build a full API, you need endpoints for musicians, bands, venues, and promoters. That’s a lot of boilerplate code.</p>
+</div>
+<div class="readable-text intended-text" id="p35">
+<p>Enter Django Ninja (sneakily, of course—it is a ninja). Ninja (<a href="https://django-ninja.dev/">https://django-ninja.dev/</a>) is a third-party library that reduces the amount of boilerplate code you need for your API endpoints. You turn a view into an endpoint using a decorator, and the serialization of objects into JSON is mostly done for you. Ninja knows how to serialize your Model classes and can use Python type hints to interact with non-Model fields as well. If you’ve ever used the FastAPI (<a href="https://fastapi.tiangolo.com/">https://fastapi.tiangolo.com/</a>) web framework, you’ll find Ninja familiar; it had heavy influence on the library’s design.</p>
+</div>
+<div class="readable-text intended-text" id="p36">
+<p>To get started with Ninja, you’ll need to install it. For full details on installing third party apps, see appendix A. Ninja is one of the simpler libraries to install; all you need to do is run <code>pip</code> <code>install</code> <code>django-ninja</code> and you’re good to go. It is a rare Django library that technically isn’t an app and so does not need to be registered in <code>INSTALLED_APPS</code>.</p>
+</div>
+<div class="readable-text intended-text" id="p37">
+<p>To build an API, you instantiate a <code>NinjaAPI</code> object. This should only be done once (or once per API, more on that later). Groups of API endpoints get collected in a <code>Router</code> object, and each router gets registered with the <code>NinjaAPI</code> object. It is called a <em>router</em>, as it is collecting view routes, just like your other views registered in urls.py.</p>
+</div>
+<div class="readable-text intended-text" id="p38">
+<p>The main Ninja object has a <code>.urls</code> property, which you use inside a <code>path</code> object in your urls.py file. <code>Router</code> object instances have methods that correspond to the HTTP methods and get used as decorators. The decorators turn view functions into API endpoints.</p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>Let’s start building an API by adding a <code>"Hello,</code> <code>world"</code>-inspired endpoint. Inside your RiffMates/home directory, create a new file called api.py. Inside this file, create a Ninja <code>Router</code> object, a view function that returns a string, and wrap the function with the <code>.get()</code> method of the router. The <code>.get()</code> method takes an argument: the last part of the URL for this API endpoint. The following listing contains this code.</p>
+</div>
+<div class="browsable-container listing-container" id="p40">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.1</span> An API endpoint that returns a string</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/home/api.py
+from ninja import Router
+
+router = Router() <span class="aframe-location"></span> #1
+
+@router.get("/") <span class="aframe-location"></span> #2
+def home(request):
+    return "RiffMates rocks!" <span class="aframe-location"></span> #3</pre>
+<div class="code-annotations-overlay-container">
+     #1 Each api.py file gets its own Router instance that groups all the API endpoints in the file.
+     <br/>#2 A Router instance contains methods for each HTTP method. You decorate your view with one such method, passing in the end part of the URL for this endpoint.
+     <br/>#3 Ninja automatically serializes returned values as a JSON result.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p41">
+<p>Now that you have declared an endpoint, you need to register it. Open RiffMates/urls.py, and then add the code in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p42">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.2</span> Register routers with a <code>NinjaAPI</code> object and use it to create URLs</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+from ninja import NinjaAPI
+
+from home.api import router as home_router <span class="aframe-location"></span> #1
+
+api = NinjaAPI(version="1.0") <span class="aframe-location"></span> #2
+api.add_router("/home/", home_router) <span class="aframe-location"></span> #3
+
+urlpatterns = [
+    # ...
+    path("api/v1/", api.urls), <span class="aframe-location"></span> #4
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the Router from the RiffMates/home/api.py.
+     <br/>#2 Create a single NinjaAPI object.
+     <br/>#3 Register the home app’s router with NinjaAPI.
+     <br/>#4 Add the API endpoints as URLs in your Django project.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p43">
+<p>I’ve made a couple of choices here that aren’t necessary yet but help future-proof the API. First, when importing <code>router</code> from <code>home.api</code>, I alias it as <code>home_router</code>. If you guessed that I plan on adding api.py files to several apps, you’d be right. Second, I used the <code>version</code> argument when constructing the <code>NinjaAPI</code> object. This isn’t required if you only have one API. If you wish to have multiple <code>NinjaAPI</code> objects, they must have unique version names. As I like to version my APIs anyway, I’ve done this from the start.</p>
+</div>
+<div class="readable-text intended-text" id="p44">
+<p>The <code>api.urls</code> property works similarly to <code>include()</code> in the <code>django.urls</code> module. All the API endpoints that are registered with the <code>NinjaAPI</code> object get included underneath the declared path. I’ve chosen <code>api/v1/</code> as my base path, first to namespace all the URLs as part of the API and second to include versioning information to future-proof any breaking changes.</p>
+</div>
+<div class="readable-text intended-text" id="p45">
+<p>That’s it. You’ve got an API. Granted, it only has one endpoint, but it is an API. Fire up your development server and visit http://localhost:8000/api/v1/home/ to see it in action. Remember that Ninja’s output is JSON, so it has a MIME type of <code>application/json</code>. Depending on what browser or tool you are using to hit the API, you may see different things. Firefox has a great JSON analysis tool built in. If you’re using Firefox, you will see three tabs: the Content tab (RiffMates Rocks!), a Raw Data tab, and a Headers tab. For our home endpoint, the content and the raw data are the same: the serialized string from our view. When you move to more complex data structures, the content tab parses the JSON and makes it easier to deal with. For example, objects and lists can be collapsed, and you can apply filters. If you’re using Chrome or one of the many Chrome-based browsers, you don’t get all this fancy stuff—you only get the raw data. There are add-ons for Chrome that have similar features to Firefox’s interface.</p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>When dealing with APIs, the <code>curl</code> command-line tool (<a href="https://curl.se/">https://curl.se/</a>) can be quite useful. This tool speaks numerous protocols, including HTTP, and can fetch any URL you give it. If you’re interacting with a REST API that uses JSON or XML, doing so on the command line is sometimes easier. There are also dedicated tools, like <code>postman</code> (<a href="https://www.postman.com/product/rest-client/">https://www.postman.com/product/rest-client/</a>), if you prefer a GUI approach.</p>
+</div>
+<div class="readable-text" id="p47">
+<h3 class="readable-text-h3"><span class="num-string">11.2.1</span> Serializing objects</h3>
+</div>
+<div class="readable-text" id="p48">
+<p>Returning simple strings isn’t much fun and is of limited value. Thankfully, Ninja serializes more interesting objects. Most native Python data types can be returned from a view, and Ninja will turn them into JSON. There are some restrictions, but they’re the same restrictions imposed by Python’s <code>json</code> library. This means lists of strings, or a good old dictionary, can be returned from an API view.</p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>One of the exercises in chapter 2 had you add a view that showed your project’s version information. In it, you returned a <code>JsonReponse</code> object that serialized a dictionary. The following listing shows the Ninja equivalent. Add it to RiffMates/home/api.py.</p>
+</div>
+<div class="browsable-container listing-container" id="p50">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.3</span> You can serialize a <code>dict</code> from a Ninja API endpoint</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/home/api.py
+...
+@router.get("/version/") <span class="aframe-location"></span> #1
+def version(request):
+    data = {
+        "version": "0.0.1",
+    }
+    return data <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Declare a function that handles a GET call for the URL ending in /version/.
+     <br/>#2 Anything the json module can serialize can be returned through Ninja.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p51">
+<p>Note the URL argument to <code>@router.get()</code> ends with a slash (/). You’ll recall from chapter 8 that Django redirects any URLs not ending in a slash to their equivalent with a slash on the end. This is actually my only real complaint about Ninja—it doesn’t handle this well. You can create API endpoints without the slash, but I’ve run into problems with them: there are cases where the redirect will trigger and others where it won’t. Rather than trying to figure out which is which, always declare the URL ending in a slash and avoid the problem altogether.</p>
+</div>
+<div class="readable-text intended-text" id="p52">
+<p>Since the <code>version</code> API endpoint uses the existing <code>router</code> object in the file, and that router already got registered with Ninja, you have nothing else to do. Your API now supports two endpoints. Make sure your development server is running, and visit http://localhost:8000/api/v1/home/version/ to try it out.</p>
+</div>
+<div class="readable-text intended-text" id="p53">
+<p>As mentioned earlier in the chapter, the most likely thing you’ll do with your API is expose your ORM Model classes. Django Model classes aren’t compatible with Python’s JSON serializer, but Ninja provides tools for converting your Model data to JSON with very little work.</p>
+</div>
+<div class="readable-text intended-text" id="p54">
+<p>Ninja is built on top of another third-party library, called Pydantic. This library is similar to the Django ORM, in that it provides tools for declaring fields in classes, but unlike the ORM, it uses Python type hints to do so. Ninja extends Pydantic’s object model with a class called <code>Schema</code>. You can declare your own serializable objects by inheriting from <code>Schema</code> and declaring fields. If you’ve ever used Python’s dataclasses module, it is similar. Pydantic has been around longer than dataclasses, which is why there are multiple ways of doing things now.</p>
+</div>
+<div class="readable-text intended-text" id="p55">
+<p>Ninja also provides a class that translates a Django ORM object into a <code>Schema</code> for serialization. You do this by subclassing a <code>ModelSchema</code> and configuring it based on your ORM Model class. This is similar to the <code>ModelForm</code> class discussed in chapter 7.</p>
+</div>
+<div class="readable-text intended-text" id="p56">
+<p>Consider, once again, a mobile application, this time with a screen that displays the promoters in your database. To do this, you’ll need to add some API endpoints to the RiffMates <code>promoters</code> Django app. First off, create RiffMates/promoters/api.py. Inside this file, you declare <code>PromoterSchema</code>, which extends a Ninja <code>ModelSchema</code>. This class uses an inner class, called <code>Meta</code>, whose properties declare how the serialization works. At minimum, you need two properties: <code>model</code> points to the <code>Model</code> class to be serialized, and <code>fields</code> is a list of the fields to participate in the serialization. As its name implies, the <code>PromoterSchema</code> class gets used to serialize a <code>Promoter</code> <code>Model</code>. Note that the <code>Promoter</code> class got modified in the chapter 10 exercises; the example presented here is based on that version. If you didn’t do the exercises, you’ll need different values in the <code>fields</code> property.</p>
+</div>
+<div class="readable-text print-book-callout" id="p57">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>In early versions of Ninja, <code>Meta</code> was called <code>Config</code>, and <code>fields</code> was called <code>model_fields</code>. With the 1.0 release, the names were made consistent with Django’s own ORM models</p>
+</div>
+<div class="readable-text" id="p58">
+<p>Once you’ve declared <code>PromoterSchema</code>, you use it with a <code>response</code> argument in a Ninja decorator. This informs Ninja that the schema gets used for serialization of the endpoint’s return value.</p>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>The promoters screen in your mobile application would contain a list of promoters, similar to the list of songs mentioned before. The <code>promoters()</code> endpoint, shown in the following listing, returns a list of all the promoters used to populate that screen. You tell Ninja that a function endpoint returns a list by using Python type hints. With the correct type hint in place, all the function needs to do is return a <code>QuerySet</code> of <code>Promoter</code> objects, and Ninja takes care of the rest.</p>
+</div>
+<div class="browsable-container listing-container" id="p60">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.4</span> Serialize an ORM Model class with Ninja <code>ModelSchema</code></h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/api.py
+from ninja import Router, ModelSchema
+
+from promoters.models import Promoter
+
+router = Router() <span class="aframe-location"></span> #1
+
+class PromoterSchema(ModelSchema): <span class="aframe-location"></span> #2
+    class Meta:
+        model = Promoter <span class="aframe-location"></span> #3
+        fields = ["id", "full_name", "birth", "death"] <span class="aframe-location"></span> #4
+
+@router.get("/promoters/",
+        response=list[PromoterSchema]) <span class="aframe-location"></span> #5
+def promoters(request):
+    return Promoter.objects.all() <span class="aframe-location"></span>  #6</pre>
+<div class="code-annotations-overlay-container">
+     #1 Each api.py file declares its own Router object.
+     <br/>#2 Subclassing ModelSchema creates a serializer for your Django ORM Model.
+     <br/>#3 This class serializes a Promoter object.
+     <br/>#4 List the fields to participate in the serialization.
+     <br/>#5 Tell Ninja that this endpoint returns a list of PromoterSchema objects.
+     <br/>#6 Return all the Promoter objects.
+     <br/>
+</div>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p61">
+<h5 class="callout-container-h5 readable-text-h5"><code>list</code> vs. <code>List</code></h5>
+</div>
+<div class="readable-text" id="p62">
+<p>The code in this book was written and tested with Python 3.12. Type hinting with built-in types got introduced in Python 3.9. If you’re using Python 3.8 or earlier, the endpoint function declaration needs the <code>List</code> class from the <code>typing</code> module instead. It looks like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p63">
+<div class="code-area-container">
+<pre class="code-area">from typing import List
+
+@router.get("/promoters/",
+        response=List[PromoterSchema])<span class="aframe-location"></span> #1
+def promoters(request):
+    return Promoter.objects.all()</pre>
+<div class="code-annotations-overlay-container">
+      #1 Note the use of List instead of list.
+      <br/>
+</div>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p64">
+<p>As this is a new file with a new <code>Router</code> object in it, you need to register it with the <code>NinjaAPI</code> object in urls.py. The following listing highlights the changes needed there.</p>
+</div>
+<div class="browsable-container listing-container" id="p65">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.5</span> Register the <code>Router</code> for the <code>promoters</code> app</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+from promoters.api import router as promoters_router <span class="aframe-location"></span> #1
+...
+api = NinjaAPI(version="1.0")
+api.add_router("/home/", home_router)
+api.add_router("/promoters/", promoters_router) <span class="aframe-location"></span> #2
+...</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the promoters Router object with an alias.
+     <br/>#2 Register the new router with the NinjaAPI object.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p66">
+<p>Note that you don’t need to make changes to the <code>path</code> object; using the <code>add_router()</code> call is sufficient. Depending on how much playing around you did in chapter 10, you may or may not have promoter data in your database. Make sure you do, or your API won’t have anything to return. You can either use the Django Admin to add some information, or for your convenience, the sample code has a fixture starting in the ch10g_exercises directory. Note that this fixture pairs with the changes in the chapter 10 exercises and will only work if you model matches that work.</p>
+</div>
+<div class="readable-text intended-text" id="p67">
+<p>Your new endpoint is http://localhost:8000/api/v1/promoters/promoters; visit it to see the results. The double noun of <code>promoters/promoters</code> is a little annoying but common practice. The first noun is the namespace, and the second indicates this is listing a series of objects. For the <code>promoters</code> app, this is overkill: there is only one model inside it. When you start building the APIs for bands, musicians, and venues, this kind of namespacing becomes important. Your results should look something like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p68">
+<div class="code-area-container">
+<pre class="code-area">[{
+    "id": 1,
+    "full_name": "Michael Lang",
+    "birth": "1944-12-11",
+    "death": "2022-01-08"
+},
+{
+    "id": 2,
+    "full_name": "Phoebe Jacobs",
+    "birth": "1919-06-21",
+    "death": "2012-04-09"
+},
+{
+    "id": 3,
+    "full_name": "Harvey Goldsmith",
+    "birth": "1946-03-04",
+    "death": null
+},
+{
+    "id": 4,
+    "full_name": "Allan Williams",
+    "birth": "1930-02-21",
+    "death": "2106-12-30"
+}]</pre>
+</div>
+</div>
+<div class="readable-text" id="p69">
+<p>As I write this sentence, Harvey Goldsmith is still alive and, therefore, doesn’t have a death date (date of passing? expiration date? period-of-pushing-up-petunias?). Where Django uses Python’s <code>None</code> value, JavaScript, and therefore JSON, uses <code>null</code>.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p70">
+<h5 class="callout-container-h5 readable-text-h5">A shortcut you shouldn’t use</h5>
+</div>
+<div class="readable-text" id="p71">
+<p>Similar to the <code>ModelForm</code> class, <code>ModelSchema</code> supports two values that can save you typing in a long list of fields. You can set the <code>fields</code> property to <code>"__all__"</code> to include all the fields from a Model, or instead of using the <code>fields</code> property, you can use an <code>exclude</code> property.</p>
+</div>
+<div class="readable-text" id="p72">
+<p>Like with <code>ModelForm</code>, this isn’t recommended. Explicitly listing your fields is safer. If you add a new field to your Model that shouldn’t be serialized, it is better for the default to be exclusion. Inclusion, by default, means having to remember to edit the <code>ModelSchema</code> subclass to explicitly remove the new field.</p>
+</div>
+<div class="readable-text" id="p73">
+<p>Not all fields get used in all situations. For example, if you have a creation timestamp on your object that automatically gets set by Django, you might want it serialized when reading an object but not when updating it. You shouldn’t be able to change the creation timestamp through the API. This can mean needing different serializers for reading and updating—more on this later.</p>
+</div>
+</div>
+<div class="readable-text" id="p74">
+<h3 class="readable-text-h3"><span class="num-string">11.2.2</span> Handling arguments</h3>
+</div>
+<div class="readable-text" id="p75">
+<p>Ninja supports both URL query parameters and URL-based arguments. Typically, query parameters get used to modify a result, while URL-based arguments get used to identify a target object. It is quite common for an API to provide two GET methods for each target object, one that lists objects and the other to fetch a specific object. This is akin to the <code>musician()</code> and <code>musicians()</code> views you wrote in chapter 4.</p>
+</div>
+<div class="readable-text intended-text" id="p76">
+<p>You’ve already seen the <code>promoters()</code> endpoint, so let’s add a new one to fetch a single <code>Promoter</code> object. The difference, in this case, is the URL must support an argument, which you dictate to Ninja through the use of brace brackets, similar to an f-string. The following listing shows how to tie a named value in the URL with the view function’s arguments.</p>
+</div>
+<div class="browsable-container listing-container" id="p77">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.6</span> An endpoint to fetch a single <code>Promoter</code> object by its ID</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/api.py
+from django.shortcuts import get_object_or_404
+...
+@router.get("/promoter/{promoter_id}/", <span class="aframe-location"></span> #1
+    response=PromoterSchema) <span class="aframe-location"></span> #2
+<span class="aframe-location"></span>def promoter(request, promoter_id):  #3
+    promoter = get_object_or_404(Promoter, id=promoter_id) <span class="aframe-location"></span> #4
+    return promoter</pre>
+<div class="code-annotations-overlay-container">
+     #1 Denote URL arguments, using brace brackets.
+     <br/>#2 This endpoint returns a single object and uses the PromoterSchema to serialize it.
+     <br/>#3 Match the named URL argument with an argument to the endpoint view function.
+     <br/>#4 Like in a page view function, use get_object_or_404() to find the requested object, and then return it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p78">
+<p>To dive deeper into arguments and serialization, let’s move on from promoters and start building a more complex set of API endpoints. The goal is to provide a full set of CRUD operations on the <code>Venue</code> model, including the ability to show a subset of venues at once through the application of a filter. Again, if this was for a mobile application, you’d start with the venue listing screen, but this time, you’d also have an input field that allowed you to only show those venues that match the name in the field.</p>
+</div>
+<div class="readable-text intended-text" id="p79">
+<p>Like with the other RiffMates apps, you need a new api.py file, this time in the <code>bands</code> app directory. To output a <code>Venue</code> object, you need a serializer, which is also based on a <code>ModelSchema</code> class. Earlier, I hinted that you can declare your own fields on a <code>Schema</code>. You can do this by building a serializer that is independent of a model, or you can augment a <code>ModelSchema</code> by adding fields. I’ll show you the latter by defining the <code>VenueSchema</code> serializer.</p>
+</div>
+<div class="readable-text intended-text" id="p80">
+<p>I want to add two fields that aren’t in the <code>Venue</code> model to the <code>VenueSchema</code>, both of which can be helpful for developers consuming your API. A <em>slug</em> is a term from the newspaper industry, meaning a short name for an article. Slugs sometimes get used on the web inside of URLs. Consider the readability difference between <code>/song/43/</code> and <code>/song/paint-it-black/</code>; the latter is human readable and gives search engines a clue regarding what the URL points to. A common technique is to combine the two ideas: <code>/song/paint-it-black-43/</code> keeps the human-readable content, while making it easy to parse the song’s ID off the end of the URL. An integer-based primary key is typically significantly faster to find in a database than searching on a string. With the mixed technique, you don’t even need to store the slug, as the <code>43</code> part is enough to do your look-up.</p>
+</div>
+<div class="readable-text intended-text" id="p81">
+<p>The second field to add to the serializer is a URL for the object’s GET method. This provides a shortcut for developers using the listing GET and wanting to fetch more information on a specific object. If you’ve designed your API well, the URL will be the same for PATCH and DELETE, meaning the programmer doesn’t have to know how to construct your API endpoint—they can just use the information in the serialized object.</p>
+</div>
+<div class="readable-text intended-text" id="p82">
+<p>Adding fields to a Ninja serializer only requires you to declare them in the class with a corresponding Python type hint. When an object gets serialized, the field gets populated by looking up properties with the same name on the object. To implement the slug and URL fields, you could add <code>@property</code> values to <code>Venue</code>. Ninja also provides a way of populating fields within the serializer class itself, using a static method named after the field with a <code>resolve_</code> prefix. To implement our two fields, you create <code>.resolve_slug()</code> and <code>.resolve_url()</code>. Figure 11.3 shows how the <code>.resolve</code> methods get used by the serializer to produce the resulting JSON.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p83">
+<img alt="figure" height="683" src="../../OEBPS/Images/CH11_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 11.3</span> Using methods in a Ninja serializer to add content to an object’s representation</h5>
+</div>
+<div class="readable-text" id="p84">
+<p>Django has its roots in the newspaper industry and so comes with a slug method built-in. The <code>django.utils.text</code> module has a function called <code>slugify()</code>, which takes a string and returns a slug that is URL compatible. The <code>slugify()</code> function converts a string to ASCII (in case it contains Unicode); changes it to lowercase; removes leading and trailing spaces; replaces remaining whitespace with a single dash; and removes any characters that aren’t alphanumeric, underscores, or hyphens. The <code>.resolve _slug()</code> method on the serializer calls <code>slugify()</code> on the <code>Venue</code> object’s name and appends a hyphen and the object ID.</p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>In chapter 5, you learned about the <code>reverse()</code> function, which gets used to look up a named URL. The <code>.resolve_url()</code> method uses <code>reverse()</code> to find the GET endpoint for a <code>Venue</code> object. Ninja’s decorators support naming in a fashion similar to a <code>path</code> object in the urls.py file. The only complication is they are namespaced. If your <code>NinjaAPI</code> object has no <code>version</code> argument, the namespace is <code>api-1.0.0:</code>. If your <code>NinjaAPI</code> object does have a <code>version</code> argument (like in our code), the namespace starts with <code>api-</code>, then appends the value of <code>version</code>, and finishes with a colon (<code>:</code>). In either case, the name you give the API endpoint comes after the <code>:</code>. The following listing contains the code for serializing a <code>Venue</code> object and the API endpoint for fetching a single instance.</p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.7</span> API endpoint for fetching a <code>Venue</code> object</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.utils.text import slugify
+
+from ninja import Router, ModelSchema
+
+from bands.models import Venue
+
+router = Router() <span class="aframe-location"></span> #1
+
+class VenueOut(ModelSchema):
+    slug: str <span class="aframe-location"></span> #2
+    url: str
+
+    class Meta:
+        model = Venue
+        fields = ["id", "name", "description"] <span class="aframe-location"></span> #3
+
+    @staticmethod
+    def resolve_slug(obj): <span class="aframe-location"></span> #4
+        slug = slugify(obj.name) + "-" + str(obj.id)
+        return slug
+
+    @staticmethod
+    def resolve_url(obj): <span class="aframe-location"></span> #5
+        url = reverse("api-1.0:fetch_venue", args=[obj.id, ])
+        return url
+
+@router.get("/venue/{venue_id}/",
+    response=VenueOut,
+    url_name="fetch_venue") <span class="aframe-location"></span> #6
+def fetch_venue(request, venue_id):
+    venue = get_object_or_404(Venue, id=venue_id)
+    return venue</pre>
+<div class="code-annotations-overlay-container">
+     #1 As this is a new api.py file, it needs its own Router.
+     <br/>#2 Additional fields get declared in a Schema or ModelSchema class, using Python type hinting.
+     <br/>#3 Serialize the id, name, and description fields from the Venue object.
+     <br/>#4 Ninja uses .resolve_X() static methods to populate the corresponding field. The .resolve_slug() method uses Django’s slugify() function to create a slug based on the Venue object’s name and ID.
+     <br/>#5 The .resolve_url() method looks up the API endpoint named fetch_venue and returns the corresponding URL.
+     <br/>#6 The url_name argument to a Ninja decorator declares a name for the endpoint that can be looked up with a call to reverse().
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<p>In addition to adding the code in listing 11.7, don’t forget to register the new <code>router</code> with the <code>NinjaAPI</code> object in urls.py, using <code>bands</code> as the router’s base name. Once done, you can run the development server and visit http://localhost:8000/api/v1/bands/venue/1/. If you followed along way back in chapter 4, you will get the following result:</p>
+</div>
+<div class="browsable-container listing-container" id="p88">
+<div class="code-area-container">
+<pre class="code-area">{
+    "id": 1,
+    "name": "CBGB",
+    "description": "Take it CJ! 1-2-3-4",
+    "slug": "cbgb-1",
+    "url": "/api/v1/bands/venue/1/",
+}</pre>
+</div>
+</div>
+<div class="readable-text" id="p89">
+<p>Including the <code>url</code> field here may seem a little strange: you had to hit that URL to get this result, but the same serializer gets used in the listing code, which is where that value becomes useful. Are you ahead of me? Are you mumbling, <em>well, then let’s add the listing code</em>? Who am I to argue? To add a bit of flair, the <code>Venue</code> listing endpoint also supports a filter. It takes an optional query parameter <em>name</em>, which, if given, filters the venues that begin with that value. The following listing shows the first attempt at this endpoint.</p>
+</div>
+<div class="browsable-container listing-container" id="p90">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.8</span> <code>Venue</code> object listing API end-point</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+@router.get("/venues/", response=list[VenueOut])
+def venues(request, name=None):<span class="aframe-location"></span> #1
+    venues = Venue.objects.all()
+    if name is not None:
+        venues = venues.filter(name__istartswith=name) <span class="aframe-location"></span> #2
+
+    return venues</pre>
+<div class="code-annotations-overlay-container">
+     #1 Support a query parameter called name.
+     <br/>#2 If a name got provided, include only venues that start with it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p91">
+<p>Endpoint view arguments get used by Ninja to support either URL arguments or query parameters. If a view argument has a corresponding brace-bracket surrounded value in the URL, it is a URL argument. Otherwise, it is treated as a query parameter. To make the query parameter optional, simply provide a default value to the function argument.</p>
+</div>
+<div class="readable-text intended-text" id="p92">
+<p>To filter listed results based on a name query parameter, you use the <code>QuerySet</code> object’s <code>.filter()</code> method. Like with the <code>promoters()</code> endpoint, this endpoint function returns a list, indicated to Ninja through a Python type hint in the decorator. Make sure your development server is running, and visit http://localhost:8000/api/v1/bands/venues/ to see the results of your work.</p>
+</div>
+<div class="readable-text" id="p93">
+<h3 class="readable-text-h3"><span class="num-string">11.2.3</span> Filtering your listings</h3>
+</div>
+<div class="readable-text" id="p94">
+<p>A few paragraphs back, I wrote <em>first attempt</em>, did you catch it? Filtering lists is such a common activity that Ninja provides tools for it. For our <code>Venue</code> example, the tool is overkill: it takes more code with the tool than without. But if you want to support filters on multiple fields of an object, it can save you some work. To define a filter you build a <code>FilterSchema</code>, it is very similar to the other kinds of schemas you’ve seen so far, using Python type hints to declare the fields that can be filtered.</p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>To filter the <code>Venue</code> listing, there are a couple of wrinkles. First, you need to use the <code>Optional</code> type hint to specify that this query parameter isn’t required. Second, by default, the filter is an exact match. To perform starts-with, you need some extra stuff. Ninja uses Pydantic’s <code>Field</code> class to give you more control over how a field behaves. Without the <code>Field</code> class, this would simply match the name of the field. With it, you can specify the <code>q</code> argument to a <code>QuerySet.filter()</code> call, using the <code>__istartswith</code> field look-up you learned about in chapter 4. The following listing contains the <code>VenueFilter</code> code.</p>
+</div>
+<div class="browsable-container listing-container" id="p96">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.9</span> Declare the fields that participate in a Ninja filter</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+from typing import Optional
+...
+from ninja import Field, Router, ModelSchema,
+<span class="">↪</span><span class="">↪</span> FilterSchema<span class="aframe-location"></span> #1
+
+...
+
+class VenueFilter(FilterSchema): <span class="aframe-location"></span> #2
+    name: Optional[str] = Field(None,
+        q=['name__istartswith']) <span class="aframe-location"></span> #3</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add Field and FilterSchema to the list of imports from ninja.
+     <br/>#2 Inherit from FilterSchema to create a filter class.
+     <br/>#3 Declare the name field, using Python type hinting to define it as an optional string and the Field class to change how it filters.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p97">
+<p>With the filter class ready, you need to make changes to the <code>Venue</code> listing endpoint. Replace the <code>name</code> argument of the function with the more generic <code>filters</code>. The key to Ninja understanding this is the Python type hint you provide. Ninja includes a <code>Query</code> type hint, which you combine with your <code>VenueFilter</code> class to specify that <code>filters</code> is a query filter.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p98">
+<h5 class="callout-container-h5 readable-text-h5">Type hinting, a little deeper</h5>
+</div>
+<div class="readable-text" id="p99">
+<p>The next chunk of code includes a bit of magic: Python’s ellipsis (<code>…</code>). If you’re not very familiar with type hinting, or don’t really care, you can simply type it in as it is, and you’ll be fine.</p>
+</div>
+<div class="readable-text" id="p100">
+<p>Type hinting is all about telling your tools what kinds of values to expect. For a complex filter, you could have a variable number of arguments. For <code>VendorFilter</code>, there is only name, but for a heavier object, you could filter on many fields.</p>
+</div>
+<div class="readable-text" id="p101">
+<p>The ellipsis literal in Python acts as a placeholder. You’ve seen it in the sample code, indicating I’ve skipped over stuff. The wonder of the ellipsis is that it is valid Python. If you copy and paste some sample code containing <code>…</code>, Python won’t complain. The ellipsis commonly gets used to create stub functions as well: define the function header, and make the body just <code>…</code>.</p>
+</div>
+<div class="readable-text" id="p102">
+<p>In type hinting, the ellipsis literal indicates a variable number of arguments. As the filter can have zero or more arguments, the syntax for the type hint is <code>filters:</code> <code>VendorFilter</code> <code>=</code> <code>Query(…)</code>.</p>
+</div>
+</div>
+<div class="readable-text" id="p103">
+<p>The <code>FilterSchema</code> base class contains a method called <code>.filter()</code>, which takes a <code>QuerySet</code> and filters it based on the instantiated values of the <code>FilterSchema</code> object. I tried to write the word <em>filter</em> twice more in that last sentence to make it clearer but couldn’t sneak them in. Remember, as complicated as this sounds, it is just a set of query parameters. Ninja uses the query parameters to build a set of fields to perform a filter and provides a class that encapsulates this operation for you. The following listing has replacement code for the <code>venues()</code> endpoint.</p>
+</div>
+<div class="browsable-container listing-container" id="p104">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.10</span> Declare the fields that participate in a Ninja filter</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+from ninja import (Field, Router, ModelSchema,
+    FilterSchema, Query) <span class="aframe-location"></span> #1
+
+...
+
+@router.get("/venues/", response=list[VenueOut])
+def venues(request, filters: VenueFilter = Query(...)):<span class="aframe-location"></span> #2
+    venues = Venue.objects.all()
+    venues = filters.filter(venues) <span class="aframe-location"></span> #3
+    return venues</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add the Query type hint class to your list of imports.
+     <br/>#2 Declare a query parameter, using the VenueFilter type, which takes a variable number of arguments.
+     <br/>#3 The filters object is an instance of VenueFilter with a method that filters the venue’s QuerySet based on the query parameters.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p105">
+<p>To see the new endpoint in action, you’ll want some additional <code>Venue</code> objects: filtering when you only have one in the database isn’t much fun. Use the Django Admin to add a couple more venues, and then visit http://localhost:8000/api/v1/bands/venues/?name=c. Your results will be dependent on what data you created, but it will be something like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p106">
+<div class="code-area-container">
+<pre class="code-area">[{
+    "id": 1,
+    "name": "CBGB",
+    "description": "Take it CJ! 1-2-3-4",
+    "slug": "cbgb-1",
+    "url": "/api/v1/bands/venue/1/",
+},
+{
+    "id": 8,
+    "name": "Cherry Bar",
+    "description": "Australia's best after party",
+    "slug": "cherry-bar-8",
+    "url": "/api/v1/bands/venue/8/",
+}]</pre>
+</div>
+</div>
+<div class="readable-text" id="p107">
+<p>Don’t forget to test it without a query parameter filter as well, to make sure you didn’t break anything.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p108">
+<h5 class="callout-container-h5 readable-text-h5">Filtering with django-filter</h5>
+</div>
+<div class="readable-text" id="p109">
+<p>This filter concept is a cool idea, and it can be applied to your regular views as well. You could go through the effort of handling all the query arguments to provide filters on your views, or you could use django-filter (<a href="https://pypi.org/project/django-filter/">https://pypi.org/project/django-filter/</a>). This third-party library works similarly to Ninja’s <code>FilterSchema</code>: you build a <code>django_ filters.FilterSet</code> class and then use it to fetch operate on your <code>QuerySet</code> in a view, passing in the request and all the possible query parameters. With just a few lines of code, any of your Django views can support filtering.</p>
+</div>
+</div>
+<div class="readable-text" id="p110">
+<h3 class="readable-text-h3"><span class="num-string">11.2.4</span> Nesting data</h3>
+</div>
+<div class="readable-text" id="p111">
+<p>Sometimes, even your data has data. Consider the rooms that belong to venues. You could write an API endpoint that lists rooms that took a venue ID as an argument, but then, determining the rooms that belong to a venue would take two calls. A list of all venues and their corresponding rooms would take <em>N</em> + 1 calls, one to list the venues and <em>N</em> more for each of the corresponding rooms. This is expensive on the network and, for a long listing, hard on the database in the backend. A better solution is to nest the room information inside the venue data.</p>
+</div>
+<div class="readable-text intended-text" id="p112">
+<p>Ninja makes data nesting straightforward: add a serializer for the nested object, and set an appropriate Python hint in the enclosing one. Recall that each <code>Room</code> model gets connected to a <code>Venue</code> through a many-to-many relationship. Each <code>Venue</code> object has a <code>.room_set</code> query manager that you can use to find associated rooms. Ninja knows how to do this. By defining a schema for a room and adding a <code>room_set</code> field to <code>VenueOut</code>, Ninja automatically performs the subquery and nests the data.</p>
+</div>
+<div class="readable-text intended-text" id="p113">
+<p>The name <code>room_set</code> is very Django-esque. Developers using your API might not understand what that means, and <em>rooms</em> would be easier to understand. Ninja allows you to rename fields using the <code>Field</code> class—in fact, that’s what was going on when you aliased the <code>name__istartswith</code> query parameter. The following listing contains the code for a room serializer and the change to <code>VenueOut</code> to include the nested data.</p>
+</div>
+<div class="browsable-container listing-container" id="p114">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.11</span> Nesting <code>Room</code> data inside serialized <code>Venue</code> objects</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+from bands.models import Venue, Room <span class="aframe-location"></span> #1
+
+...
+
+class RoomSchema(ModelSchema):<span class="aframe-location"></span> #2
+    class Meta:
+        model = Room
+        fields = ["id", "name"]
+
+class VenueOut(ModelSchema):
+    slug: str
+    url: str
+    rooms: list[RoomSchema] = Field(...,
+        alias="room_set") <span class="aframe-location"></span> #3
+
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add the Room model to your imports.
+     <br/>#2 Create a serialization schema for rooms.
+     <br/>#3 To nest the room data, use a list of RoomSchema type hint, which, when combined with the Field class, allows you to rename it from room_set.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p115">
+<p>Ninja’s pretty cool; with very little code, you’ve got nested data. Rerun your query on the CBGB venue, and you’ll now get the following:</p>
+</div>
+<div class="browsable-container listing-container" id="p116">
+<div class="code-area-container">
+<pre class="code-area">{
+    "id": 1,
+    "name": "CBGB",
+    "description": "Take it CJ! 1-2-3-4",
+    "slug": "cbgb-1",
+    "url": "/api/v1/bands/venue/1/",
+    "rooms": [ <span class="aframe-location"></span> #1
+        {
+            "id": 2,
+            "name": "Blue"
+        },
+        {
+            "id": 1,
+            "name": "Red"
+        }
+    ]
+}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Nested room data associated with CBGBs
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p117">
+<h3 class="readable-text-h3"><span class="num-string">11.2.5</span> Authenticating your API</h3>
+</div>
+<div class="readable-text" id="p118">
+<p>So far, you’ve only been doing the <em>R</em> from <em>CRUD</em>. What about the other three choices? You’ve used Ninja’s <code>.get()</code> decorator to read values. It also has <code>.post()</code>, <code>.put()</code>, <code>.patch()</code>, and <code>.delete()</code> decorators to take care of the other parts of CRUD (still a fun acronym). But you might not want just anybody adding stuff to your database. Before considering create or delete, it is time for a tangent about authentication.</p>
+</div>
+<div class="readable-text intended-text" id="p119">
+<p>Ninja supports a variety of authentication mechanisms. You can specify authentication globally through the <code>NinjaAPI</code> object, at the <code>Router</code> level, or endpoint by endpoint. In each case, you provide an <code>auth</code> argument, the value of which determines the kind of authentication to perform. In this section, I’ll be discussing two mechanisms: Django’s auth and an API key. For a full list of the other supported types, see <a href="https://django-ninja.dev/guides/authentication/">https://django-ninja.dev/guides/authentication/</a>.</p>
+</div>
+<div class="readable-text intended-text" id="p120">
+<p>Authentication for an API doesn’t have to be restricted to modification. Everything discussed here can also be used for your GET methods if you want to limit who can access your data.</p>
+</div>
+<div class="readable-text intended-text" id="p121">
+<p>What kind of authentication to use depends on your use case. As Django has authentication built-in, at first glance, that might seem like the right answer. If you’ve already got user accounts and all that fun password management stuff covered in chapter 6, why not use it for your API as well? The problem is the authentication step: if you’re not authenticated, Django redirects you to the login page. If another system is talking to your project, that means it has to fill in a web form.</p>
+</div>
+<div class="readable-text intended-text" id="p122">
+<p>There really is only one case where Django-based authentication should be used: when the API is for a web-based interface. If your API is there to support an SPA or provide data to libraries like Vue.js, then the redirect isn’t a problem. You can capture the redirect in your code and send the user to the login page. To implement this kind of authentication, simply import <code>django_auth</code> from <code>ninja.security</code> and pass it as the value to the <code>auth</code> argument in an endpoint function or the <code>NinjaAPI</code> class.</p>
+</div>
+<div class="readable-text intended-text" id="p123">
+<p>If Django-based authentication isn’t the answer, then what is? A common mechanism out there is to provide a key. Keys can be simple, a global string which all API consumers know, or more complex, a value stored in the database and validated. For public-facing APIs, you’re going to want a key management system, so you can revoke keys from problematic users. If you’re just using the API for your own tools, you can take a simpler approach. Be careful with keys; they are essentially passwords. If you’re passing them around in the clear, someone might see them and then gain access to your API. For simplicity, I’m going to ignore this advice here and just use a hardcoded global value.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p124">
+<h5 class="callout-container-h5 readable-text-h5">Getting key management right</h5>
+</div>
+<div class="readable-text" id="p125">
+<p>Like password management, key management can be tricky. If you’re building a public API, you should do some research on key management first. A good place to start is freeCodeCamp’s website: <a href="https://mng.bz/maan">https://mng.bz/maan</a>.</p>
+</div>
+<div class="readable-text" id="p126">
+<p>The major cloud providers, like AWS (<a href="https://aws.amazon.com/what-is/api-key/">https://aws.amazon.com/what-is/api-key/</a>) and Google Cloud (<a href="https://mng.bz/5lO4">https://mng.bz/5lO4</a>), both have in-depth documentation on how they handle API keys at scale, to give you some ideas as well.</p>
+</div>
+</div>
+<div class="readable-text" id="p127">
+<p>When you authenticate with Django, it sets a cookie in your browser and uses that to validate who you are in future calls. This requires managing a user’s session. For an API, it is far simpler to require the key to be included in every single call. HTTP supports metadata getting attached to a method through the use of a header. HTTP has its own headers but reserves anything that begins with <em>X-</em> as a namespace to be used by developers. Ninja provides the <code>APIKeyHeader</code> class, which you extend to create a key-based authentication mechanism.</p>
+</div>
+<div class="readable-text intended-text" id="p128">
+<p>Your subclass of <code>APIKeyHeader</code> needs two things: the name of the HTTP header to use for the key and an <code>.authenticate()</code> method. The authentication method returns the key to indicate success or <code>None</code> for failure. You provide an instance of your sub-class as the <code>auth</code> argument in the places you wish authentication to happen. In the following examples, I’m going to put it on the endpoints. There should only be one instance of the <code>APIKeyHeader</code> subclass, so it is useful to put it in a file separate from api.py files in your apps. It doesn’t really matter where it goes; it just needs to be importable. Create RiffMates/api_auth.py, and add the code in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p129">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.12</span> Creating an authentication handler based on a key</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/api_auth.py
+from django.conf import settings
+
+from ninja.security import APIKeyHeader
+
+class APIKey(APIKeyHeader):
+    param_name = "X-API-KEY" <span class="aframe-location"></span> #1
+
+    def authenticate(self, request, key):
+        if key == settings.NINJA_API_KEY: <span class="aframe-location"></span> #2
+            return key <span class="aframe-location"></span> #3
+
+
+api_key = APIKey() <span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 The name of the HTTP header where the key gets found
+     <br/>#2 Compare the key sent in to a hardcoded value in settings.py.
+     <br/>#3 Return the key if the values match; otherwise, use the default return value of a function: None.
+     <br/>#4 Create a single instance of APIKey to be used by the apps.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p130">
+<p>Don’t forget to add a new configuration value, called <code>NINJA_API_KEY</code>, in your settings.py file. I’ve set mine to the very cryptic <em>notsecure</em>. As mentioned earlier, this is a bad idea. Do proper key management, or at least use an appropriately cryptic long value, for your key.</p>
+</div>
+<div class="readable-text" id="p131">
+<h3 class="readable-text-h3"><span class="num-string">11.2.6</span> Creating objects with the API</h3>
+</div>
+<div class="readable-text" id="p132">
+<p>With your key-handling class in place, you can now write an endpoint for creating a venue that is behind the authentication wall. You may have noticed that I named the serializer for venues <code>VenueOut</code>. That’s because there needs to be a <code>VenueIn</code>. The fields involved in displaying a venue are different from those for creating one. Venues being output should include their ID, whereas venues getting created don’t have an ID yet. In this case, the only difference between the <em>in</em> and <em>out</em> versions is the ID, so you could choose an ID value of 0 for creating, but in more complex cases, there may be bigger differences.</p>
+</div>
+<div class="readable-text intended-text" id="p133">
+<p>When using the <code>.post()</code> decorator for the creation method, you declare an argument to the function for the field values. This is similar to the contents of POST when handling a form, but in this case, the payload is a JSON dictionary. You tell Ninja what kind of data to expect by using a Python type hint for the payload argument. The <code>Schema</code> class has a <code>.dict()</code> method that returns the contents as a dictionary. This can be combined with Python’s double-star (<code>**</code>) feature, like you do with <code>**kwargs</code>, to use the contents of the dictionary as key–value pairs for the <code>Venue</code> object constructor. The following listing contains the new <code>VenueIn</code> serializer along with the POST endpoint for creating a venue.</p>
+</div>
+<div class="browsable-container listing-container" id="p134">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.13</span> A create endpoint for venues</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+from api_auth import api_key <span class="aframe-location"></span> #1
+...
+class VenueIn(ModelSchema): <span class="aframe-location"></span> #2
+    class Meta:
+        model = Venue
+        fields = ["name", "description"]
+
+...
+
+@router.post("/venue/", response=VenueOut, auth=api_key) <span class="aframe-location"></span> #3
+<span class="aframe-location"></span>def create_venue(request, payload:VenueIn):  #4
+    venue = Venue.objects.create(**payload.dict()) <span class="aframe-location"></span> #5
+    return venue</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the instance of APIKey to specify the authentication method.
+     <br/>#2 A new serializer specific to creating venues, which doesn’t require an ID
+     <br/>#3 The response from a creation action is the resulting Venue. By specifying the auth argument, you restrict access to this endpoint.
+     <br/>#4 Using VenueIn as a Python type hint tells Ninja how to handle the payload body.
+     <br/>#5 Venue.objects.create() expects key–value pairs for the fields in a Venue object; using the ** notation turns a dictionary into this format.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p135">
+<p>If you’re concerned about how to test this, thinking you’ll need to manually create an HTTP call with the appropriate header, don’t worry—Ninja has your back. Similar to how Django provides the Admin, Ninja provides a tool for interacting with your API. It is called <em>docs</em>, and you invoke it by adding <em>docs</em> to the end of your API’s URL. You’ll recall me complaining about Ninja’s lack of consistency with trailing slashes; this is one of those cases: putting a slash on the end of the URL won’t work. To see the interface for your own API, visit http://localhost:8000/api/v1/docs.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p136">
+<h5 class="callout-container-h5 readable-text-h5">Unit testing Ninja calls</h5>
+</div>
+<div class="readable-text" id="p137">
+<p>Although it is great to have the Ninja docs interface to play with your API, in a real project, you’re still going to want to write unit tests. In chapter 8, you saw how to use the <code>.client.get()</code> and <code>.client.post()</code> member methods of the <code>TestCase</code> class. These work equally well with Ninja. There are also methods for <code>.put()</code>, <code>.patch()</code>, and <code>.delete()</code>.</p>
+</div>
+<div class="readable-text" id="p138">
+<p>The <code>.post()</code>, <code>.put()</code>, and <code>.patch()</code> methods that are used for creating and updating content all support an optional argument: <code>content_type</code>. By setting this value to <code>application/json</code>, Django automatically converts your data argument into JSON. In your unit tests, create a Python dictionary containing the key–value pairs for your content, and then pass it into the call using the JSON content type, and Django’s test framework takes care of the rest.</p>
+</div>
+<div class="readable-text" id="p139">
+<p>Another useful optional argument that is supported by all the HTTP method calls is <code>headers</code>. This value takes a dictionary with key–value pairs specifying additional headers to include in the call. This is how you test against calls guarded by key-based authentication. The following example combines both these ideas:</p>
+</div>
+<div class="browsable-container listing-container" id="p140">
+<div class="code-area-container">
+<pre class="code-area">from django.conf import settings
+from django.test import TestCase
+
+class APITests(TestCase):
+    def test_venue_api(self):
+        headers = {<span class="aframe-location"></span> #1
+            "X-API-KEY": settings.NINJA_API_KEY,
+        }
+
+        data = { <span class="aframe-location"></span> #2
+            "name": "some venue name",
+            "description": "some venue description",
+        }
+        response = self.client.post("/api/v1/bands/venue/", data,
+            content_type="application/json", headers=headers)<span class="aframe-location"></span> #3
+        # Asserts about the response go here
+        ...</pre>
+<div class="code-annotations-overlay-container">
+      #1 A dictionary containing the API key’s HTTP header
+      <br/>#2 The payload data for the POST call
+      <br/>#3 Using a JSON content type and the headers dictionary to post to the API endpoint
+      <br/>
+</div>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p141">
+<p>In the Ninja docs interface, every endpoint in your API gets displayed as a collapsible line. You can expand any endpoint to see more details about each call. In the expanded view, there is also a Try it Out button. This button is a little misleading; it should read Get Ready to Try it Out. Pressing it creates another button labeled Execute, which you press to actually do something. It is a two-step process for the scenarios where you need to provide data. For a GET with no arguments, it is an extra step. Try executing one of your GET endpoints to see the results. Ninja gives you a bunch of info: the <code>curl</code> call equivalent of what you just ran, which you can copy/paste into a terminal, the URL you just executed against, the response body, and the headers that came back with it.</p>
+</div>
+<div class="readable-text intended-text" id="p142">
+<p>If you attempt to run the POST for creating a <code>Venue</code>, you will get a Permission Denied response. This is because you didn’t provide an authentication key. To do so, scroll to the top of the screen, and click the Authorize button. This pops open a new window, which in our case, shows the name of the HTTP header and an input box for the key. Fill it in, press Authorize, and all subsequent calls will include the authentication header. Note that this information isn’t long-lived. If you exit your development server and come back, you may need to re-enter the key.</p>
+</div>
+<div class="readable-text intended-text" id="p143">
+<p>Once you’ve authenticated, expand the POST call for creating a venue, and then press the Try it Out button. A text field gets added, containing a template of the JSON payload needed for the call. Replace the placeholder values with actual content, and then press Execute. Like with the GET calls, you’ll see the <code>curl</code> command, the URL used, and the response header and content.</p>
+</div>
+<div class="readable-text intended-text" id="p144">
+<p>If you scroll to the bottom of the docs interface, you’ll see a listing of all your serialization schemas. Expand any of these to see the required format for the fields. The docs tool is very handy for testing and can be left on for developers working with your API. If you’ve secured everything with keys, this interface really is no different from the API itself. If you want to be a little more subtle about things, you can ask Ninja to use Django authentication before giving access to the interface or turn it off altogether. Details on how to do that can be found here: <a href="https://django-ninja.dev/guides/api-docs/">https://django-ninja.dev/guides/api-docs/</a>.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p145">
+<h5 class="callout-container-h5 readable-text-h5">Object relationships</h5>
+</div>
+<div class="readable-text" id="p146">
+<p>Each room belongs to a venue, so to create a <code>Room</code> object using the API (or in the docs interface), you need to associate it with a <code>Venue</code>. To do this, use the numeric ID of the related object. A <code>RoomIn</code> schema would include a field named <code>venue</code>, which you populate with the integer ID of the room’s related <code>Venue</code> object.</p>
+</div>
+</div>
+<div class="readable-text" id="p147">
+<h3 class="readable-text-h3"><span class="num-string">11.2.7</span> Updating and deleting with the API</h3>
+</div>
+<div class="readable-text" id="p148">
+<p>Two letters down, two to go; it’s time to address <em>U</em> and <em>D</em>. Updating an object is rather similar to creating a new one—in fact, if you’re using the PUT method, the same serializer can be used. As you’re editing an existing object, include the ID of the object to be changed in the URL. Ninja doesn’t provide any shortcuts for updating the fields on an object, so you need to loop through the payload and apply each field using a call to <code>setattr()</code>. The following listing contains a new API endpoint that updates all the field values on an existing <code>Venue</code> instance.</p>
+</div>
+<div class="readable-text print-book-callout" id="p149">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong><code>setattr()</code> is a Python built-in method that allows you to set a property on an object by giving its name as a string and the new value.</p>
+</div>
+<div class="readable-text" id="p150">
+<p>The following listing contains a new API endpoint that updates all the field values on an existing <code>Venue</code> instance.</p>
+</div>
+<div class="browsable-container listing-container" id="p151">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.14</span> A update endpoint for venues</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+
+@router.put("/venue/{venue_id}/",<span class="aframe-location"></span> #1
+    response=VenueOut, auth=api_key) <span class="aframe-location"></span> #2
+def update_venue(request, venue_id, payload:VenueIn): <span class="aframe-location"></span> #3
+  <span class="aframe-location"></span>  venue = get_object_or_404(Venue, id=venue_id)  #4
+    for key, value in payload.dict().items():
+        setattr(venue, key, value) <span class="aframe-location"></span> #5
+
+    venue.save() <span class="aframe-location"></span> #6
+    return venue</pre>
+<div class="code-annotations-overlay-container">
+     #1 Include the ID of the venue to be edited as a URL argument.
+     <br/>#2 The response of an update call is typically the altered object.
+     <br/>#3 Like with POST, specify an inbound payload.
+     <br/>#4 Fetch the object to be updated.
+     <br/>#5 Loop through the key–value pairs in the payload, and apply each to the object.
+     <br/>#6 Remember to save your changes to the object before returning it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p152">
+<p>Ninja supports both the PUT and PATCH methods as decorators. You seldom need to implement both. PUT gets used when the client provides all fields, whereas PATCH only sends fields that changed. PATCH takes up less bandwidth but typically requires its own schema. A <code>ModelSchema</code> subclass decides which fields are required based on its ORM Model. For example, if <em>first_name</em> is a required field, it will be required in the schema. To implement a PATCH, required fields need to be optional instead, as you are only sending the changed values. There is no easy way to do this, so you have to construct the schema by hand and use the <code>Optional</code> Python type hint. Implementing PATCH means you have to write more serializer code, so it needs to be worth it. The custom schema notwithstanding, PATCH code is otherwise identical to a PUT: loop through the fields sent and update the object, saving it when you’re done.</p>
+</div>
+<div class="readable-text intended-text" id="p153">
+<p>Choosing between PUT and PATCH is based on how you’re passing objects around. For an SPA or a mobile app, there is a good chance the entire object gets sent to the browser or device, and the browser or device doesn’t track changes at the field level. In this case, it is simplest to send all the information on the client side to the server through a PUT. Alternatively, for models with many fields or for data-intensive fields, like attachments, you might use PATCH. It is up to the client device to know what fields got edited in this case.</p>
+</div>
+<div class="readable-text intended-text" id="p154">
+<p>Last, but not least, is DELETE. OK, technically it is least, as in the least likely thing you’ll need to implement. I’ve never counted, but I suspect less than a quarter of the APIs I’ve built have implemented delete capabilities, but that will depend on what you’re using the API for. If your API is to make data available programtically (like an RSS feed), it will likely be read only and not need DELETE. If your API is the interface to a mobile front end, you’ll likely need the whole range of CRUD.</p>
+</div>
+<div class="readable-text intended-text" id="p155">
+<p>To delete an object, you need to find it. Like with PUT and PATCH, the URL for DELETE contains an object ID. What the body of a delete call’s response should contain is somewhat debated. The two schools of thought are (a) return the deleted object or (b) return some meta-information expressing success or failure. I lean toward the latter, but if you want to give the user undo or re-save capabilities, returning the object might be your preferred approach. The following listing contains code to delete a venue. Nothing in it should be a surprise at this point.</p>
+</div>
+<div class="browsable-container listing-container" id="p156">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 11.15</span> A delete endpoint for venues</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/api.py
+...
+
+@router.delete("/venue/{venue_id}/", auth=api_key)
+def delete_venue(request, venue_id):
+    venue = get_object_or_404(Venue, id=venue_id)
+    venue.delete()
+
+    return {"success": True}</pre>
+</div>
+</div>
+<div class="readable-text" id="p157">
+<p>Use the Ninja docs interface to try out your new delete endpoint. Once you’re done, run a GET on the newly deleted ID. On the server side, this causes a 404, as the look-up in <code>get_object_or_404()</code> throws an error. It is worth trying out to see how Ninja handles a <code>404</code>. The HTTP status code gets set, of course, but it also automatically sends a JSON dictionary containing a key named <em>details</em>, whose value is the error string from the exception. This can be useful in a user interface: you can show the error in a pop-up dialog.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p158">
+<h5 class="callout-container-h5 readable-text-h5">Alternate Ninja architecture structures</h5>
+</div>
+<div class="readable-text" id="p159">
+<p>Putting the <code>NinjaAPI</code> object in urls.py and using <code>Router</code> instances to group API endpoints is just one approach. This tends to be how I organize my code, as it keeps the endpoint definitions in the same app as their model and view code. On occasion, I also separate out the schemas into their own file, creating a schemas.py to go along with the api.py file.</p>
+</div>
+<div class="readable-text" id="p160">
+<p>An alternate structure I’ve used in the past is to make the API its own Django app. In this case, you don’t need the <code>Router</code> instance. Instead of calling <code>.add_router()</code> on the <code>NinjaAPI</code> object, you can use the instance of the <code>NinjaAPI</code> object directly: the HTTP method decorators are available on it as well. If you want to put all of your API code together in an app, you can create the <code>NinjaAPI</code> object in that app and import the instance into whatever files contain your endpoints.</p>
+</div>
+<div class="readable-text" id="p161">
+<p>This style of structure is common when using an alternate to Ninja called the Django REST Framework (as discussed later in the chapter). It is done this way, as the DRF requires a few more files to configure, and keeping it all in the same directory makes more sense.</p>
+</div>
+</div>
+<div class="readable-text" id="p162">
+<h2 class="readable-text-h2"><span class="num-string">11.3</span> Other API libraries</h2>
+</div>
+<div class="readable-text" id="p163">
+<p>Ninja is definitely my preferred library for building APIs with Django. There are other choices out there, though. Predating Ninja is the <em>Django REST Framework</em> (DRF). The DRF (<a href="https://www.django-rest-framework.org/">https://www.django-rest-framework.org/</a>) is the granddaddy of Django REST API tools, and its first version was built before Python type hints existed. As such, there is a lot more code that needs to be written to build an API, code that Ninja does for you by understanding Python type hints. </p>
+</div>
+<div class="readable-text intended-text" id="p164">
+<p>The same basic ideas apply, though. Instead of functions, you typically use class methods, implementing a class for each object with methods corresponding to the GET, POST, and other HTTP actions. Classes also get used to declare serialization, and tools that map Django ORM objects are available. Like with Ninja, a multitude of authentication mechanisms are provided.</p>
+</div>
+<div class="readable-text intended-text" id="p165">
+<p>Like Ninja, the DRF comes with a web-based interface to interact with the API, which is very useful for testing. Unlike Ninja, the DRF supports several response-body formats. By using its serialization classes, changing from JSON to XML is a matter of a configuration parameter. DRF does this through the use of <code>Renderer</code> classes, and in fact, its web interface is built using this same technology. The DRF ships with renderers for JSON, HTML forms, Django templates, and more. There are also third-party add-ons for XML, YAML, three variations on JSON, MessagePack, Excel, CSV, Pandas, and Latex. </p>
+</div>
+<div class="readable-text intended-text" id="p166">
+<p>If your project needs payloads that are something other than JSON, then DRF is the way to go. This can also be used as a data export tool. For example, you could build an API with a single call whose output is YAML based on a group of nested serializers.</p>
+</div>
+<div class="readable-text intended-text" id="p167">
+<p>The DRF is definitely richer than Ninja, having more features and giving more control over how things work. The downside is it requires a lot more code, and for most REST APIs, Ninja is sufficient. Ninja is also a younger library, and features are getting added frequently; it may handle your need soon.</p>
+</div>
+<div class="readable-text intended-text" id="p168">
+<p>I’ve mentioned several times in this chapter the importance of a REST API’s documentation, especially considering how loosely defined the protocol is. While both Ninja and the DRF come with web-based interfaces that can be used as docs, the developers consuming your API would appreciate actual documentation. Since API endpoints get exposed through views and classes in Ninja and DRF, the usual Python tools are sufficient. My personal preference is Sphinx (<a href="https://www.sphinx-doc.org/">https://www.sphinx-doc.org/</a>), but any Python documentation tool will work.</p>
+</div>
+<div class="readable-text intended-text" id="p169">
+<p>There are non-REST alternatives to providing an API as well. A popular mechanism is GraphQL. A GraphQL interface has a single endpoint that takes a JSON-like document that specifies a query. There are no HTTP methods to “verb” an object, and you don’t need to specify multiple URL endpoints.</p>
+</div>
+<div class="readable-text intended-text" id="p170">
+<p>To build a GraphQL API interface with Django, you use a third-party library called Graphene (<a href="https://docs.graphene-python.org">https://docs.graphene-python.org</a>). Like with Ninja or the DRF, you specify a series of schemas that indicate what data can be returned from your interface and how it maps to the ORM. Since GraphQL doesn’t use HTTP methods, you also need to define query classes that specify those actions that can be performed. Different types of query classes map to CRUD operations. This is essentially similar to REST endpoints, but it is built into the query language instead.</p>
+</div>
+<div class="readable-text intended-text" id="p171">
+<p>Graphene schemas and query classes get registered against a single <code>GraphQLView</code> object, which, itself, is registered as a view. This view is your API’s endpoint. I have written systems that interact with upstream servers using GraphQL, but I’ve never built an API based upon it. The argument for GraphQL is flexibility on the client side. By specifying a schema, you get filtering and more complex queries for free. For example, you can ask for an object and limit what data comes back, minimizing your bandwidth usage. It is akin to an SQL call, where you can limit the response to only the columns you’re interested in. There are two main arguments against GraphQL. First, the flexibility comes with the cost of the developer using the API having to write the queries to consume the data. Contrast this with REST, where they simply hit a URL. The second argument against is a provisioning one: due to the flexibility, the load on your server gets determined by the complexity of the query the downstream developer has written. This makes it much harder to predict load cost. </p>
+</div>
+<div class="readable-text intended-text" id="p172">
+<p>If you’re writing your first API, I’d suggest sticking with Ninja. If you’re already comfortable with GraphQL from other projects or frameworks, then Graphene could be the answer you’re looking for.</p>
+</div>
+<div class="readable-text intended-text" id="p173">
+<p>When weighing which API framework to use, consider that Ninja has a few other features not covered in this chapter. For example, it supports the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p174"> Endpoints implementing multiple HTTP methods </li>
+<li class="readable-text" id="p175"> HTTP methods not covered by the decorators </li>
+<li class="readable-text" id="p176"> Pagination </li>
+<li class="readable-text" id="p177"> Dynamically creating schemas </li>
+<li class="readable-text" id="p178"> Exception handling </li>
+<li class="readable-text" id="p179"> Injecting additional headers into a response </li>
+<li class="readable-text" id="p180"> Custom content renderers </li>
+<li class="readable-text" id="p181"> Support for <code>async</code> calls </li>
+</ul>
+<div class="readable-text" id="p182">
+<p>All else being equal, I’d recommend you start by using Ninja, only moving to other libraries if you have deeper needs that aren’t covered. Finally, I’d really like to point out the self-control involved in getting all the way through chapter 11 without making a bad bankruptcy joke. </p>
+</div>
+<div class="readable-text" id="p183">
+<h2 class="readable-text-h2"><span class="num-string">11.4</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p184"> Write an API to list all the <code>Band</code> objects in the system with the corresponding <code>Musician</code> data nested within each <code>Band</code> object.  </li>
+<li class="readable-text" id="p185"> Write an API to update the fields of a <code>Musician</code> object, requiring authentication to do so. </li>
+</ol>
+<div class="readable-text" id="p186">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p187"> An API interface can provide access to the data in your project to outside systems. </li>
+<li class="readable-text" id="p188"> Web pages based on the Django Template Engine aren’t the only kind of frontend you might build, and by building an API, these other interfaces can use the same logic from your views and the same data in your project. </li>
+<li class="readable-text" id="p189"> <em>CRUD</em> is short for <em>create</em>, <em>read</em>, <em>update</em>, and <em>delete</em>, the actions you perform on data in your system. This is true whether you’re dealing with the objects directly, through the ORM, or indirectly, through the Django Admin or an API. </li>
+<li class="readable-text" id="p190"> REST is a loosely defined protocol built around URLs to define “nouns” in your system and HTTP methods to act as “verbs” to access them. </li>
+<li class="readable-text" id="p191"> REST uses HTTP GET to fetch content, POST to create or modify content, PUT and PATCH to update content, and DELETE to remove content. </li>
+<li class="readable-text" id="p192"> REST does not specify what data is in a call, but two common formats are JSON and XML. </li>
+<li class="readable-text" id="p193"> To use a REST API, you need to know which HTTP methods are used and the format of the payload. </li>
+<li class="readable-text" id="p194"> Versioning an API means including a version number in the base of the API’s URL. This can allow you to future-proof breaking changes, giving your users time to continue to use a deprecated version of the API. </li>
+<li class="readable-text" id="p195"> Django Ninja is a third-party library that uses decorators to turn Django view functions into API endpoints. </li>
+<li class="readable-text" id="p196"> In Ninja, you define a single <code>NinjaAPI</code> object as a central collector for API endpoints and use its <code>api.urls</code> property to register the API’s URLs as Django routes.  </li>
+<li class="readable-text" id="p197"> API endpoints can be grouped together, using a Ninja <code>Router</code> object, with each router registered with the central <code>NinjaAPI</code> object. It is common practice to use a separate api.py file for each of your project’s apps that participates in the API, with a <code>Router</code> in each of those files.  </li>
+<li class="readable-text" id="p198"> You create API versioning with Ninja in two steps: (1) use the <code>version</code> argument to the <code>NinjaAPI</code> object, and then (2) include the version number in your route declaration.  </li>
+<li class="readable-text" id="p199"> Ninja provides <code>Schema</code> objects to specify how data gets translated into and out of JSON payloads.  </li>
+<li class="readable-text" id="p200"> Ninja’s <code>ModelSchema</code> class is a shortcut for basing a schema on an existing Django Model class.  </li>
+<li class="readable-text" id="p201"> Each HTTP method has its own decorator in Ninja. Arguments passed to the decorator can register the ending part of the URL, determine the schema of the view’s response, provide a look-up name for the endpoint view, and define the use of an authentication mechanism. </li>
+<li class="readable-text" id="p202"> Ninja endpoints can handle URL-based arguments and query parameters. Both cases get specified using an argument to the endpoint view function, with the URL-based arguments requiring an additional brace-bracket-wrapped token in the URL. </li>
+<li class="readable-text" id="p203"> Python type hints are used within schema definitions to indicate how fields get serialized. The declaration of a schema is similar to Python’s <code>dataclasses</code> library.  </li>
+<li class="readable-text" id="p204"> Ninja schemas look for static class methods with a prefix of <code>.resolve_</code> to populate fields. For example, <code>.resolve_slug()</code> is called to populate a field named <code>slug</code> on the class. The methods get called with an instance of the object getting serialized and should return the field’s value.  </li>
+<li class="readable-text" id="p205"> Schemas in Ninja can contain fields that reference other schemas, allowing you to nest data. For <code>Model</code> classes, a field name corresponding to related objects automatically gets populated. A Python type hint of <code>list[]</code> gets used to support the nesting of multiple related objects. </li>
+<li class="readable-text" id="p206"> The <code>Field</code> class is a Python type hint that gets used to give fine-grained control over field definitions, including providing default values and field name aliasing.  </li>
+<li class="readable-text" id="p207"> Ninja supports a variety of authentication mechanisms, including Django’s own authentication system and one based on API keys. </li>
+<li class="readable-text" id="p208"> Authentication can be linked to the <code>NinjaAPI</code> object, a <code>Router</code> object, or specific endpoint view functions.  </li>
+<li class="readable-text" id="p209"> Using an API key that is included in an HTTP header is good practice, as it doesn’t require an authentication session on the server, like a Django login does. </li>
+<li class="readable-text" id="p210"> The Django REST Framework is a popular alternative to Django Ninja. It requires more code to implement but also provides more flexibility. </li>
+<li class="readable-text" id="p211"> A GraphQL API can be built into your Django project, using the third-party library Graphene. </li>
+</ul>
+</div></body>
+</html>

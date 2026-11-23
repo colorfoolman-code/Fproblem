@@ -1,0 +1,765 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>12 Making your pages more dynamic with HTMX</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">12</span> </span> <span class="chapter-title-text">Making your pages more dynamic with HTMX</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers </h3>
+<ul>
+<li class="readable-text" id="p2">Using HTMX to add on-page interactivity to your Django project</li>
+<li class="readable-text" id="p3">Lazy loading</li>
+<li class="readable-text" id="p4">Search-as-you-type</li>
+<li class="readable-text" id="p5">Infinite scroll</li>
+<li class="readable-text" id="p6">Click to edit</li>
+</ul>
+</div>
+<div class="readable-text" id="p7">
+<p>On its own, Django is structured for older-style web interactions, with each action causing a new page to be loaded. Modern web frameworks, like React and Angular, can be used on top of an API, but the HTMX library allows for a high degree of interactivity without a lot of additional JavaScript code.</p>
+</div>
+<div class="readable-text" id="p8">
+<h2 class="readable-text-h2"><span class="num-string">12.1</span> Dynamic web pages</h2>
+</div>
+<div class="readable-text" id="p9">
+<p>Django was created in a time when there was a one-to-one relationship between a URL and a web page. Web pages were relatively static, with JavaScript mostly used to snazz the page up a little, by highlighting the current page in the nav or doing a bit of calculation in a form. This time period now gets referred to as Web 1.0. As computers got faster and browsers added features, new degrees of interactivity got added to web pages. Many tools grew out of this time period, and web pages evolved into fully contained applications. Meanwhile, Django kept chugging along in its rather old-school way. </p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>Web 2.0 can require a lot of JavaScript tooling. Frameworks like React and Angular mean potentially writing in TypeScript and adding a compilation stage to your web development. Libraries like Vue.js straddle the line, allowing you to mix and match 1.0-style pages with 2.0-style dynamics. If you want to build a web-based spreadsheet, these heavy-duty frameworks are a must. You wouldn’t want the page to reload every time the user edited a cell; a high degree of interactivity is required. Single-page applications are really full programs running in your browser, rather than being paged based. The vast majority of business applications don’t need this degree of interactivity. Most business applications really are just CRUD interfaces to a database. A sprinkling of interactivity is often enough.</p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>HTMX is a JavaScript library that can meet a significant percentage of your dynamic web page needs. It works by adding the capability of replacing a portion of a web page through a URL call. Essentially, it brings the web 1.0 principle of visiting a URL and getting a page back to parts of the page. This works quite well with Django. HTMX modifies a loaded page on the fly by fetching part of a page from a Django view.</p>
+</div>
+<div class="readable-text intended-text" id="p12">
+<p>HTMX isn’t meant to replace the heavier frameworks for situations like building a web-based spreadsheet, but it does provide a degree of interaction with very little JavaScript. The structure of your project can be very similar to Web 1.0, while the dynamic interactions on your pages get brought into the 2.0 era. </p>
+</div>
+<div class="readable-text" id="p13">
+<h2 class="readable-text-h2"><span class="num-string">12.2</span> HTMX attributes</h2>
+</div>
+<div class="readable-text" id="p14">
+<p>The HTMX library adds a set of attributes to HTML that you can place on almost any tag. These new attributes center around HTTP methods, and so are very similar to the REST concepts covered in chapter 11. When a user interacts with an HTML tag containing an HTMX attribute, the corresponding HTTP method gets invoked. Other HTMX attributes specify what to do with the response from the REST-like call. A typical example is to replace the activated tag with the response from the server. When using HTMX with Django, the only difference is that some Django views now return part of a web page, rather than a complete one. These component pieces are known as <em>partials</em>. </p>
+</div>
+<div class="readable-text intended-text" id="p15">
+<p>Consider a web page that shows the user the details of a random song and a link that swaps the song for another one when clicked. In the Web 1.0 world, clicking a link loads the whole page again to fetch a single new song. With HTMX, the link executes a GET to fetch an HTML partial containing the new content, which HTMX then replaces in the page for you. Dynamic!</p>
+</div>
+<div class="readable-text intended-text" id="p16">
+<p>All HTMX attributes begin with an <code>hx-</code> prefix. The <code>hx-get</code> performs an HTTP GET operation when the attached tag gets interacted with. The <code>hx-target</code> and <code>hx-swap</code> tags indicate what to do with the resulting content, with the target identifying what tag to replace and the swap attribute indicating how to replace it. A value of <code> </code><code>hx-swap="innerHTML"</code> means to replace the contents inside the tag identified as the target. Figure 12.1 shows you this interaction. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p17">
+<img alt="figure" height="850" src="../../OEBPS/Images/CH12_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 12.1</span> Using HTMX attributes to change a link into an action that replaces a portion of the page</h5>
+</div>
+<div class="readable-text" id="p18">
+<p>HTMX operation attributes, like <code>hx-get</code>, are aware of their context. For example, when paired with an <code>&lt;input&gt;</code> tag, the <code>hx-get</code> is capable of including the value inside the input box as a query parameter in the URL it calls. Likewise, <code>hx-post</code> is aware of any forms it is attached to. The <code>hx-trigger</code> attribute allows you to specify when an action occurs. In conjunction with an input box, the trigger can be related to a key-press event. You can also trigger actions based on a tag becoming visible or the page getting loaded. With just a handful of attributes and the same view-based mechanisms you’re already using in Django, HTMX provides a lot of possibilities. </p>
+</div>
+<div class="readable-text" id="p19">
+<h2 class="readable-text-h2"><span class="num-string">12.3</span> Lazy loading</h2>
+</div>
+<div class="readable-text" id="p20">
+<p>Let’s dip our toes into the HTMX waters by doing lazy loading. Sometimes, elements on a web page take a while to calculate or can be slow to load. In some cases, this means the whole page stalls out waiting for a single item. Lazy loading is the idea of showing a page while dynamically inserting the slower content into the page afterwards. To do lazy loading with HTMX, you use the <code>hx-get</code> attribute set to the URL of the item to load and the <code>hx-trigger</code> attribute set to <code>"load"</code>, meaning the GET gets executed once the page has loaded. </p>
+</div>
+<div class="readable-text intended-text" id="p21">
+<p>To demonstrate this feature, you need two views: one for the main page and one for the dynamically loaded segment. The main page is a view like any other you’ve written, with its HTML content containing the HTMX tags. The second view gets called by the <code>hx-get</code> attribute, and unlike a normal Django page, it only returns a snippet of HTML, called a <em>partial</em>. </p>
+</div>
+<div class="readable-text intended-text" id="p22">
+<p>The Promoters app, added in chapter 10, hasn’t gotten enough love—it is only data and no views. Let’s add a view that lists your promoters, lazy loading the actual content. The view for the main page is found in the following listing and should be added to RiffMates/promoters/views.py.</p>
+</div>
+<div class="browsable-container listing-container" id="p23">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.1</span> A promoters listing view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/views.py
+from django.shortcuts import render
+
+from promoters.models import Promoter
+
+def promoters(request):
+    return render(request, "promoters.xhtml")</pre>
+</div>
+</div>
+<div class="readable-text" id="p24">
+<p>The corresponding HTML template is in the following listing. This template has a <code>&lt;div&gt;</code> tag containing the <code>hx-get</code> and <code>hx-trigger</code> attributes. When the GET fires, the tag gets replaced by the view’s response. The content of the <code>&lt;div&gt;</code>, before the GET fires, is a placeholder <em>loading</em> message, which is visible until the lazy load is complete. </p>
+</div>
+<div class="browsable-container listing-container" id="p25">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.2</span> A promoters listing template</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/promoters.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block title %}
+  {{block.super}}: Promoter Listing
+{% endblock %}
+
+{% block content %}
+  &lt;h1&gt;Promoters&lt;/h1&gt;
+
+  &lt;div
+        hx-get="/promoters/partial_promoters/" <span class="aframe-location"></span> #1
+        hx-trigger="load"&gt; <span class="aframe-location"></span> #2
+    &lt;i&gt; Loading promoters... &lt;/i&gt; <span class="aframe-location"></span> #3
+  &lt;/div&gt;
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 hx-get replaces this tag with the contents returned from the URL.
+     <br/>#2 hx-trigger specifies when the GET occurs—in this case, on page load.
+     <br/>#3 Placeholder text visible until the lazy load completes
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p26">
+<p>The <code>hx-get</code> tag fires when the page loads and calls the associated URL. The following listing contains the view this GET invokes. </p>
+</div>
+<div class="browsable-container listing-container" id="p27">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.3</span> An HTMX-invoked promoters listing view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/views.py
+from time import sleep
+...
+def partial_promoters(request):
+    sleep(2) <span class="aframe-location"></span> #1
+    data = {
+        "promoters": Promoter.objects.all(),
+    }
+    return render(request, "partials/promoters.xhtml",
+        data) <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 A two-second delay to simulate lazy loading taking a while
+     <br/>#2 HTMX results get rendered the same as any other template, but the contents are only a partial page.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p28">
+<p>The following listing contains the partial HTML segment, rendered by the <code>partial_promoters()</code> view. I keep all my partials together in a subdirectory, created under templates. This first partial is named RiffMates/templates/partials/promoters.xhtml. </p>
+</div>
+<div class="browsable-container listing-container" id="p29">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.4</span> A snippet of HTML that gets rendered in response to an HTMX GET call</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/partials/promoters.xhtml --&gt;
+&lt;ul&gt;
+  {% for promoter in promoters %}<span class="aframe-location"></span> #1
+    &lt;li&gt; <span class="aframe-location"></span> #2
+      {{promoter.full_name}}
+      {% if promoter.birth %}
+        (
+          {{promoter.birth}} -
+          {% if promoter.death %}
+            {{promoter.death}}
+          {% endif %}
+        )
+      {% endif %}
+    &lt;/li&gt;
+  {% empty %}
+    &lt;li&gt; &lt;i&gt;No promoters in the database&lt;/i&gt; &lt;/li&gt;<span class="aframe-location"></span> #3
+  {% endfor %}
+&lt;/ul&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 Loop through all promoters.
+     <br/>#2 Render each promoter as a list item.
+     <br/>#3 An alternate message if there are no promoters
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p30">
+<p>To test all this out, you need to add a urls.py file to the <code>promoters</code> app, register the two new views, and include the URL routes in the main RiffMates/urls.py file. You’ll also need some promoters if you haven’t created them already. You can do this with the Django Admin or the <code>ch10h_exercises</code> sample code directory, which includes a fixture with some data. </p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>One last thing needs to be done before it will work: you need the HTMX JavaScript file. You reference this file in base.xhtml, so it can be loaded into all of your pages. The <code>&lt;script&gt;</code> tag that includes the library can reference a CDN, as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p32">
+<div class="code-area-container">
+<pre class="code-area">&lt;script src="https://unpkg.com/htmx.org@1.9.8"&gt;&lt;/script&gt;</pre>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p33">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>A <em>content delivery network</em> (CDN) is a giant cache on the internet, which many popular tools use to centrally locate their content, meaning your browser can cache files common between different sites. </p>
+</div>
+<div class="readable-text" id="p34">
+<p>Or if you prefer not to use a CDN, you can download the file for yourself and serve it as static content, like you learned about in chapter 7. This is the approach I’ve taken, as I don’t always trust CDNs to keep their files around for a long time. This comes at the cost of page load time; the user’s browser can’t use a cached copy from a different site because it doesn’t know it is the same content as HTMX elsewhere. The change I made to base.xhtml to load the HTMX library from the project directly is shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p35">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.5</span> Add the HTMX library to the base template</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/base.xhtml --&gt;
+{% load static %} <span class="aframe-location"></span> #1
+&lt;head&gt;
+  &lt;!-- ... --&gt;
+  &lt;script src="{% static 'js/htmx-1.9.8.min.js' %}" <span class="aframe-location"></span> #2
+    &gt;&lt;/script&gt;
+
+&lt;/head&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 Load the {% static %} tag.
+     <br/>#2 Use the downloaded copy of the library found in RiffMates/static/js/htmx-1.9.8.min.js.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p36">
+<p>Restart your development server, and visit the <code>promoters()</code> view. I put mine at http://localhost:8000/promoters/promoters/. As there is a 2-second delay in the view called by the lazy load, you should see the Loading… message, followed by your list of promoters filled in dynamically. </p>
+</div>
+<div class="readable-text" id="p37">
+<h2 class="readable-text-h2"><span class="num-string">12.4</span> Search-as-you-type with infinite scroll</h2>
+</div>
+<div class="readable-text" id="p38">
+<p>A common dynamic interaction on a web page is search-as-you-type, where a search page has an input box and as you enter search terms, the results are populated below. Another dynamic concept is infinite scroll. Consider your favorite social media feed: as you scroll, new content gets added to the bottom. Both of these concepts can be built with HTMX, requiring little more code than a regular view. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>Before considering the HTMX version, let’s start with a musicians search view, making sure it works before adding the interactive part. The view uses a query parameter to get the search text—it’ll be clear why, when the HTMX part gets wired in.</p>
+</div>
+<div class="readable-text intended-text" id="p40">
+<p>To search a model, you need to construct a query based on the search text. For a <code>Musician</code>, you want to search by first and last names. Instead of looking for exact matches, it is better to look for names that start with the search terms. All the queries you’ve performed so far with the <code>.filter()</code> method have had their clauses AND-ed together. To search for a first or last name beginning with a search term, you need clauses OR-ed together. </p>
+</div>
+<div class="readable-text intended-text" id="p41">
+<p>In Django, you can create more complex queries by using the <code>Q</code> object, found in the <code>django.db.models</code> module. <code>Q</code> is short for <em>query</em>, and you build the objects using the same arguments as you pass to <code>.filter()</code>. You can combine <code>Q</code> objects together to compound them, using Python’s binary operators, like AND (<code>&amp;</code>) and OR (<code>|</code>). This allows you to form arbitrarily complex queries, and then submit the resulting <code>Q</code> object as a single argument to a <code>.filter()</code> call. In chapter 11, when you passed <code>q=name__ icontains</code> into a <code>Field</code> class to modify a related-object query, it was using this same technique under the covers. </p>
+</div>
+<div class="readable-text intended-text" id="p42">
+<p>In addition to searching using both first and last name, it would be nice to allow the user to enter multiple search terms. To support this, the code needs to parse the text based on whitespace, use each term in two <code>Q</code> objects for the first and last names, and then combine all the <code>Q</code> objects with an OR (|). The finished query searches for instances of any of the search terms in either name. The following listing contains the first attempt at a search view.</p>
+</div>
+<div class="browsable-container listing-container" id="p43">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.6</span> A search view for musicians by their names</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from django.db.models import Q
+...
+
+def search_musicians(request):
+    search_text = request.GET.get("search_text", "") <span class="aframe-location"></span> #1
+    search_text = urllib.parse.unquote(search_text)<span class="aframe-location"></span> #2
+    search_text = search_text.strip()
+
+    musicians = []
+
+    if search_text:
+        parts = search_text.split() <span class="aframe-location"></span> #3
+
+        q = Q(first_name__istartswith=parts[0]) | \
+            Q(last_name__istartswith=parts[0]) <span class="aframe-location"></span> #4
+       <span class="aframe-location"></span> for part in parts[1:]: #5
+            q |= Q(first_name__istartswith=part) | \
+                Q(last_name__istartswith=part)<span class="aframe-location"></span> #6
+
+        musicians = Musician.objects.filter(q) <span class="aframe-location"></span> #7
+
+    data = {
+        "search_text": search_text,
+        "musicians": musicians,
+    }
+
+    return render(request, "search_musicians.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Retrieve the search terms from the query parameter.
+     <br/>#2 A URL parameter gets encoded. Turn it back into a regular string.
+     <br/>#3 Split the search terms into a list.
+     <br/>#4 Build Q objects OR-ed together to search for this term in both the first and last name fields of the Musician object.
+     <br/>#5 Loop through subsequent search terms.
+     <br/>#6 OR another set of Q objects to the combined query.
+     <br/>#7 Perform the database search by calling .filter() with the combined Q objects.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p44">
+<p>For the sake of brevity, I’ll leave it to you to create the first version of RiffMates/templates/search_musicians.xhtml. It only needs a <code>{%</code> <code>for</code> <code>%}</code> tag to loop over the resulting musicians. </p>
+</div>
+<div class="readable-text intended-text" id="p45">
+<p>Once you’ve written the proof-of-concept template, add a route for the new search view in RiffMates/bands/urls.py, and then test your view by calling http://localhost:8000/bands/search_musicians/?search_text=J V. (Yes, that space in the URL will work in your browser.) If your data is the same as mine, you’ll get back John Bonham, Jimi Hendrix, John Lennon, and Steve Vai. The first three match the <em>J</em> with the first name field, while Steve Vai is a match for the <em>V</em> on the last name field.</p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>With the initial view in place, let’s add some HTMX. The real version of the page has an <code>&lt;input&gt;</code> tag for entering the search terms and an area where results get appended. The results area gets populated using an infinite scroll mechanism, meaning smaller sets of results are returned by the server, and as the user scrolls down on the page, more results are added. This is an efficient way of doing things, especially if there are a lot of results. It is essentially pagination without the user having to click Next Page. In case that’s not fancy enough, we’re also going to update the browser’s URL as the user types in their search terms. Doing this means the search can be bookmarked or shared between users as a deep link. One complication of this feature is that the initial view of a deep-linked page must render search results. So either the initial render or an infinite scroll event can add results to the page. Figure 12.2 outlines the end goal of our search page. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p47">
+<img alt="figure" height="510" src="../../OEBPS/Images/CH12_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 12.2</span> A search-as-you-type page with infinite scroll and deep linking</h5>
+</div>
+<div class="readable-text" id="p48">
+<p>Let’s start building the page by adding the <code>&lt;input&gt;</code> tag, which uses an <code>hx-get</code> attribute, sending the search terms to the server when the user types. You connect typing with a GET call through the <code>hx-trigger</code> attribute. A value of <code>hx-trigger="keyup"</code> causes GET to be performed when a key gets pressed and released. </p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>The trigger also supports additional parameters. Using <code>"keyup</code> <code>changed delay:500ms"</code> adds a filter to the trigger. Now, only key releases that change the value of the field invoke the GET. Pressing an arrow key won’t cause the trigger. The <code>delay</code> tells HTMX to wait until typing has stopped, or at least paused. The trigger doesn’t activate until 500 milliseconds after the last keypress. If the user is typing quickly, the page waits a bit before invoking the trigger, so as not to overwhelm the server.</p>
+</div>
+<div class="readable-text intended-text" id="p50">
+<p>Search results get inserted in a <code>&lt;div&gt;</code> tag on the page. The <code>&lt;div&gt;</code> has an ID, which the <code>&lt;input&gt;</code> tag targets with an <code>hx-target</code> attribute. The GET call’s results get inserted into the target tag. </p>
+</div>
+<div class="readable-text intended-text" id="p51">
+<p>HTMX allows you to tie the content of the input box to the browser’s URL by using the <code>hx-push-url</code> attribute. With this attribute set to <code>"true"</code>, anything the user types in gets appended to a query parameter in the URL. This allows for deep linking. You can copy and paste the URL into another window to perform the same search results. This also means your search can be bookmarked. Because of this, the initial rendering of the page may need to include search results, but you don’t need to use HTMX for this—you can instead include it as part of the page rendering like with non-HTMX views. The <code>&lt;div&gt;</code> tag where results go starts with rendering any initial results and is the target for any appended results. As this chunk of HTML is needed in two places (the initial and update calls), I’ve encapsulated it into its own file, so it can be included by the template engine. The following listing contains the main search page. </p>
+</div>
+<div class="browsable-container listing-container" id="p52">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.7</span> The template for the search page</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/search_musicians.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+  &lt;h1&gt;Search Musicians&lt;/h1&gt;
+
+  &lt;input name="search_text" <span class="aframe-location"></span> #1
+    placeholder="Search for musicians..."
+    type="text"
+    value="{{search_text}}" <span class="aframe-location"></span> #2
+   <span class="aframe-location"></span> hx-get="{% url 'search_musicians' %}"  #3
+    hx-trigger="keyup changed delay:500ms" <span class="aframe-location"></span> #4
+    hx-target="#results" <span class="aframe-location"></span> #5
+    <span class="aframe-location"></span>hx-push-url="true"&gt; #6
+
+    &lt;div class="results" id="results"&gt; <span class="aframe-location"></span> #7
+      {% include "partials/musician_results.xhtml" %}<span class="aframe-location"></span>  #8
+    &lt;/div&gt;
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 The input box for search terms
+     <br/>#2 When the page is deep-linked, render the search terms in the input box.
+     <br/>#3 The URL to call when the search terms change
+     <br/>#4 Trigger a GET when a keyup event changes the content of the input box.
+     <br/>#5 Returned results get rendered in the tag matching this CSS query selector.
+     <br/>#6 Turning on hx-push-url causes the URL’s search_text query parameter to be updated with the contents of the input box.
+     <br/>#7 The parent tag for any results
+     <br/>#8 The partial HTML segment that renders the resulting list of musicians
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p53">
+<p>The subtemplate that both gets included by the search page and used as a partial HTML result is shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p54">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.8</span> The inner template for the search results</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/partials/musician_results.xhtml --&gt;
+&lt;ul&gt;
+  {% for musician in musicians %} <span class="aframe-location"></span> #1
+    &lt;li&gt; &lt;a href="{% url 'musician' musician.id %}"&gt;
+      {{musician.last_name}}, {{musician.first_name}}
+    &lt;/a&gt; &lt;/li&gt;
+  {% empty %}
+    &lt;li&gt; &lt;i&gt;No matching musicians&lt;/i&gt; &lt;/li&gt;
+  {% endfor %}
+&lt;/ul&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 Loop through and display all the musicians.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p55">
+<p>An HTMX-enabled search page isn’t very different from a regular one; with a few extra attributes, you have search-as-you-type. The only thing missing now is a view that returns the results as partial HTML. In the <code>promoters()</code> view early in this chapter, you used separate views for the main page and the partial, but like with GET and POST sections in a form view, it is cleaner to put it all in the same place. </p>
+</div>
+<div class="readable-text intended-text" id="p56">
+<p>For a view to be able to render both the page and the partial segment, it needs to know its invocation mode. Any call that HTMX makes includes a header called <code>HX-Request</code>. In your view, you check for this header and behave accordingly. You could do this manually, but there is a very handy library that makes it simpler: django-htmx. To install this library, call <code>python -m pip install django-htmx</code>, add <code>"django_htmx"</code> to your <code>INSTALLED_APPS</code>, and add <code>"django_htmx.middleware.HtmxMiddleware"</code> to the <code>MIDDLEWARE</code> list in your settings.py file. For more details on installing third-party libraries, see appendix A. </p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>The <code>HtmxMiddleware</code> component of <code>django-htmx</code> adds an <code>htmx</code> object to the <code>request</code> in your view. This object contains details about the HTMX call and, usefully, can be used in a Boolean context to determine whether the HTMX invoked the call. The following listing contains the new version of the search musicians view. </p>
+</div>
+<div class="browsable-container listing-container" id="p58">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.9</span> An HTMX-capable search view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+def search_musicians(request):
+    search_text = request.GET.get("search_text", "")
+    search_text = urllib.parse.unquote(search_text)
+    search_text = search_text.strip()
+
+    musicians = []
+
+    if search_text:
+        parts = search_text.split()
+
+        q = Q(first_name__istartswith=parts[0]) | \
+            Q(last_name__istartswith=parts[0])
+        for part in parts[1:]:
+            q |= Q(first_name__istartswith=part) | \
+                Q(last_name__istartswith=part)
+
+        musicians = Musician.objects.filter(q)
+
+    data = {
+        "search_text": search_text,
+        "musicians": musicians,
+    }
+
+    if request.htmx:<span class="aframe-location"></span> #1
+        return render(request, "partials/musician_results.xhtml", data)
+
+    return render(request, "search_musicians.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 If this is an HTMX call, render only the partial page.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p59">
+<p>That’s it! Now, you have search-as-you-type. The equivalent in Vue.js requires a couple dozen lines of JavaScript. With HTMX, you add a few attributes, write a search view, and you’re there. Go back to the development server, and this time, type your search terms in the input box to test it out. Note how the URL updates as you enter your terms.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p60">
+<h5 class="callout-container-h5 readable-text-h5">Other django-htmx features</h5>
+</div>
+<div class="readable-text" id="p61">
+<p>In this chapter, I’ll only be using the <code>request.htmx</code> object as a Boolean to determine if the call is HTMX or not, but the library also has the following:</p>
+</div>
+<ul>
+<li class="readable-text" id="p62"> Full access to all the headers HTMX sends, including which URL got called and why it got triggered </li>
+<li class="readable-text" id="p63"> An extension JavaScript library that enhances HTMX’s error reporting and interaction with the template engine </li>
+<li class="readable-text" id="p64"> Response classes allowing you to perform redirects, refreshes, and other actions as part of HTMX-triggered views </li>
+</ul>
+</div>
+<div class="readable-text" id="p65">
+<p>Let’s add another feature to your search page: infinite scroll. If your site has a lot of data, you might paginate the results. With infinite scroll, instead of forcing the user to click to get the next page of data, they simply scroll down, and the new data gets added to the bottom. Two things need to be done to add infinite scroll to your existing search feature: first, you need to paginate the data in your view, and second, you need an HTMX trigger that renders the next “page” of data.</p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>You’ve seen pagination before. It was used in the <code>musicians()</code> view way back in chapter 4. As a quick recap, Django provides the <code>Paginator</code> object that divides query results into pages of data, and then you use a query parameter to specify which page is displayed. The following listing contains the modifications to the search musicians view to add pagination. It takes advantage of the existing <code>_get_items_per_page()</code> and <code>_get_page_num()</code> utilities, written in chapter 4’s exercises. </p>
+</div>
+<div class="browsable-container listing-container" id="p67">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.10</span> An HTMX-capable search view</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from time import sleep
+...
+def search_musicians(request):
+    ...
+
+    # Query results are in the "musicians" object by this point in the code
+
+    items_per_page = _get_items_per_page(request)
+    paginator = Paginator(musicians, items_per_page)<span class="aframe-location"></span> #1
+    page_num = _get_page_num(request, paginator)
+    page = paginator.page(page_num)
+
+    data = {
+        "search_text": search_text,
+        "musicians": page.object_list, <span class="aframe-location"></span> #2
+       <span class="aframe-location"></span> "has_more": page.has_next(), #3
+        "next_page": page_num + 1, <span class="aframe-location"></span> #4
+    }
+
+    if request.htmx:
+        if page_num &gt; 1: <span class="aframe-location"></span> #5
+            sleep(2)
+
+        return render(request, "partials/musician_results.xhtml", data)
+
+    return render(request, "search_musicians.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Paginate the results of the search.
+     <br/>#2 "musicians" now contains only this page of results.
+     <br/>#3 True if there is more data
+     <br/>#4 The value of the next page of data
+     <br/>#5 If you are rendering after the first page, wait 2 seconds.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p68">
+<p>You’ll note that like with the promoters partial view, I’ve included a time delay in this code. On your local machine, using a development server, it can be hard to see the call for the next data, as it happens so fast. To help check things are working properly, I’ve intentionally made the call take at least 2 seconds.</p>
+</div>
+<div class="readable-text intended-text" id="p69">
+<p>The search view now supports pages of data. To add infinite scrolling, you need an HTMX trigger for when a tag scrolls into view. This trigger value is <code>"revealed"</code>. At the bottom of the results page, insert a <code>&lt;div&gt;</code> that calls the next page of results when it gets revealed on the page. Of course, <code>&lt;div&gt;</code> tags are invisible, so the user doesn’t see anything, but the browser doesn’t care. The tag is either within the browser’s view port, or it is not, and the first time it “shows” in the view port, the HTMX call gets triggered. Add the code in the following listing to the bottom of RiffMates/templates/partials/musician_results.xhtml.</p>
+</div>
+<div class="browsable-container listing-container" id="p70">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.11</span> The inner template for the search results</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&lt;!-- RiffMates/templates/partials/musician_results.xhtml --&gt;
+&lt;!-- ... --&gt;
+
+{% if has_more %} <span class="aframe-location"></span> #1
+  &lt;div <span class="aframe-location"></span> #2
+    hx-get="{% url 'search_musicians' %}?page={{next_page}}
+    <span class="">↪</span> &amp;search_text={{search_text}}"
+    hx-trigger="revealed" <span class="aframe-location"></span> #3
+
+
+
+    hx-swap="outerHTML"&gt; <span class="aframe-location"></span> #4
+    &lt;i&gt; Loading... &lt;/i&gt; <span class="aframe-location"></span> #5
+  &lt;/div&gt;
+{% endif %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 The view sets has_more to True if there are more pages of data.
+     <br/>#2 GET invokes the same search view with query parameters specifying the next page number and the search text.
+     <br/>#3 Trigger the HTMX call when this tag becomes visible on screen.
+     <br/>#4 A value of "outerHTML" means to replace the entire &lt;div&gt; with the results from the GET call.
+     <br/>#5 Display a Loading… message until the results are available.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p71">
+<p>This new addition to the results partial implements infinite scrolling. It is common to indicate that something is loading if it takes a bit of time; I’ve used text here, but you could use an animated spinner GIF instead. Since the search view has a delay in it, you should see the Loading… text on the screen for 2 seconds before more results get shown.</p>
+</div>
+<div class="readable-text intended-text" id="p72">
+<p>You could test this out now, but as you don’t have many musicians, there won’t be enough data to trigger the infinite scroll feature. That is easily fixed. Invoke your Django shell with the <code>shell</code> management command, and enter the following code:</p>
+</div>
+<div class="browsable-container listing-container" id="p73">
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&gt;&gt;&gt; from datetime import date
+&gt;&gt;&gt; from bands.models import Musician
+&gt;&gt;&gt; for n in range(1, 81):
+...     Musician.objects.create(first_name=f"X{n:02}", last_name="Z",
+...     <span class="">↪</span> birth=date(1900, 1, 20))
+...</pre>
+</div>
+</div>
+<div class="readable-text" id="p74">
+<p>You now have an extra 80 musicians, all of whom conveniently have a first name starting with the same letter. Restart your development server, and try out your search results page with infinite scroll. Don’t forget to keep scrolling until the data is consumed; you want to make sure the last page is working as well. </p>
+</div>
+<div class="readable-text" id="p75">
+<h2 class="readable-text-h2"><span class="num-string">12.5</span> Click to edit</h2>
+</div>
+<div class="readable-text" id="p76">
+<p>The Django Admin is very Web 1.0. It starts with a list of items, and to edit one, you click it and go to the next screen. With HTMX, you can perform inline editing, modifying the page to replace an item with the form to edit it. This is known as <em>click to edit</em>. The concepts are similar to what you’ve seen already: <code>hx-get</code> to replace a tag with a new partial, where the partial contains the edit form. HTMX supports all the HTTP methods you’re familiar with, so as you might guess, the form gets submitted with <code>hx-post</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>To demonstrate click-to-edit, let’s build an editor for the rooms associated with a venue. For this feature, you’ll need three views: the main page displaying a venue’s rooms, a view that handles the room-editing form, and a third view that can display a room partial on its own. The third view is necessary to give the user the ability to cancel out of the edit.</p>
+</div>
+<div class="readable-text intended-text" id="p78">
+<p>The main page view for editing rooms takes the ID of a <code>Venue</code> object and displays its associated rooms. The view is about as simple as is possible. The following listing shows the view I’ve added to RiffMates/bands/views.py.</p>
+</div>
+<div class="browsable-container listing-container" id="p79">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.12</span> A view to display the rooms in a venue</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404
+...
+@login_required <span class="aframe-location"></span> #1
+def room_editor(request, venue_id):
+    venue = get_object_or_404(Venue, id=venue_id,
+        userprofile=request.user.userprofile)<span class="aframe-location"></span> #2
+
+    data = {
+        "venue": venue,
+    }
+
+    return render(request, "room_editor.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Only logged-in users should be able to edit a venue.
+     <br/>#2 Find the given venue and ensure the logged-in user is associated with it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p80">
+<p>The HTML for the room editor is broken down into two parts: the main page and the partial that renders a room. You saw a similar pattern with the search musicians feature: the partial that needs to be rendered is often also included into the main page as well. The following listing contains the main page.</p>
+</div>
+<div class="browsable-container listing-container" id="p81">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.13</span> The main room editor page</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/room_editor.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+  &lt;h1&gt;Venue: {{venue.name}}&lt;/h1&gt;
+
+  &lt;ul&gt;
+    {% for room in venue.room_set.all %}
+      {% include "partials/show_room.xhtml" %} <span class="aframe-location"></span> #1
+    {% empty %}
+      &lt;li&gt;&lt;i&gt;No rooms for this venue&lt;/i&gt; &lt;/li&gt;
+    {% endfor %}
+  &lt;/ul&gt;
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 The same subtemplate is used as the partial for another view.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p82">
+<p>The corresponding subtemplate for each room is shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p83">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.14</span> The main room editor page</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/partials/show_room.xhtml --&gt;
+&lt;li id="room-row-{{room.id}}"&gt;
+  {{room.name }} &amp;nbsp;&amp;nbsp; <span class="aframe-location"></span> #1
+  &lt;a
+      hx-get="{% url 'edit_room_form' room.id %}" <span class="aframe-location"></span> #2
+      hx-target="#room-row-{{room.id}}" <span class="aframe-location"></span> #3
+      style="cursor: pointer; text-decoration: underline" <span class="aframe-location"></span> #4
+    &gt; (Edit) &lt;/a&gt;
+&lt;/li&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 Display the room’s name.
+     <br/>#2 The Edit link uses an HTMX GET to retrieve the room-editing form.
+     <br/>#3 When GET gets invoked, replace the entire &lt;li&gt; tag.
+     <br/>#4 As the &lt;a&gt; tag has no href, the browser doesn’t style it; add the underline and pointer cursor back to it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p84">
+<p>With the two templates in place, you can test the room editor view. Don’t forget to register the <code>room_editor()</code> as a route in bands/urls.py, and make sure you include the <code>name</code> argument, as you’ll want to reference this view in your HTML. As you haven’t written the view for the form partial, clicking the Edit link won’t work, but you can see the main page. Visit http://localhost:8000/bands/room_editor/1/ to see the rooms associated with the CGBG venue.</p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>The next step is to add the view that handles the form to edit a room. Similarly to the form views covered in chapter 7, this view is responsible for both displaying the form and handling the submit. For this view, the HTML rendered is a partial segment in both cases, but otherwise, the idea is the same. The form, in this case, is simple enough that you could handle the <code>request.POST</code> manually, but I’ll stick with best practices and create a <code>ModelForm</code>, shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.15</span> A form for editing <code>Room</code> objects</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/forms.py
+from django import forms
+...
+from bands.models import Room
+...
+
+RoomForm = forms.modelform_factory(Room, fields=["name",])</pre>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<p>The view that handles the room form has both a GET and POST case. The GET renders the form with the given room data. For the POST, the form gets validated, and the submitted data gets saved, replacing the values in the associated room. In both cases, the output is a partial, so HTMX can either replace the display information with the form or the form with the display information. The following listing shows the view.</p>
+</div>
+<div class="browsable-container listing-container" id="p88">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.16</span> An HTMX view for handling a room-editing form</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from bands.forms import RoomForm
+...
+@login_required <span class="aframe-location"></span> #1
+def edit_room_form(request, room_id): <span class="aframe-location"></span> #2
+    room = get_object_or_404(Room, id=room_id,
+        venue__userprofile=request.user.userprofile) <span class="aframe-location"></span> #3
+
+    if request.method == "POST": <span class="aframe-location"></span> #4
+        form = RoomForm(request.POST, instance=room)
+        if form.is_valid(): <span class="aframe-location"></span> #5
+            form.save()
+            data = {
+                "room": room,
+            }
+            return render(request, "partials/show_room.xhtml",
+             <span class="aframe-location"></span>   data)  #6
+    else:
+        form = RoomForm(instance=room) <span class="aframe-location"></span> #7
+
+    data = {
+        "room": room,
+        "form": form,
+    }
+
+    return render(request, "partials/edit_room_form.xhtml", data) <span class="aframe-location"></span> #8</pre>
+<div class="code-annotations-overlay-container">
+     #1 Editing data requires the user to be logged in.
+     <br/>#2 Edit the Room object for the ID passed in.
+     <br/>#3 Fetch the Room, and ensure it is associated with a venue that is associated with the user.
+     <br/>#4 The view handles form submission through a POST method.
+     <br/>#5 Validate, and then save the submitted room data.
+     <br/>#6 After saving the changes, show the partial displaying the room info.
+     <br/>#7 For the GET scenario, build the form based on the Room object.
+     <br/>#8 Render the room editing form as a partial.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p89">
+<p>The partial for the room-editing form is similar to the forms you built in chapter 7. The following listing shows the form, which uses an <code>hx-get</code> to cancel the editing action, and an <code>hx-post</code> to submit the form.</p>
+</div>
+<div class="browsable-container listing-container" id="p90">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.17</span> The HTML form for editing a room</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/partials/edit_room_form.xhtml --&gt;
+&lt;li id="room-row-{{room.id}}"&gt;
+    &lt;form&gt;
+      {% csrf_token %} <span class="aframe-location"></span> #1
+    <span class="aframe-location"></span>  {{form.as_p}}  #2
+      &lt;button
+            hx-post="{% url 'edit_room_form' room.id %}" <span class="aframe-location"></span> #3
+            hx-target="#room-row-{{room.id}}" <span class="aframe-location"></span> #4
+        &gt;Save&lt;/button&gt;
+      &lt;button
+          hx-get="{% url 'show_room_partial' room.id %}" <span class="aframe-location"></span> #5
+          hx-target="#room-row-{{room.id}}"
+        &gt;Cancel&lt;/button&gt;
+    &lt;/form&gt;
+&lt;/li&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 All forms require CSRF protection; see section 7.1.2, on CSRF, for more details.
+     <br/>#2 Render the RoomForm object as a &lt;p&gt; tag.
+     <br/>#3 Submit the form, using hx-post.
+     <br/>#4 When triggering the POST, replace the parent &lt;li&gt; tag with the response.
+     <br/>#5 Cancel editing the form by fetching the display information with hx-get.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p91">
+<p>The beauty of HTMX is its similarity to regular Web 1.0 HTML coding. The form handling here uses the same patterns you used in chapter 7, but with the <code>hx-</code> attributes, the behavior becomes dynamic within the page.</p>
+</div>
+<div class="readable-text intended-text" id="p92">
+<p>The only thing you’re missing now is the view called when cancelling the edit form. This view displays the existing room info partial template. The following listing shows this view.</p>
+</div>
+<div class="browsable-container listing-container" id="p93">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 12.18</span> An HTMX view for handling a room editing form</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+@login_required
+def show_room_partial(request, room_id):
+    room = get_object_or_404(Room, id=room_id,
+        venue__userprofile=request.user.userprofile)
+
+    data = {
+        "room": room,
+    }
+
+    return render(request, "partials/show_room.xhtml", data)</pre>
+</div>
+</div>
+<div class="readable-text" id="p94">
+<p>Completing the <code>@login_required</code> security check and validating the room is associated with the user aren’t strictly necessary here, as the user can get the same information from the public venue listing page built in the exercises in chapter 4. I prefer the consistent approach, though; having a habit of “if it is for editing, it should be secure” is a good one.</p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>Your code is now complete. Make sure to register the views as routes you haven’t done so far, and revisit http://localhost:8000/bands/room_editor/1/ to play with the CBGB venue’s rooms.</p>
+</div>
+<div class="readable-text intended-text" id="p96">
+<p>A true room editor would also allow you to create and delete rooms. These features can be added using the same techniques you’ve used so far. An Add link on the page could dynamically render the Edit form with empty data. Your room editing view would need to handle the ID = 0 case, or you could write a separate view for adding, if you prefer. Delete is just another link, like Edit. You can use <code>hx-delete</code> in the view if you like, but <code>hx-get</code> works equally well. The only trick with deletion is to remove the display tag afterwards, so the partial returned from the view needs to be empty. HTMX even has an <code>hx-confirm</code> tag, which presents an <em>Are You Sure?</em> dialog that you can use in the delete case. See <a href="https://htmx.org/docs/#confirming">https://htmx.org/docs/#confirming</a> for more information. </p>
+</div>
+<div class="readable-text intended-text" id="p97">
+<p>HTMX may not be as powerful as full SPA frameworks, but it does allow you to inject a large degree of interactivity into your project with very little change in your code. For most CRUD-based websites, HTMX is more than enough, and the overhead is far smaller than a full SPA framework. The HTMX website includes a couple of case studies in which companies converted React-based projects to HTMX. The conversion significantly shrank the size of their code base; reduced the load time of their pages; and, due to the smaller memory footprint, actually enabled the application to handle more data on the screen at a time. See the Essays section of the HTMX website for more information: <a href="https://htmx.org/essays/">https://htmx.org/essays/</a>. </p>
+</div>
+<div class="readable-text" id="p98">
+<h2 class="readable-text-h2"><span class="num-string">12.6</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p99"> Add search functionality for your ad content, similar to the musicians search page. Implement both search-as-you-type and infinite scrolling. </li>
+<li class="readable-text" id="p100"> Create a page that has two tabs: one for musicians and one for venues. You’ll need a new view for the page, but the existing listing views for musicians and venues can be used to populate the tabs. An example covering how to write tabs is provided on the HTMX site: <a href="https://htmx.org/examples/tabs-hateoas/">https://htmx.org/examples/tabs-hateoas/</a> </li>
+</ol>
+<div class="readable-text" id="p101">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p102"> Django is constructed using a Web 1.0 architecture and requires integration with JavaScript libraries to make pages more interactive. </li>
+<li class="readable-text" id="p103"> HTMX enables replacing part of a page using similar techniques to clicking a link in the Web 1.0 world. </li>
+<li class="readable-text" id="p104"> HTMX adds a series of HTTP method attributes that can be assigned to tags in your HTML. Interacting with such a tag causes a GET, POST, or other method to be invoked on the server. </li>
+<li class="readable-text" id="p105"> All HTMX attributes begin with <code>hx-</code>. </li>
+<li class="readable-text" id="p106"> HTMX has attributes that control when the HTTP method gets invoked, such as when clicking a tag, when a page gets loaded, when a tag becomes visible, or when an event like a keypress occurs. </li>
+<li class="readable-text" id="p107"> The <code>hx-target</code> and <code>hx-swap</code> attributes control what parts of a page get modified when an action gets invoked. The target uses a CSS selector to determine what tag gets replaced, while the swap attribute determines which part of the tag changes. </li>
+<li class="readable-text" id="p108"> Lazy loading allows you to add content to the page after it has been displayed and is typically used for assets that take a long time to be generated or downloaded. </li>
+<li class="readable-text" id="p109"> To build lazy loading with HTMX, you use the <code>hx-trigger</code> attribute, set to a value of <code>"load"</code>, along with an <code>hx-get</code>, pointing to the URL of the asset to be fetched. </li>
+<li class="readable-text" id="p110"> Since HTMX uses HTTP methods, the Django portion of the code can be the same kinds of views you’ve written before. </li>
+<li class="readable-text" id="p111"> HTMX sets a header to indicate a call invoked by the library; this allows you to write views that serve both the full page and the replacement segment for an HTMX call. </li>
+<li class="readable-text" id="p112"> The segments of HTML returned in response to an HTMX call are known as <em>partials</em>. </li>
+<li class="readable-text" id="p113"> HTMX appends the contents of input boxes onto an <code>hx-get</code> URL as a query parameter. </li>
+<li class="readable-text" id="p114"> Search-as-you-type is a feature that populates search results dynamically as the user enters search terms in an input box. </li>
+<li class="readable-text" id="p115"> To build search-as-you-type in HTMX, you combine an input box with an <code>hx-get</code> call to the search view. An <code>hx-trigger</code> based on the <code>keyup</code> event invokes the GET when a key is pressed and released. </li>
+<li class="readable-text" id="p116"> When using an <code>hx-triggerkeyup</code> event, you can filter events with <code>changed</code>, so only keypresses that change an input box’s value invoke the GET call. </li>
+<li class="readable-text" id="p117"> The <code>django.db.models.Q</code> object allows you to create arbitrarily complex ORM queries, using both AND and OR terms. </li>
+<li class="readable-text" id="p118"> Infinite scroll is a feature that adds additional data to the page when the user scrolls to the bottom. </li>
+<li class="readable-text" id="p119"> You can implement infinite scroll in HTMX by using the <code>hx-trigger</code> attribute with a value of <code>revealed</code>. When the tag scrolls onto screen, it triggers a GET call to fetch more content. </li>
+<li class="readable-text" id="p120"> Infinite scroll in Django is best handled using a <code>Paginator</code> class, with a page of data returned for each invocation of the associated view. </li>
+<li class="readable-text" id="p121"> The <code>django-htmx</code> library provides a middleware component, which can be used to test whether the view got called by HTMX or a regular page view. </li>
+<li class="readable-text" id="p122"> Click-to-edit is a feature displaying data as well as a button or link, which, when clicked, changes the display data into an edit form. </li>
+<li class="readable-text" id="p123"> You implement click-to-edit with HTMX by using <code>hx-get</code> to change viewable data into a form and <code>hx-post</code> to submit the form. This can be combined with an additional <code>hx-get</code> to cancel out of the edit.  </li>
+</ul>
+</div></body>
+</html>
