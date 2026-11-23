@@ -1,0 +1,1594 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>7 Forms, user data, static files, and uploads</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">7</span> </span> <span class="chapter-title-text">Forms, user data, static files, and uploads</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers </h3>
+<ul>
+<li class="readable-text" id="p2">Writing views that handle form submissions</li>
+<li class="readable-text" id="p3">Using the <code>Form</code> class to write web forms</li>
+<li class="readable-text" id="p4">Cross-site request forgery (CSRF) protection</li>
+<li class="readable-text" id="p5">Using the <code>ModelForm</code> to create forms based on <code>Model</code> classes</li>
+<li class="readable-text" id="p6">Writing views that handle file uploads</li>
+<li class="readable-text" id="p7">Providing access to both uploaded and static files</li>
+</ul>
+</div>
+<div class="readable-text" id="p8">
+<p>This chapter covers content handled by your website over and above a simple view. It starts out by showing you how to receive user input data through web forms, and then it moves on to dealing with files. Files can be uploaded by your users, and if they are, those same files can be downloaded or shown on a page. There are also files you include in your site that aren’t served by Django: CSS, images, JavaScript, and more. This chapter covers how to deal with user data and all kinds of file input and output as well as how to do it to manage it all securely.</p>
+</div>
+<div class="readable-text" id="p9">
+<h2 class="readable-text-h2"><span class="num-string">7.1</span> Web forms</h2>
+</div>
+<div class="readable-text" id="p10">
+<p>In the previous chapter, you took the first steps toward having self-serve user features in RiffMates. And although it wasn’t explicitly called out, you started using <em>web forms</em>. The login page is a web form with two fields: Username and Password. Submitting this form gets handled by a built-in Django view, which adds data to the user’s session, indicating they are authenticated. The mechanisms the login view uses are built on top of the tools available to you as a programmer. With them, you can build your own forms and have users submit data to your site. </p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>The connection between a web form’s HTML and Django is loosely coupled. Django provides utilities to reduce the amount of coding you need, but they are not required. The Django <code>Form</code> object provides a shortcut for creating web forms and their corresponding HTML, but the processing of data submitted through this form is generic, and it is up to you to code your view as you see fit. </p>
+</div>
+<div class="readable-text intended-text" id="p12">
+<p>An instance of a Django <code>Form</code> specifies a number of fields, with each field corresponding to an HTML tag. You can use a form instance in a template to render the HTML tags, but you don’t have to. Figure 7.1 shows a form with a field for entering a person’s name and email address along with the corresponding HTML.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p13">
+<img alt="figure" height="307" src="../../OEBPS/Images/CH07_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.1</span> The relationship between a <code>Form</code> object and the HTML</h5>
+</div>
+<div class="readable-text" id="p14">
+<p>Form fields get rendered through an associated widget object. The widget object is responsible for rendering the corresponding HTML tag. There are over 20 different widgets provided by Django, but most of them result in the <code>&lt;input&gt;</code> tag, with varying values of the <code>type</code> attribute. For example, the <code>CharField</code> renders as <code>&lt;input type="text"&gt;</code>, while the <code>EmailField</code> renders as <code>&lt;input type="email"&gt;</code>. Beyond the <code>&lt;input&gt;</code> tags, there are also widgets for drop-down selects, multiple selection boxes, radio buttons, dates, times, and file handling. </p>
+</div>
+<div class="readable-text intended-text" id="p15">
+<p>You have some control over the appearance of the widget, but you can’t use template features, like conditional formatting. This limitation can be a little frustrating; a <code>Form</code> object can save you from writing a lot of HTML, right up until you hit its limits, and then you’re back to writing all the HTML. If your site uses a framework like Bootstrap, which requires wrapping <code>&lt;div&gt;</code> tags in forms for styling, you may have to write the HTML by hand.</p>
+</div>
+<div class="readable-text intended-text" id="p16">
+<p>Keeping the limitations in mind, let’s start by building a simple form, so you can see what it can and can’t do. The <code>Bands</code> app is getting a little full, so for this chapter, create a new app, called <code>Content</code>, using the <code>startapp</code> management command. Don’t forget to add it to <code>INSTALLED_APPS</code> in settings.py as well. See Chapter 2 if you need a refresher on how to do this.</p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>Inside your newly created RiffMates/content directory, create a file called forms.py to build your first <code>Form</code> class. <em>Form objects</em> are quite similar to <code>Model</code> objects: they contain fields that specify areas of input in the form. Like with a model, you inherit from a class and declare attributes to build the form. The class you inherit from is <code>django.forms.Form</code>. Inside the form class, you add attributes for each field you want, with a variety of fields provided in the <code>forms</code> module. </p>
+</div>
+<div class="readable-text intended-text" id="p18">
+<p>Your first form is for collecting comments from your site’s visitors. It has a name field and a comment area. The corresponding HTML contains an <code>&lt;input&gt;</code> tag for the name and a <code>&lt;textarea&gt;</code> tag for the comment. As both the name and comment fields collect text information, they get declared with a <code>forms.CharField()</code>. By default, this field uses an <code>&lt;input&gt;</code> tag. To use a <code>&lt;textarea&gt;</code> instead, you add a <code>widget</code> argument to the field’s constructor. </p>
+</div>
+<div class="readable-text intended-text" id="p19">
+<p>Every field type supports changing the widget used to render it, and every field type has a default. If you’re happy with the default, you don’t need to specify a widget. To use a <code>&lt;textarea&gt;</code> tag, you pass a <code>forms.Textarea</code> widget to the field declaration. You can control the attributes of a rendered widget by passing an <code>attrs</code> dictionary to the widget class. Any key–value pairs in the dictionary get rendered as attributes in the corresponding HTML tag. You use this feature to specify the <code>rows</code> and <code>cols</code> values for a <code>&lt;textarea&gt;</code> tag. Create a comment form by adding the code in the following listing to your newly created file. </p>
+</div>
+<div class="browsable-container listing-container" id="p20">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.1</span> A form class for accepting comments</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/forms.py
+from django import forms <span class="aframe-location"></span> #1
+
+<span class="aframe-location"></span>class CommentForm(forms.Form):  #2
+    name = forms.CharField() <span class="aframe-location"></span> #3
+    comment = forms.CharField(
+        widget=forms.Textarea( <span class="aframe-location"></span> #4
+            attrs={"rows": "6", "cols": "50"} <span class="aframe-location"></span> #5
+        )
+    )</pre>
+<div class="code-annotations-overlay-container">
+     #1 The forms module contains the form base class, fields, and widgets.
+     <br/>#2 Inherit from forms.Form to create a Form object.
+     <br/>#3 forms.CharField is used to collect text and uses an &lt;input&gt; tag by default.
+     <br/>#4 Specify the widget attribute to change what tag gets used to collect data.
+     <br/>#5 You can pass additional attributes to the tag using the attrs dictionary argument in the widget object constructor.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p21">
+<p>Form objects provide a method called <code>.as_p()</code> that outputs the form fields surrounded in paragraph (<code>&lt;p&gt;</code>) tags. Recall using <code>{{form.as_p}}</code> inside the login page, which is what rendered the fields in the form. To quickly test your new creation, open the REPL using the <code>shell</code> management command, create an instance of the <code>CommentForm</code>, and then print the results of <code>.as_p()</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p22">
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; from content.forms import CommentForm
+&gt;&gt;&gt; f = CommentForm()
+&gt;&gt;&gt; print(f.as_p())
+&lt;p&gt;
+    &lt;label for="id_name"&gt;Name:&lt;/label&gt;
+    &lt;input type="text" name="name" required id="id_name"&gt;
+&lt;/p&gt;
+&lt;p&gt;
+    &lt;label for="id_comment"&gt;Comment:&lt;/label&gt;
+    &lt;textarea name="comment" cols="50" rows="6" required
+        id="id_comment"&gt;&lt;/textarea&gt;
+&lt;/p&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p23">
+<p>The results in the previous example were reformatted for readability. The actual content has more whitespace and newlines—Django forms are a bit messy with their indentation, but HTML doesn’t care.</p>
+</div>
+<div class="readable-text intended-text" id="p24">
+<p>The <code>"name"</code> field in the <code>CommentForm</code> gets rendered as a <code>&lt;label&gt;</code> and <code>&lt;input&gt;</code> tag, while the <code>"comment"</code> field gets rendered as a <code>&lt;label&gt;</code> and <code>&lt;textarea&gt;</code>. Both fields have the <code>required</code> attribute, as this is the default. You can pass <code>required=False</code> to a field to turn this behavior off. Both fields also provide <code>id</code> and <code>name</code> attributes. This is important if you are planning on hand-tooling a form; you need to provide both of these attributes to process the form properly. More on this later. Finally, the <code>&lt;textarea&gt;</code> tag has the additional <code>rows</code> and <code>cols</code> attributes from the <code>attrs</code> dictionary provided. </p>
+</div>
+<div class="readable-text intended-text" id="p25">
+<p>With a form in place, you’re all set to collect some data. You’ll need a view for that.</p>
+</div>
+<div class="readable-text" id="p26">
+<h3 class="readable-text-h3"><span class="num-string">7.1.1</span> Handling GET and POST in views</h3>
+</div>
+<div class="readable-text" id="p27">
+<p>Up until now, your views have all been one-way: the user visits your URL, and your code provides some output. Recall that HTTP has multiple methods; the one you’ve been using is GET. When a form gets submitted by a web browser, the HTTP method is POST. The POST method almost never gets used on its own; typically, you perform a GET to fetch the page and its form, and then the browser submits the data back to you through a POST. The website validates the contents of the form, and if that validation fails, the same page gets displayed but with error information. If the validation passes, a different page gets displayed. </p>
+</div>
+<div class="readable-text intended-text" id="p28">
+<p>At first glance, this process sounds like you need multiple views. You can construct it that way, but the usual pattern is to use a single view and a redirect. With a single view handling both the GET and POST case, the rendered HTML doesn’t need extra code in the <code>&lt;form&gt;</code> tag to tell it where to POST. It POSTs to the same place as the GET that rendered the page.</p>
+</div>
+<div class="readable-text intended-text" id="p29">
+<p>The view function first determines whether it was invoked through a GET or a POST call, displaying the form in the first case and handling the submission in the second. If the form validates, the view redirects the user to another page. If the form doesn’t validate, error information gets added to the form, and the GET code gets called again. Figure 7.2 details this process.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p30">
+<img alt="figure" height="1592" src="../../OEBPS/Images/CH07_F02_Trudeau.png" width="1098"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.2</span> Logic flow for a view that handles form submission</h5>
+</div>
+<div class="readable-text" id="p31">
+<p>Let’s put this into practice by writing a view that uses your <code>CommentForm</code>. The <code>comment()</code> view is divided into three parts: a GET handler, a POST handler, and the form renderer. The view first checks if the HTTP method was GET, and if so, it instantiates a new <code>CommentForm</code> instance. If the method wasn’t GET, it must have been POST. In the POST case, the user submitted a form, and the data from the submission is contained in <code>request.POST</code>. You pass this data into your form’s initializer to populate it. </p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>The Form base class provides the <code>.is_valid()</code> method for validating the data sent by the user. The validation process is based on the fields in the form and their configuration. In the <code>CommentForm</code> case, the data is all text. As data submitted by HTTP is all text, there is very little validation done here. The fields are required, which the validator enforces, but if the user used the browser to submit the form, the browser would have enforced this anyhow. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p33">
+<h5 class="callout-container-h5 readable-text-h5">Tricky, tricky users</h5>
+</div>
+<div class="readable-text" id="p34">
+<p>Never trust your users. That last paragraph had an important caveat in it: “if the user used the browser to submit the form.” Although well-behaved users will do this, your site openly accepts requests from HTTP. There are ways of issuing an HTTP POST without using the browser or, in the browser, using development tools that don’t enforce the form’s rules.</p>
+</div>
+<div class="readable-text" id="p35">
+<p>Always (it bears repeating: <em>always</em>) assume your users are malicious. Browser-side JavaScript validation is helpful to users, giving them a quick response on errors, but it should never be the only enforcement. Always validate your data in your views.</p>
+</div>
+</div>
+<div class="readable-text" id="p36">
+<p>If the form is valid, you have a comment. Now what? Let’s inform the admin through email. The <code>send_mail()</code> function in <code>django.core.mail</code> is a quick way to send an email using the currently configured email backend. In the previous chapter, you configured Django to print email messages to the console using the <code>console.EmailBackend</code> class. Using <code>send_mail()</code>, you can send a note with the contents of the comment. The note will be from the admin, and to the admin, you’re sort of talking to yourself. </p>
+</div>
+<div class="readable-text intended-text" id="p37">
+<p>The <code>.is_valid()</code> method on a form sets up a dictionary in the form named <code>cleaned_data</code>. This dictionary has a key–value pair for each field named in the form and its contents. Using <code>cleaned_data</code>, you construct an email message and then send it. By default, the <code>send_mail()</code> function fails silently; this is not usually the best choice, so add <code>fail_silently=False</code> to the call, causing an exception if there is a problem. With the development server, this kind of problem shows up in the console as a <code>500</code> error, while in a production environment, this shows in your logs. </p>
+</div>
+<div class="readable-text intended-text" id="p38">
+<p>Once the form gets processed, you need to send the user somewhere new. A second view, called <code>comment_accepted()</code>, displays a thank-you note. This view can take advantage of the general.xhtml template created in the previous chapter. To send the user to another view, you use the <code>redirect()</code> function from the <code>django.shortcuts</code> module. This function takes at least one argument which indicates where to redirect the user to. The argument can be a string containing a named URL path, a string containing a URL, or a reference to a view function. If you are using the name of a path or a view and the associated view takes arguments, you also pass those to <code>redirect()</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>The third part of the <code>comment()</code> view is the <em>form renderer</em>. This is like the final part of most views, creating a context dictionary and calling the <code>render()</code> shortcut. Note that this code can be reached for two reasons: because the HTTP method was GET or because the method was POST and the form was not valid. In the latter case, the form object contains error information that can be displayed to the user. </p>
+</div>
+<div class="readable-text intended-text" id="p40">
+<p>Add the code in listing 7.2 to RiffMates/content/views.py. You also need to create RiffMates/content/urls.py with a <code>path</code> object for the view, similar to RiffMates/bands/urls.py. To register all the paths in content/urls.py, make sure to add an <code>include</code> line inside RiffMates/RiffMates/urls.py for the new file. Review chapter 4 if you need a refresher on using app-based URL routing files.</p>
+</div>
+<div class="browsable-container listing-container" id="p41">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.2</span> A view accepting both HTTP GET and POST to handle comment form data</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/views.py
+from django.core.mail import send_mail
+from django.shortcuts import render, redirect
+
+from content.forms import CommentForm <span class="aframe-location"></span> #1
+
+def comment(request):
+    if request.method == 'GET':
+        form = CommentForm()<span class="aframe-location"></span> #2
+
+    else: # POST <span class="aframe-location"></span> #3
+        form = CommentForm(request.POST) <span class="aframe-location"></span> #4
+
+        <span class="aframe-location"></span>if form.is_valid():  #5
+            name = form.cleaned_data["name"] <span class="aframe-location"></span> #6
+            comment = form.cleaned_data["comment"]
+
+            message = f"""\
+                Received comment from {name}\n\\n
+                {comment}
+            """
+
+            send_mail("Received comment", message,<span class="aframe-location"></span> #7
+                "admin@example.com", ["admin@example.com"],
+             <span class="aframe-location"></span>   fail_silently=False) #8
+            return redirect("comment_accepted") <span class="aframe-location"></span> #9
+
+
+    # Was a GET, or Form was not valid<span class="aframe-location"></span> #10
+    data = {
+        "form": form,
+    }
+
+    return render(request, "comment.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 The CommentForm class with name and comment fields
+     <br/>#2 In the GET handler portion of the code, create an empty form object.
+     <br/>#3 The POST handler portion of the code, reached on form submit
+     <br/>#4 Create a form object, populating it with the data from the submit.
+     <br/>#5 Validate the form.
+     <br/>#6 The cleaned_data dictionary contains the form contents.
+     <br/>#7 Use send_mail() to send an email from the admin to the admin.
+     <br/>#8 Turn fail_silently off.
+     <br/>#9 Redirect the user to the comment_ accepted view, using its path name.
+     <br/>#10 The rendering part of the view, used in both the GET case and the POST case if the form wasn’t valid
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p42">
+<p>You’re not quite done yet. The <code>comment()</code> view redirects to a view named <code>comment_ accepted()</code>, which someone has to write. Luckily, you’re someone! Add the code from the following listing to RiffMates/content/views.py. Don’t forget to register this route as well, and make sure to name the path <code>"comment_accepted"</code>, as that is what the <code>redirect()</code> shortcut looks for in the <code>comment()</code> view. </p>
+</div>
+<div class="browsable-container listing-container" id="p43">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.3</span> A view saying Thank You when a user submits a comment</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/views.py
+...
+def comment_accepted(request):
+    data = {
+        "content": """
+            &lt;h1&gt; Comment Accepted &lt;/h1&gt;
+
+            &lt;p&gt; Thanks for submitting a comment to &lt;i&gt;RiffMates&lt;/i&gt; &lt;/p&gt;
+        """
+    }
+
+    return render(request, "general.xhtml", data) <span class="aframe-location"></span> #1</pre>
+<div class="code-annotations-overlay-container">
+     #1 Reuse the general.xhtml template from the previous chapter.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p44">
+<p>There is one last step: you need the template that renders the comment form. Create RiffMates/templates/comment.xhtml, and add the code in the following listing. This template is quite similar to the login page, using a <code>&lt;form&gt;</code> tag and rendering the form field using <code>{{form.as_p}}</code>.</p>
+</div>
+<div class="browsable-container listing-container" id="p45">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.4</span> The comment form template</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/comment.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;h1&gt;Comment&lt;/h1&gt;
+
+&lt;form method="post"&gt;
+  {% csrf_token %} <span class="aframe-location"></span> #1
+  {{form.as_p}} <span class="aframe-location"></span> #2
+  &lt;button class="btn btn-dark" type="submit"&gt;Send&lt;/button&gt;
+&lt;/form&gt;
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 The security black magic, once again
+     <br/>#2 The .as_p() method renders the fields within &lt;p&gt; tags.
+     <br/>
+</div>
+</div>
+</div>
+<div class="browsable-container figure-container" id="p46">
+<img alt="figure" height="502" src="../../OEBPS/Images/CH07_F03_Trudeau.png" width="814"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.3</span> Leave a comment—we’re interested, honest!</h5>
+</div>
+<div class="readable-text" id="p47">
+<p>The content template includes the <code>{% csrf_token %}</code> black magic mentioned in the previous chapter. The next section dispels the spell; for now, just make sure to include it. With all those pieces in place, you should be able to fire up your development server and visit http://local host:8000/content/comment/. Fig-ure 7.3 shows the resulting form.</p>
+</div>
+<div class="readable-text" id="p48">
+<p>Without styling, it is rather jumbled, but your users can now complain about that with your new comment form. </p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>Test your form out by leaving your name and comment. As you’re using the <code>console.EmailBackend</code>, the resulting email will display in the terminal. </p>
+</div>
+<div class="readable-text" id="p50">
+<h3 class="readable-text-h3"><span class="num-string">7.1.2</span> CSRF</h3>
+</div>
+<div class="readable-text" id="p51">
+<p>You’ve been patient with my hand-waving and references to black magic, so just what is the <code>{%</code> <code>csrf_token</code> <code>%}</code>? <em>Cross-site request forgery</em> (CSRF) is an attack that tricks a user into doing something on your site that they didn’t intend. A malicious site can be designed to look exactly like your site and use a form that looks like an innocuous task but actually causes a change on the real site. For example, the malicious site might have a form that looks just like your comment form but contains hidden fields for doing a password change. When the user hits Submit, the malicious form communicates with your real site, causing the user’s password to change. The bad hats can then use the changed password to access the user’s account. </p>
+</div>
+<div class="readable-text intended-text" id="p52">
+<p>To prevent this attack, Django uses the <code>{%</code> <code>csrf_token</code> <code>%}</code>. It works through a piece of Django Middleware called <code>CsrfViewMiddleware</code>, which creates a session cookie containing a random value. A variation on this value gets included as a hidden form field when you use <code>{%</code> <code>csrf_token</code> <code>%}</code>. When your form gets submitted, the value gets included in the POST. Django looks for this token, and if it isn’t there or doesn’t match the one in the session, the POST gets rejected. </p>
+</div>
+<div class="readable-text intended-text" id="p53">
+<p>The malicious site has no way of knowing the value of the CSRF token, so a fake form will not be able to include it. For more information on CSRF attacks in general, see the Open Worldwide Application Security Project’s (OWASP) “Cross Site Request Forgery” article (<a href="https://owasp.org/www-community/attacks/csrf">https://owasp.org/www-community/attacks/csrf</a>). For specifics on how Django prevents the attack, see the CSRF documentation: <a href="https://docs.djangoproject.com/en/dev/ref/csrf/">https://docs.djangoproject.com/en/dev/ref/csrf/</a>. </p>
+</div>
+<div class="readable-text" id="p54">
+<h3 class="readable-text-h3"><span class="num-string">7.1.3</span> Beautifying web forms</h3>
+</div>
+<div class="readable-text" id="p55">
+<p>I haven’t seen a web page without CSS since the 1990s. It sounds like a bad joke: the author’s so old he used the web before it was stylized! The form examples in this and previous chapters have all used <code>form.as_p</code> to render the necessary HTML tags. In addition to <code>form.as_p</code>, there is <code>form.as_table</code>, but this doesn’t do much to make the results prettier. Table columns mean the labels in the forms all end up the same width, which is an improvement, but it still won’t win any design awards. </p>
+</div>
+<div class="readable-text intended-text" id="p56">
+<p>Earlier, you saw how you could use the <code>attrs</code> argument to a widget to add attributes to the resulting HTML tag. The example populated the <code>rows</code> and <code>cols</code> attributes of a <code>&lt;textarea&gt;</code> tag. This mechanism can also be used to add a <code>class</code> attribute to the tag, making it easier to stylize the result with CSS. </p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>Class attributes may not be enough, depending on what you are trying to achieve. For example, Bootstrap has some very pretty forms, but to get them, you need to wrap the tags in other tags. At this point, you’re beyond the limit of what the Django forms will render for you. You can still use <code>Form</code> objects, but you need to write the corresponding HTML in full. The key to getting this to work is the correct use of <code>id</code> and <code>name</code> attributes on the tags. Django expects the field <code>name</code> to show up as the tag’s <code>name</code> attribute and the tag’s ID attribute to contain id-underscore-field.</p>
+</div>
+<div class="readable-text intended-text" id="p58">
+<p>The <code>form</code> object in the template provides access to each individual field via dot-notation. Each field has attributes for the value of the field, corresponding help text, and any associated error message. Each of these pieces can be accessed in your template to help you render beautiful content.</p>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>The following code is a sample Bootstrap field for entering a first name:</p>
+</div>
+<div class="browsable-container listing-container" id="p60">
+<div class="code-area-container">
+<pre class="code-area">&lt;div class="form-group"&gt;
+    &lt;label for="first_name"&gt;First name&lt;/label&gt;
+
+    &lt;input type="text" class="form-control"
+        id="id_first_name" name="first_name"
+        aria-describedby="first_name_help"
+        placeholder="First name"
+        {% if form.first_name.value %}
+            value="{{ form.first_name.value }}"
+        {% endif %}
+    &gt;
+
+    &lt;small id="first_name_help"
+        class="form-text text-muted"&gt;
+            If you are Cher or Madonna, enter your name
+            in the last name field
+    &lt;/small&gt;
+
+    {% if form.errors.first_name %}
+        &lt;small class="text-danger"&gt;
+            {{ form.errors.first_name }}
+        &lt;/small&gt;
+    {% endif %}
+&lt;/div&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p61">
+<p>That’s a lot of code, isn’t it? The <code>Form</code> does so much for you: properly populating the field, showing help text, and errors when they occur. If you can get your forms to be beautiful enough through CSS alone, you can write a lot less HTML. Depending on your style toolkit, there may be third-party libraries that build on top of <code>Form</code>, doing the work for you. They’re worth checking out before writing all that HTML. </p>
+</div>
+<div class="readable-text" id="p62">
+<h3 class="readable-text-h3"><span class="num-string">7.1.4</span> New in Django 5: Reusable field group templates</h3>
+</div>
+<div class="readable-text" id="p63">
+<p>Having to write HTML by hand due to styling is a step backward. Django 5 recognizes this and adds a new feature: reusable field group templates. In Django 5, the structure of a form field is determined by a template. This template contains the tags for labels and inputs along with if clauses that display help text if it is associated with the field. The provided template uses <code>&lt;div&gt;</code> tags for structure. You can override the template used to display a field by adding a <code>template_name</code> argument to any field object in your <code>Form</code> class:</p>
+</div>
+<div class="browsable-container listing-container" id="p64">
+<div class="code-area-container">
+<pre class="code-area">class CommentForm(forms.Form):
+    name = forms.CharField(template_name="custom_input_field.xhtml") <span class="aframe-location"></span> #1
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 Specify the use of a custom template to render your field.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p65">
+<p>This means you can build Bootstrap-style widgets as field templates and reuse them in your forms. If you’re going to customize a field, it is best to start with Django’s own template as a base. You can find it in the Django package under forms/templates/django/forms/field.xhtml. </p>
+</div>
+<div class="readable-text" id="p66">
+<h2 class="readable-text-h2"><span class="num-string">7.2</span> Django ModelForm</h2>
+</div>
+<div class="readable-text" id="p67">
+<p>It is quite common for there to be a link between the data you ask your users to submit and the information you store in your database. To reduce the amount of code you write, Django includes the <code>ModelForm</code> class. This class extends from <code>Form</code> and automatically creates fields based on the structure of an associated model class. </p>
+</div>
+<div class="readable-text intended-text" id="p68">
+<p>It is finally time to implement Nicky’s original idea: ads for musicians seeking bands and bands seeking musicians. Ultimately, the goal is to use a <code>ModelForm</code> to get your user’s input, but there is a bit of a journey to get there. First off, you’ll need somewhere to store the ad, which means a new model class. Along the way to implementing the <code>ModelForm</code>, you’ll learn some more about ORM fields, how to validate multifield interdependencies, and how to use the undocumented <code>Truncate</code> class to show part of some text.</p>
+</div>
+<div class="readable-text" id="p69">
+<h3 class="readable-text-h3"><span class="num-string">7.2.1</span> Validating fields in a model</h3>
+</div>
+<div class="readable-text" id="p70">
+<p>Before providing a self-service feature for your users, like writing a classified ad, it is good practice to get any new model working in the Admin first. This provides a way for you to test out your thoughts before exposing it to your users. </p>
+</div>
+<div class="readable-text intended-text" id="p71">
+<p>The <code>SeekingAd</code> model stores a classified ad written by a user, and its key component is a <code>TextField</code> containing the ad’s content. Ads can be either written by musicians seeking a band or bands seeking musicians. To capture that, you need a foreign relationship to a <code>Musician</code> object and a second one to a <code>Band</code> object. You also need to store which kind of ad it is; you can do this in several ways. A <code>BooleanField</code> could be used, where <code>True</code> means <em>musician seeking band</em>, and <code>False</code> means <em>band seeking musician</em>, but then, you have to remember what <code>True</code> means. A better choice is to use a <code>CharField</code> and store <code>"M"</code> when seeking a musician, or <code>"B"</code> when seeking a band. </p>
+</div>
+<div class="readable-text intended-text" id="p72">
+<p>The <code>CharField</code> takes an optional argument called <code>choices</code> that restricts the values allowed in the field. By using <code>choices</code>, you can guarantee that only an <code>"M"</code> or <code>"B"</code> is stored. The <code>choices</code> argument takes a tuple-of-tuples structure, where each <code>tuple</code> defines a choice, and the <code>tuple</code> within the choice pairs a value with a human-readable label, as shown in the following example:</p>
+</div>
+<div class="browsable-container listing-container" id="p73">
+<div class="code-area-container">
+<pre class="code-area">SEEKING_CHOICES = (
+    ("M", "Musician"),
+    ("B", "Band"),
+)</pre>
+</div>
+</div>
+<div class="readable-text" id="p74">
+<p>Django also provides utility classes for building these kinds of structures. The <code>django.db.models.TextChoices</code> class allows you to achieve the same result by coding an enumeration-like class:</p>
+</div>
+<div class="browsable-container listing-container" id="p75">
+<div class="code-area-container">
+<pre class="code-area">class SeekingChoice(models.TextChoices):
+    MUSICIAN = "M"
+    BAND = "B"</pre>
+</div>
+</div>
+<div class="readable-text" id="p76">
+<p><code>TextChoices</code> classes use attribute names as labels with attribute values as the value in the database. All-capital attribute names get converted into sentence-case labels: the <code>MUSICIAN</code> attribute becomes the <code>"Musician"</code> label. The <code>.choices</code> attribute of this class contains the tuple-of-tuples structure required by the <code>choices</code> argument to <code>CharField</code>. There isn’t much difference in the amount of code here, but the <code>TextChoices</code> class is more explicit about its purpose, and personally, I find it easier to read. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p77">
+<h5 class="callout-container-h5 readable-text-h5">Nesting your choices</h5>
+</div>
+<div class="readable-text" id="p78">
+<p>Some programmers prefer to make their choices structure a member of the model class that uses it. For example, <code>MusicianBandChoice</code> could be an inner class of <code>SeekingAd</code>. This is a matter of preference. Scoping it this way makes it clear where it gets used, but accessing it requires writing out the whole thing. Personally, I find <code>MusicianBandChoice.MUSICIAN</code> lengthy enough, and having to type <code>SeekingAd .MusicianBandChoice.MUSICIAN</code> feels like overkill.</p>
+</div>
+</div>
+<div class="readable-text" id="p79">
+<p>When a band is seeking a musician, the <code>seeking</code> field is <code>"M"</code>, and you want to track which band is seeking a musician. You do this by populating the <code>band</code> foreign key. Likewise, when a musician is seeking a band, the <code>seeking</code> field is <code>"B"</code> and the <code>musician</code> foreign key should be populated with the musician seeking a band. This introduces a new wrinkle: the validation of the fields in your model are interdependent.</p>
+</div>
+<div class="readable-text intended-text" id="p80">
+<p>In chapter 4, you learned about basic ORM field validation, like disallowing empty values and constraints limiting what could be in a field. Most validation and constraints are field level, meaning inter-field dependencies don’t come out of the box. The <code>Model</code> base class has a series of methods that are called to validate an object. One of them is called <code>.clean()</code>, and it can be overridden to verify inter-field relationships. The base class’s <code>.clean()</code> method is empty, but you can add code to check for problems and raise a <code>ValidationError</code> if one is found. The following code is part of just such a validation process:</p>
+</div>
+<div class="browsable-container listing-container" id="p81">
+<div class="code-area-container">
+<pre class="code-area">def clean(self):
+    if self.seeking == MusicianBandChoice.MUSICIAN:
+        if self.band is None:
+            raise ValidationError(
+                "Band field required when seeking a musician")
+    ...</pre>
+</div>
+</div>
+<div class="readable-text" id="p82">
+<p>The <code>SeekingAd</code> model needs two more fields: an <code>owner</code> and a <code>date</code>. The <code>owner</code> field is a foreign key to a <code>User</code> account to track who created the ad. This is especially important if you want to provide the ability to edit ads, as only the owner should be able to edit it. The <code>date</code> field tracks when the ad got created. Conveniently, <code>DateField</code> has an optional argument called <code>auto_now_add</code> that, when set to <code>True</code>, automatically populates the field with the current date. (There is also another option, <code>auto_now</code>, that gets populated whenever the object gets saved.) The Django Admin is aware of this and won’t even prompt you for the field—it lets the model set it for you. The following listing puts all these pieces together. You’ll need a new models.py file in the RiffMates/content app directory. </p>
+</div>
+<div class="browsable-container listing-container" id="p83">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.5</span> The <code>SeekingAd</code> model stores a RiffMates classified ad</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/models.py
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import models
+
+from bands.models import Musician, Band
+
+class MusicianBandChoice(models.TextChoices): <span class="aframe-location"></span> #1
+    MUSICIAN = "M"
+    BAND = "B"
+
+class SeekingAd(models.Model):
+    date = models.DateField(auto_now_add=True) <span class="aframe-location"></span> #2
+    owner = models.ForeignKey(User,
+      <span class="aframe-location"></span>  on_delete=models.CASCADE)  #3
+    seeking = models.CharField(max_length=1,
+        choices=MusicianBandChoice.choices) <span class="aframe-location"></span> #4
+    musician = models.ForeignKey(Musician, on_delete=models.SET_NULL,
+        blank=True, null=True) <span class="aframe-location"></span> #5
+    band = models.ForeignKey(Band, on_delete=models.SET_NULL,
+      <span class="aframe-location"></span>  blank=True, null=True)  #6
+    content = models.TextField() <span class="aframe-location"></span> #7
+
+    class Meta:
+       <span class="aframe-location"></span> ordering = ["date", ]  #8
+
+    def __str__(self):
+        return f"SeekingAd(id={self.id}, seeking={self.seeking})"
+
+    def clean(self): <span class="aframe-location"></span> #9
+        if self.seeking == MusicianBandChoice.MUSICIAN:
+            # Validate seeking musician case <span class="aframe-location"></span> #10
+            if self.band is None:
+
+                raise ValidationError(
+                    "Band field required when seeking a musician")
+            if self.musician is not None:
+                raise ValidationError(
+                    ("Musician field should be empty for a band "
+                    "seeking a musician"))
+
+        else:
+            # Validate seeking band case <span class="aframe-location"></span> #11
+            if self.musician is None:
+                raise ValidationError(
+                    "Musician field required when seeking a band")
+            if self.band is not None:
+                raise ValidationError(
+                    ("Band field should be empty for a musician "
+                    "seeking a band"))
+
+        super().clean()</pre>
+<div class="code-annotations-overlay-container">
+     #1 Extending TextChoices allows you to write a choices object, like an enumeration class.
+     <br/>#2 Using auto_now_add=True means this field gets automatically populated with the current date when the object gets created.
+     <br/>#3 A foreign key to the user who owns the ad
+     <br/>#4 A CharField using the choices argument, so seeking can only contain "M" or "B", indicating whether a musician or band is being sought.
+     <br/>#5 A foreign key relationship to the musician seeking a band. The arguments blank=True and null=True ensure this can be empty in both the Django Admin and the database.
+     <br/>#6 A foreign key relationship to the band seeking a musician
+     <br/>#7 Storage for the text of the ad
+     <br/>#8 Default query order is by the date field
+     <br/>#9 Validation for inter-field dependencies gets done in the .clean() method.
+     <br/>#10 When seeking a musician, ensure the band field gets populated and the musician field is empty.
+     <br/>#11 When seeking a band, ensure the musician field gets populated and the band field is empty.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p84">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong><code>.clean()</code> is not called automatically!</p>
+</div>
+<div class="readable-text" id="p85">
+<p>Early versions of Django did not include object validation methods, like <code>.clean()</code>, and to maintain backward compatibility, it was decided not call it automatically. It is possible to create an object programmatically that violates your validation code. The <code>.clean()</code> method gets called when you use the Django Admin, but if you open up the REPL and create an object by hand, <code>.clean()</code> is not called. One work around for this is to override the model’s <code>.save()</code> method and force a call to <code>.clean()</code> inside it. The downside of this approach is <code>.save()</code> doesn’t know what to do with a <code>ValidationError</code>, and if your code doesn’t catch it, the error will show as a <code>500</code> error in your logs. If you do decide to override <code>.save()</code>, make sure you use a <code>try</code> block in your code to properly handle any <code>ValidationError</code> that gets raised. </p>
+</div>
+<div class="readable-text" id="p86">
+<h3 class="readable-text-h3"><span class="num-string">7.2.2</span> A ModelAdmin for SeekingAd using Truncate</h3>
+</div>
+<div class="readable-text" id="p87">
+<p>To test your new <code>SeekingAd</code> model out, you need an Admin class to go with it. Inside RiffMates/content/admin.py, add a <code>SeekingAdAdmin</code> class similar to those you wrote for the <code>bands</code> app. The Django Admin automatically uses the labels from the <code>seeking</code> field, so when you include it in <code>list_display</code>, it will show <code>"Musician"</code> rather than <code>"M"</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p88">
+<p>The ad text from the object might be quite long; displaying it on the Django Admin summary page could be unwieldy. There are several template filters that perform <em>truncation</em> on strings. The <code>{{ |truncatewords }}</code> filter truncates a string on word boundaries. It would be nice to use this functionality outside of templates. If you go digging through the Django source code, you will find the <code>Truncator</code> class inside <code>django.utils.text</code>. This undocumented feature is what the truncation filters got built on top of. It is unclear to me why this isn’t documented; it is a handy class to take advantage of outside a template. The <code>SeekingAdAdmin</code> class uses <code>Truncate</code> to show a short version of the ad description in the Django Admin listing page. The complete code for RiffMates/content/admin.py is shown in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p89">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.6</span> Register <code>SeekingAdAdmin</code> in the Django Admin</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/admin.py
+from django.contrib import admin
+from django.utils.text import Truncator<span class="aframe-location"></span> #1
+
+from content.models import SeekingAd
+
+
+@admin.register(SeekingAd)<span class="aframe-location"></span> #2
+class SeekingAdAdmin(admin.ModelAdmin):
+    list_display = ("id", "date", "owner", "seeking",
+        "show_ad", ) <span class="aframe-location"></span> #3
+
+    def show_ad(self, obj):
+        return Truncator(obj.content).words(5,
+            truncate=' ...')<span class="aframe-location"></span> #4
+    show_ad.short_description = "Ad" <span class="aframe-location"></span> #5</pre>
+<div class="code-annotations-overlay-container">
+     #1 The hidden gem Truncator makes readable shortened text.
+     <br/>#2 Register SeekingAd for use in the Django Admin.
+     <br/>#3 A list of the fields to display, including one calling the custom .show_ad() method
+     <br/>#4 Pass Truncator the ad’s content field, restricting the result to 5 words in length, appending " …" if content got truncated.
+     <br/>#5 The short_description attribute for the method changes the title in the Django Admin listing page.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p90">
+<p>You’ve got a new model class, so you need to run the <code>makemigrations</code> and <code>migrate</code> management commands to perform the necessary database actions. Once you’ve done that, you can load your development server and add a new classified ad. Play with the various combinations of values for the <code>seeking</code>, <code>musician</code>, and <code>band</code> fields to verify your validation code works. </p>
+</div>
+<div class="readable-text" id="p91">
+<h3 class="readable-text-h3"><span class="num-string">7.2.3</span> Writing a ModelForm</h3>
+</div>
+<div class="readable-text" id="p92">
+<p>It was a bit of a winding road, but you’re at your destination. It is time to write the self-serve code allowing users to create a classified ad. <code>SeekingAd</code> stores the classified ad, and any web form you write would map almost directly to the storage class. The web form needs an ad type selection widget, musician and band selection widgets, and a place to write the text of the ad. You could write a <code>Form</code> class that does all this, but Django’s <code>ModelForm</code> means you don’t have to. A <code>ModelForm</code> inherits from the <code>Form</code> class and automatically creates the form’s fields, based on an associated model. </p>
+</div>
+<div class="readable-text intended-text" id="p93">
+<p>The <code>ModelForm</code> works a bit like a <code>ModelAdmin</code>: you create a class and associate it with a model. Unlike <code>ModelAdmin</code>, the <code>ModelForm</code> uses an inner class called <code>Meta</code> to specify its behavior. Inside the inner class, the <code>model</code> attribute links the <code>ModelForm</code> to an ORM model. The <code>fields</code> attribute indicates which fields in the ORM model participate in the form. </p>
+</div>
+<div class="readable-text intended-text" id="p94">
+<p>If you don’t require further customization, then that’s all you need. Simply inherit from <code>ModelForm</code>, point the inner <code>Meta</code> class’s <code>model</code> attribute at a model, and specify which fields participate. You’ve got a form. Figure 7.4 shows the equivalent <code>Form</code> object that a <code>ModelForm</code> represents. </p>
+</div>
+<div class="browsable-container figure-container" id="p95">
+<img alt="figure" height="773" src="../../OEBPS/Images/CH07_F04_Trudeau.png" width="837"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.4</span> A <code>ModelForm</code> generates a <code>Form</code> equivalent for you based on a model class</h5>
+</div>
+<div class="readable-text" id="p96">
+<p>You can customize things further, though, if you wish. When you use a <code>Form</code> class to<strong><span class="aframe-location"></span></strong> build a form, you can modify each field as part of their declaration. You can change the field’s label, help text, or which widget renders the result. A <code>ModelForm</code> declares the fields for you, so you don’t have the opportunity to change these attributes at declaration time. Instead, you can override the <code>.__init__()</code> method. </p>
+</div>
+<div class="readable-text intended-text" id="p97">
+<p>Both the <code>Form</code> and <code>ModelForm</code> classes have an attribute called <code>fields</code>, which is a dictionary containing the fields on the form. By overriding <code>.__init__()</code>, you can modify any field after it has been constructed through the use of this dictionary. This means you can change the label, the help text, or the widget that renders the tag. </p>
+</div>
+<div class="readable-text intended-text" id="p98">
+<p>Open RiffMates/content/forms., and add the <code>SeekingAdForm</code> class found in the following listing. This class creates a form based on the <code>SeekingAd</code> model and modifies some of the labels and help text of the corresponding fields. </p>
+</div>
+<div class="browsable-container listing-container" id="p99">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.7</span> Django <code>ModelForm</code> for the <code>SeekingAd</code> ORM model</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/forms.py
+...
+from content.models import SeekingAd
+...
+
+class SeekingAdForm(forms.ModelForm):
+    class Meta:
+        model = SeekingAd <span class="aframe-location"></span> #1
+        fields = ["seeking", "musician", "band",
+            "content", ] <span class="aframe-location"></span> #2
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["seeking"].label = "I am seeking a" <span class="aframe-location"></span> #3
+        self.fields["musician"].help_text = \<span class="aframe-location"></span> #4
+            "Fill in if you are a musician seeking a band"
+        self.fields["band"].help_text = \
+            "Fill in if you are a band seeking a musician"</pre>
+<div class="code-annotations-overlay-container">
+     #1 Associate SeekingAdForm with the SeekingAd ORM model.
+     <br/>#2 A list of the fields from SeekingAd that should appear in the form
+     <br/>#3 Modify the label for the seeking field.
+     <br/>#4 Modify the help text for the musician field.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p100">
+<p>Using a <code>ModelForm</code> doesn’t only mean you have less code to write—it also adds some verification in the background. When initially writing the code for <code>SeekingAdForm</code>, I accidentally wrote <code>seeing</code> instead of <code>seeking</code> in the <code>fields</code> list. When I ran the Django server, an error got issued, as the named field did not match an attribute of the <code>SeekingAd</code> model. </p>
+</div>
+<div class="readable-text intended-text" id="p101">
+<p>It is generally recommended to explicitly list the form’s fields. There is a special value, <code>fields = "__all__"</code>, that can be used instead of a list to save you some typing, but I recommend against using this. If you change your model in the future, you might accidentally add a field into the form that should have got excluded. There have been cases where companies have exposed information they shouldn’t have to the public through exactly this kind of bug.</p>
+</div>
+<div class="readable-text intended-text" id="p102">
+<p>An alternative to using the <code>fields</code> attribute is <code>except</code>. This is also a list, but here you list the fields that don’t participate in the form. This has the same danger as <code>__all__</code>, where additions to the model automatically show up in the form, so again, this is probably not the best choice. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p103">
+<h5 class="callout-container-h5 readable-text-h5">A shorter shortcut</h5>
+</div>
+<div class="readable-text" id="p104">
+<p>If the only thing you need to do with your <code>ModelForm</code> is associate it with a <code>Model</code> class and specify the <code>fields</code> attribute, you can get there with even less code. The <code>modelform_factory</code> function is a factory that creates <code>ModelForm</code> classes. The typical use takes two arguments: a reference to the <code>Model</code> and a list of fields:</p>
+</div>
+<div class="browsable-container listing-container" id="p105">
+<div class="code-area-container">
+<pre class="code-area">from django import forms
+SeekingAdForm = forms.modelform_factory(SeekingAd, fields = ["seeking",
+    "musician", "band", "content", ]</pre>
+</div>
+</div>
+<div class="readable-text" id="p106">
+<p>The factory takes other arguments as well. Like with the class, you can use <code>except</code> instead of <code>fields</code>; specify the labels, widgets, help text, and error messages; and more. For more information, see <a href="https://docs.djangoproject.com/en/dev/ref/forms/models/">https://docs.djangoproject.com/en/dev/ref/forms/models/</a>.</p>
+</div>
+</div>
+<div class="readable-text" id="p107">
+<p>Instead of overriding the <code>.__init__()</code> method, there are several dictionaries you can use inside the <code>Meta</code> inner class. The <code>labels</code>, <code>help_texts</code>, <code>widgets</code>, and <code>error_ messages</code> attributes all override the corresponding item for a field. For example, the following is an alternate way of overriding the label for the <code>seeking</code> field:</p>
+</div>
+<div class="browsable-container listing-container" id="p108">
+<div class="code-area-container">
+<pre class="code-area">class SeekingAdForm(forms.ModelForm):
+    class Meta:
+        model = SeekingAd
+        fields = ["seeking", "musician", "band", "content", ]
+        labels = {
+            "seeking": 'I am seeking a'
+        }</pre>
+</div>
+</div>
+<div class="readable-text" id="p109">
+<h3 class="readable-text-h3"><span class="num-string">7.2.4</span> Using SeekingAdForm in a view</h3>
+</div>
+<div class="readable-text" id="p110">
+<p>For the sake of completeness, let’s write out the view and templates for the classified submission. You need two views: one that handles the form and one to redirect the user to when the form is complete. The latter can be the classified ad listing page. The listing page can be public, but the form submission view should be restricted to users. </p>
+</div>
+<div class="readable-text intended-text" id="p111">
+<p>Recall that the <code>date</code> and <code>owner</code> fields from the <code>SeekingAd</code> model are not included in the form. The <code>date</code> field’s exclusion is OK because the <code>auto_now_add</code> attribute populates it automatically the first time the model gets saved. The <code>owner</code> field gets excluded, as this isn’t something the user should be filling in. The owner field should be populated by the view, ensuring the value contains the user that created the ad. </p>
+</div>
+<div class="readable-text intended-text" id="p112">
+<p>Let’s start with the classifieds listing page. It is a short view that contains two pieces of data: all of the ads for musicians seeking bands and all the ads for bands seeking musicians. Both of these are queries on the <code>SeekingAd</code> class but with different <code>.filter()</code> parameters. The following listing contains code for RiffMates/content/views.py. </p>
+</div>
+<div class="browsable-container listing-container" id="p113">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.8</span> View for listing the classified ads</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/views.py
+...
+from content.models import MusicianBandChoice, SeekingAd
+...
+def list_ads(request):
+    data = {
+        'seeking_musician':SeekingAd.objects.filter(
+            seeking=MusicianBandChoice.MUSICIAN), <span class="aframe-location"></span> #1
+        'seeking_band':SeekingAd.objects.filter(
+            seeking=MusicianBandChoice.BAND),<span class="aframe-location"></span> #2
+    }
+
+    return render(request, "list_ads.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Band-seeking-musician query
+     <br/>#2 Musician-seeking-band query
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p114">
+<p>Don’t forget to add a <code>path</code> object to RiffMates/content/urls.py to register this view, and make sure you name the URL, so it can be used in a <code>redirect()</code> call in the form view. The following listing contains a simple template for this view. Create RiffMates/templates/list_ads.xhtml, and add the code there.</p>
+</div>
+<div class="browsable-container listing-container" id="p115">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.9</span> Template for the classified listing page</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/list_ads.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+  &lt;h1&gt;Musicians Seeking Bands &lt;/h1&gt;
+
+  {% for ad in seeking_band %} <span class="aframe-location"></span> #1
+    &lt;p&gt;
+       {{ad.date}} &amp;mdash;
+       {{ad.musician.first_name}} {{ad.musician.last_name}}<span class="aframe-location"></span> #2
+       &lt;br/&gt;
+       &lt;i&gt;{{ad.content}}&lt;/i&gt;<span class="aframe-location"></span> #3
+    &lt;/p&gt;
+  {% empty %} <span class="aframe-location"></span> #4
+    &lt;p&gt; &lt;i&gt;No ads at this time&lt;/i&gt; &lt;/p&gt;
+  {% endfor %}
+
+  &lt;h1&gt;Bands Seeking Musicians &lt;/h1&gt;
+
+  {% for ad in seeking_musician %} <span class="aframe-location"></span> #5
+    &lt;p&gt;
+       {{ad.date}} &amp;mdash; {{ad.band.name}}
+       &lt;br/&gt;
+       &lt;i&gt;{{ad.content}}&lt;/i&gt;
+    &lt;/p&gt;
+  {% empty %}
+    &lt;p&gt; &lt;i&gt;No ads at this time&lt;/i&gt; &lt;/p&gt;
+  {% endfor %}
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Loop through the ads for musicians seeking bands.
+     <br/>#2 Show the ad date and the name of the seeking musician.
+     <br/>#3 Text content of the ad
+     <br/>#4 Alternate text copy if there are no ads in the query
+     <br/>#5 Similar structure for bands seeking musicians
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p116">
+<p>When playing with <code>SeekingAd</code> in the Django Admin before, you likely created one or more ads. If you did, you should be able to see them in your new view. Figure 7.5 shows my version of the content with an ad from Nicky.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p117">
+<img alt="figure" height="502" src="../../OEBPS/Images/CH07_F05_Trudeau.png" width="814"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.5</span> The ad listing page with a single lonely ad</h5>
+</div>
+<div class="readable-text" id="p118">
+<p>The view for submitting an ad is similar to the view you wrote to submit comments earlier. The only thing you need to learn when using the <code>SeekingAdForm</code> is how to create the corresponding <code>SeekingAd</code> model object. Once you have verified that the form is valid, you call <code>.save()</code> on the form to get an instance of the corresponding model. The <code>.save()</code> method on a <code>ModelForm</code> has an optional parameter <code>commit</code>, which determines whether the returned instance object gets saved or not. </p>
+</div>
+<div class="readable-text intended-text" id="p119">
+<p>In the <code>SeekingAd</code> case, there is no <code>owner</code> field in the form, and as it is a required field on the ORM object, attempting to save without it results in an exception. Using <code>commit=False</code>, you get an instance of the object before it is saved, so you can modify it before storing it in the database. Add the form handling view code from the following listing to RiffMates/content/views.py. </p>
+</div>
+<div class="browsable-container listing-container" id="p120">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.10</span> View for displaying and submitting <code>SeekingAdForm</code></h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/views.py
+from django.contrib.auth.decorators import login_required
+...
+from content.forms import CommentForm, SeekingAdForm
+from content.models import MusicianBandChoice, SeekingAd
+
+
+@login_required <span class="aframe-location"></span> #1
+def seeking_ad(request):
+    if request.method == 'GET':
+        form = SeekingAdForm() <span class="aframe-location"></span> #2
+
+    else: # POST
+        form = SeekingAdForm(request.POST) <span class="aframe-location"></span> #3
+
+      <span class="aframe-location"></span>  if form.is_valid(): #4
+            ad = form.save(commit=False) <span class="aframe-location"></span> #5
+            ad.owner = request.user <span class="aframe-location"></span> #6
+           <span class="aframe-location"></span> ad.save()  #7
+
+            return redirect("list_ads") <span class="aframe-location"></span> #8
+
+    # Was a GET, or Form was not valid <span class="aframe-location"></span> #9
+    data = {
+        "form": form,
+    }
+
+    return render(request, "seeking_ad.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Ads belong to users and enforce that they are logged in.
+     <br/>#2 The GET mode displays an empty form.
+     <br/>#3 The POST mode populates the form based on the user’s submitted data.
+     <br/>#4 Verify the form’s contents.
+     <br/>#5 Save the form, creating a SeekingAd object without saving the model.
+     <br/>#6 Add the user’s account object to the SeekingAd object.
+     <br/>#7 Save the SeekingAd model.
+     <br/>#8 Redirect to the classified listing page.
+     <br/>#9 Handle the GET and invalid form cases by displaying the form.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p121">
+<p>To go along with your new view, you’ll need a template. Add the code from the following listing to RiffMates/templates/seeking_ad.xhtml.</p>
+</div>
+<div class="browsable-container listing-container" id="p122">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.11</span> Template for the classified ad submission form</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/seeking_ad.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;h1&gt;Seeking Ad&lt;/h1&gt;
+
+&lt;form method="post"&gt;
+  {% csrf_token %}
+  {{form.as_p}}
+  &lt;button class="btn btn-dark" type="submit"&gt;Save&lt;/button&gt;
+&lt;/form&gt;
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p123">
+<p>This template doesn’t have anything you haven’t seen before, except you have fresh eyes on <code>{% csrf_token %}</code>. Now, you should see it as an important piece of security technology rather than scary-sounding black magic. </p>
+</div>
+<div class="readable-text" id="p124">
+<h3 class="readable-text-h3"><span class="num-string">7.2.5</span> Editing existing data with forms</h3>
+</div>
+<div class="readable-text" id="p125">
+<p>You’ve got a form, and you’ve got a corresponding model in the database—all is good! Now, what if your user wants to make an edit? If they own the ad, they should be able to update its contents. With a few small changes to your code, you can handle this situation. </p>
+</div>
+<div class="readable-text intended-text" id="p126">
+<p>This scenario is commonplace. Most times when you have user driven input, you want the user to be able to edit the input. You could write two views, one for adding new content and one for editing existing content, but most of the code will be similar. Instead, you can write one view that works in two different modes.</p>
+</div>
+<div class="readable-text intended-text" id="p127">
+<p>Views are just functions, and like all functions, they can take default arguments. When in Edit mode, you need the view to take the ID of the item being edited. When in Add mode, you don’t need an ID, but you do need some indication that you’re adding instead of editing. ORM object IDs start counting at <code>1</code>, which means you can take advantage of this and use an ID of <code>0</code> to indicate Add mode. By setting the item ID’s default value to <code>0</code>, you have two different ways of calling your view.</p>
+</div>
+<div class="readable-text intended-text" id="p128">
+<p>URLs aren’t quite as flexible as Python functions. To go with your two-mode view, you can either use an optional query parameter for the item ID or register two different routes. The first route is for adding a new object, and the URL path contains no arguments. The Add route calls the view without any arguments, and the default ID of <code>0</code> gets used. The second route is for editing, and that URL takes the ID of the object to be edited.</p>
+</div>
+<div class="readable-text intended-text" id="p129">
+<p>The URL query parameter and two-route designs are equally effective. The latter is more Django-esque, though. Once you start using path arguments in a URL, going back to query parameters seems inelegant. This could just be my personal bias, though.</p>
+</div>
+<div class="readable-text intended-text" id="p130">
+<p>Let’s put this into practice by adding the ability to edit ads in the <code>seeking_ad()</code> view. In this case, the object being edited is a <code>SeekingAd</code> model, which when you’re in Edit mode, you’ll need to fetch from the database. You’ve done this before, using the <code>get_object_or_404()</code> shortcut. With the object in hand, use the <code>instance</code> argument to prepopulate the <code>ModelForm</code> with the model’s contents. This happens in both the <code>GET</code> and <code>POST</code> sections of the view when in Edit mode. Figure 7.6 shows how the original flow of <code>GET</code> and <code>POST</code> change now that the view handles both adding and editing objects. The code in listing 7.12 shows the changes to the view necessary for supporting both Add and Edit modes. </p>
+</div>
+<div class="browsable-container figure-container" id="p131">
+<img alt="figure" height="1133" src="../../OEBPS/Images/CH07_F06_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.6</span> Prepopulating the form with an existing object for Edit mode</h5>
+</div>
+<div class="browsable-container listing-container" id="p132">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.12</span> View for displaying and submitting <code>SeekingAdForm</code></h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/views.py
+...
+from django.shortcuts import render, redirect, get_object_or_404
+...
+@login_required
+def seeking_ad(request, ad_id=0):<span class="aframe-location"></span> #1
+    if request.method == 'GET':
+        if ad_id == 0: <span class="aframe-location"></span> #2
+            form = SeekingAdForm()
+        else:
+            ad = get_object_or_404(SeekingAd, id=ad_id,
+                owner=request.user) <span class="aframe-location"></span> #3
+            form = SeekingAdForm(instance=ad) <span class="aframe-location"></span> #4
+
+
+    else: # POST
+        if ad_id == 0:
+            form = SeekingAdForm(request.POST) <span class="aframe-location"></span> #5
+        else:
+            ad = get_object_or_404(SeekingAd, id=ad_id,
+              <span class="aframe-location"></span>  owner=request.user)  #6
+            form = SeekingAdForm(request.POST,
+                instance=ad)<span class="aframe-location"></span> #7
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 The view now takes the ID of a model object to edit as an argument.
+     <br/>#2 An ID of 0 indicates a new model object should be created.
+     <br/>#3 In Edit mode, the view looks up the existing SeekingAd object. Note that the query requires both the ID and the owner.
+     <br/>#4 The instance argument prepopulates the form based on the corresponding model.
+     <br/>#5 Ad ID of 0 means the form is created based solely on the submitted data.
+     <br/>#6 The same query as in the GET case of Edit mode
+     <br/>#7 Populate the form with both the submitted data and the instance information from the corresponding model.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p133">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong>The following is important security content!</p>
+</div>
+<div class="readable-text" id="p134">
+<p>As ads belong to users, only those users should be able to edit the ad. Merely taking the ID of an ad, looking it up, and allowing someone to edit the content is problematic. The query in the <code>get_object_or_404()</code> call takes two arguments: both the ID of the <code>SeekingAd</code> <em>and</em> the logged-in user. If the logged-in user manually changes the URL to attempt to edit an ad they don’t own, a <code>404</code> exception gets raised. </p>
+</div>
+<div class="readable-text intended-text" id="p135">
+<p>A better version of this code would allow an admin user to edit any ad, which can be done with an additional check to <code>request.user.is_staff</code>. I leave this as an exercise for the reader. (I’ve always wanted to write that sentence, and it is quite literally true. This is one of the chapter’s exercises.) The route registration for the two variations on your view is no different from any other registration you’ve done, except this time, two different routes point to the same view function:</p>
+</div>
+<div class="browsable-container listing-container" id="p136">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/content/urls.py
+...
+urlpatterns = [
+    ...
+    path("seeking_ad/", views.seeking_ad,
+        name="seeking_ad"),<span class="aframe-location"></span> #1
+    path("edit_seeking_ad/&lt;int:ad_id&gt;/", views.seeking_ad,
+        name="edit_seeking_ad"), <span class="aframe-location"></span> #2
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 The seeking_ad view in Add mode
+     <br/>#2 The seeking_ad view in Edit mode with its required ad_id argument
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p137">
+<p>The list_ads.xhtml file needs a small tweak: it needs Edit links for ads owned by the logged-in user. When you call <code>render()</code> from a view, the <code>request</code> object you pass in gets included in the template’s context dictionary. That means anything in the <code>request</code> can be accessed within your template. The following code goes inside the <code>{%</code> <code>for</code> <code>%}</code> loop where an ad gets rendered, displaying a link if the ad’s owner is the <code>request.user</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p138">
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/list_ads.xhtml --&gt;
+&lt;!-- ... --&gt;
+{% if ad.owner == request.user %}
+    &lt;a href="{% url 'edit_seeking_ad' ad.id %}"&gt;Edit&lt;/a&gt;
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p139">
+<p>Remember that list_ads.xhtml divides the ads into two sections: one for musicians seeking bands and the other for bands seeking musicians. In both these cases, the Edit links need to be added in the template.</p>
+</div>
+<div class="readable-text intended-text" id="p140">
+<p>Another worthwhile change to this template is to add a link for new ads, but only if the user is authenticated. Put this near the top of the file:</p>
+</div>
+<div class="browsable-container listing-container" id="p141">
+<div class="code-area-container">
+<pre class="code-area">{% if request.user.is_authenticated %}
+    &lt;a href="{% url 'seeking_ad' %}"&gt;New Ad&lt;/a&gt;
+{% endif %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p142">
+<p>Although <code>is_authenticated()</code> is a method on the User object, remember that templates can call methods if they take no arguments.</p>
+</div>
+<div class="readable-text intended-text" id="p143">
+<p>With the changes to the view, the new route registered, and the tweak to your template, you’re ready to go. Run your development server, and visit the ad listing page. You should now have Edit links for ads owned by the authenticated user, which take you to the Edit mode of the ad view. </p>
+</div>
+<div class="readable-text" id="p144">
+<h2 class="readable-text-h2"><span class="num-string">7.3</span> Serving static files</h2>
+</div>
+<div class="readable-text" id="p145">
+<p>All the content so far was from dynamic web pages output from Django views. There are two more types of content that your project may include: static files and user uploaded files. <em>Static files</em> are those that don’t change and are typically related to the presentation layer. CSS, JavaScript, and images on the site are common examples of static files. Django has not been optimized to serve this kind of content, so in production, it should be delegated to a web server. The Django development server does have an inefficient static serving mechanism, so you don’t have to use a separate web server when testing your site. The details about static file serving in production get covered, with all the other bits about production, in appendix B. </p>
+</div>
+<div class="readable-text intended-text" id="p146">
+<p>Because of the minimal understanding of technology (MUT; patent pending, offer may not be valid in your area) approach taken so far, a core piece of RiffMates is missing: a home page. Let’s throw together a basic home page that has an image file: the RiffMates logo.</p>
+</div>
+<div class="readable-text intended-text" id="p147">
+<p>I’ll leave it to you to create a view for the home page; it should go in the RiffMates/home/views.py file and really only needs to contain a single call to <code>render()</code>. There is one small thing to be aware of when registering a home page view: the relative URL portion of the <code>path</code> is an empty string. Modify your RiffMates/RiffMates/urls.py file to include the following route:</p>
+</div>
+<div class="browsable-container listing-container" id="p148">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+urlpatterns = [
+    ...
+    path("", home_views.home, name="home"), <span class="aframe-location"></span> #1
+]</pre>
+<div class="code-annotations-overlay-container">
+     #1 An empty path string registers a view against the base URL.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p149">
+<p>The logo image is a static file. The location of static files is typically different in development and production. Both the URL and the absolute path to the file are usually different, depending on environments. To help with this, Django provides the <code>{%</code> <code>static</code> <code>%}</code> template tag, which sets the base URL and handles the full file name. </p>
+</div>
+<div class="readable-text intended-text" id="p150">
+<p>The tags you encountered in chapter 3 were all part of the default tag library. Although <code>{%</code> <code>static</code> <code>%}</code> comes with Django, it isn’t part of the main module, you have to load it separately. The <code>{%</code> <code>load</code> <code>%}</code> tag works like the <code>import</code> statement in Python, adding tags from the loaded module into the template’s namespace. Somewhat confusingly, the name of the module and the name of the tag are the same. This is similar to some functions found in the Python standard library, like <code>from pprint import pprint</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p151">
+<p>The <code>{%</code> <code>static</code> <code>%}</code> tag returns a URL and gets used inside <code>&lt;img&gt;</code> and <code>&lt;link&gt;</code> HTML tags, similar to how the <code>{%</code> <code>url</code> <code>%}</code> tag gets used in an HTML anchor (<code>&lt;a&gt;</code>). The argument to <code>{%</code> <code>static</code> <code>%}</code> is the name of the static file, relative to the static directory. </p>
+</div>
+<div class="readable-text intended-text" id="p152">
+<p>The static directory is where you keep your static files in your project. This may be different from where they are deployed in production. Common practice is to create a directory called <em>static</em> in your project folder, which you point at by adding a configuration to settings.py. As there are several kinds of static files, I usually create separate subdirectories for images, JavaScript, and CSS to keep them organized. Create a directory in your project for your static files and one under that for the images:</p>
+</div>
+<div class="browsable-container listing-container" id="p153">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ mkdir static
+(venv) RiffMates$ mkdir static/img</pre>
+</div>
+</div>
+<div class="readable-text" id="p154">
+<p>The RiffMates logo file goes in RiffMates/static/img. To tell Django about your new static directory, edit RiffMates/RiffMates/settings.py, and look for the existing setting named <code>STATIC_URL</code>. Underneath that, add the following configuration:</p>
+</div>
+<div class="browsable-container listing-container" id="p155">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+...
+STATIC_URL = '/static/'  <span class="aframe-location"></span> #1
+STATICFILES_DIRS = (
+    BASE_DIR / 'static',<span class="aframe-location"></span> #2
+)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Static files have a base URL of /static/. This is the default value provided when Django created settings.py.
+     <br/>#2 Your static files are in the static directory underneath your project directory. Remember that BASE_DIR is a pathlib.Path object, so the / operator creates a new Path.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p156">
+<p>For production, there are a couple more steps you can learn about in appendix B. The development server knows all about <code>STATICFILES_DIR</code>, and with the configuration done, it will serve your logo. </p>
+</div>
+<div class="readable-text intended-text" id="p157">
+<p>With all that in place, it is time to write the home page. The following listing contains an example—feel free to be more creative. The content goes in RiffMates/templates/home.xhtml.</p>
+</div>
+<div class="browsable-container listing-container" id="p158">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.13</span> Template for the home page that includes a static file</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/home.xhtml --&gt;
+{% extends "base.xhtml" %}
+{% load static %} <span class="aframe-location"></span> #1
+
+{% block content %}
+  &lt;img src="{% static 'img/logo.png' %}" height="100"&gt; <span class="aframe-location"></span> #2
+  &lt;h1&gt;Welcome to RiffMates!&lt;/h1&gt;
+
+  &lt;ul&gt; <span class="aframe-location"></span> #3
+    &lt;li&gt; &lt;a href="{% url 'news' %}"&gt;News&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a href="{% url 'musicians' %}"&gt;Musicians&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a href="{% url 'bands' %}"&gt;Bands&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a href="{% url 'venues' %}"&gt;Venues&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a href="{% url 'list_ads' %}"&gt;Classified Ads&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a href="{% url 'comment' %}"&gt;Leave a comment&lt;/a&gt; &lt;/li&gt;
+  &lt;/ul&gt;
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Load the tag module that includes the {% static %} tag.
+     <br/>#2 Use the {% static %} tag to get the URL for the logo file. The argument is the name of the file relative to the STATICFILES_DIR base configuration.
+     <br/>#3 For convenience, some links to the pages you’ve written so far
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p159">
+<p>Of course, you’ll need an actual logo file to make all this work. The sample code includes a simple image, but any image file named logo.png inside RiffMates/static/img will work.</p>
+</div>
+<div class="readable-text intended-text" id="p160">
+<p>While you’re doing some cosmetic work, add a link to the home page into the nav header you created in chapter 6. The following listing shows the modification you need to make to RiffMates/templates/base.xhtml.</p>
+</div>
+<div class="browsable-container listing-container" id="p161">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.14</span> Adding a Home link to that thing approximating a nav bar</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/base.xhtml --&gt;
+&lt;!-- ... --&gt;
+&lt;body&gt;
+  &lt;div style="float: right;"&gt;
+    &lt;a href="{% url 'home' %}"&gt;Home&lt;/a&gt; &amp;nbsp;&amp;nbsp; <span class="aframe-location"></span> #1
+
+  &lt;!-- ... --&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 The new Home link in the nav header of the base template
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p162">
+<p>You’re all set! Fire up the development server, and take a look at the results. It should be something like figure 7.7.</p>
+</div>
+<div class="readable-text intended-text" id="p163">
+<p>We need to make one other small change, now that you have a home page. Inside RiffMates/RiffMates/settings.py, change the values of <code>LOGIN_REDIRECT_URL</code> and</p>
+</div>
+<div class="readable-text" id="p164">
+<p><code>LOGOUT_REDIRECT_URL</code> to <code>/</code>. This is a more logical place to send the user when they log in or out without a destination page:<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p165">
+<img alt="figure" height="502" src="../../OEBPS/Images/CH07_F07_Trudeau.png" width="814"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.7</span> Finally, a home page for RiffMates</h5>
+</div>
+<div class="browsable-container listing-container" id="p166">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+...
+LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/'</pre>
+</div>
+</div>
+<div class="readable-text" id="p167">
+<p>With static files working, there is only one content type left: user-uploaded files. That’s what’s next. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p168">
+<h5 class="callout-container-h5 readable-text-h5">Loading by default</h5>
+</div>
+<div class="readable-text" id="p169">
+<p>If you are frequently loading other template libraries using the <code>{% load %}</code> tag, there is a shortcut. Inside the <code>TEMPLATES</code> configuration setting, there is a section called <code>OPTIONS</code>. Inside <code>OPTIONS</code>, you can add a key called <code>builtins</code> with a list as its value. Whatever tag modules are named in this list are automatically loaded across all your templates. For example, to use the <code>static</code> template tag library throughout your system, modify <code>TEMPLATES</code> in settings.py as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p170">
+<div class="code-area-container">
+<pre class="code-area">TEMPLATES = [
+    {
+        ...
+        "OPTIONS": {
+            "builtins": ["django.templatetags.static"],
+            ...
+        },
+    },
+]</pre>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p171">
+<h2 class="readable-text-h2"><span class="num-string">7.4</span> Uploads</h2>
+</div>
+<div class="readable-text" id="p172">
+<p>HTML forms allow your users to attach files, submitting them to your site. Unlike other submitted data, files generally shouldn’t go in a database; it is far more efficient to store them as files on the server. Files often get associated with data, though, so you need database columns to reference them. Django handles this through the <code>FileField</code> model field. </p>
+</div>
+<div class="readable-text intended-text" id="p173">
+<p>I’ve mentioned before that you should never trust your users; for file uploads, this goes double. Just because the user says they’re uploading an image doesn’t mean what they’re uploading is an image. At least for the case of images, Django can help you here. The <code>ImageField</code> inherits from the <code>FileField</code> and validates that the associated file is an image. To do this, it uses the Pillow image library (<a href="https://pillow.readthedocs.io/en/latest/">https://pillow.readthedocs.io/en/latest/</a>), which has to be installed separately:</p>
+</div>
+<div class="browsable-container listing-container" id="p174">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python -m pip install pillow</pre>
+</div>
+</div>
+<div class="readable-text" id="p175">
+<h3 class="readable-text-h3"><span class="num-string">7.4.1</span> Configuring your project for uploads</h3>
+</div>
+<div class="readable-text" id="p176">
+<p>Like static files, uploaded files shouldn’t be served by Django. In production, these files should be handled by a web server. In development, you can add a couple lines of code to get the Django dev server to serve files. Also like static files, you need a place to store the uploaded files and configuration to tell Django where that is. </p>
+</div>
+<div class="readable-text intended-text" id="p177">
+<p>Where you keep your uploaded files is a matter of preference. Unlike static files, uploaded files should not be part of your project. For smaller projects and testing, the pattern I typically use is a directory named <em>outside</em> at the same level as the project directory. Within the outside folder, I create another directory with the same name as the project. I started this habit when working with smaller customers, who ran multiple Django projects from the same server. Having the project name inside the outside directory created a separate upload location for each project.</p>
+</div>
+<div class="readable-text intended-text" id="p178">
+<p>This outside directory can be used for other things as well, so I typically create an <em>uploads</em> directory inside the project folder. Here is a sample file tree for the RiffMates project, its associated outside folder, and a hypothetical second project called <em>BeatBosses</em>:</p>
+</div>
+<div class="browsable-container listing-container" id="p179">
+<div class="code-area-container">
+<pre class="code-area">.
+├── RiffMates <span class="aframe-location"></span> #1
+│   ├── RiffMates
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── db.sqlite3
+│   ├── manage.py
+│   └── static <span class="aframe-location"></span> #2
+│       └── img
+│           └── logo.png
+├── BeatBosses <span class="aframe-location"></span> #3
+│   ├── BeatBosses
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   └── manage.py
+└── outside <span class="aframe-location"></span> #4
+    ├── RiffMates<span class="aframe-location"></span> #5
+    │   └── uploads <span class="aframe-location"></span> #6
+    └── BeatBosses <span class="aframe-location"></span> #7
+        └── uploads</pre>
+<div class="code-annotations-overlay-container">
+     #1 A RiffMates project folder
+     <br/>#2 A directory for static content, like images and CSS files
+     <br/>#3 A hypothetical BeatBosses project folder
+     <br/>#4 An outside directory for uploads and other things
+     <br/>#5 A project-specific subfolder for RiffMates outside content
+     <br/>#6 A folder explicitly for uploads
+     <br/>#7 A project-specific subfolder for BeatBosses outside content
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p180">
+<p>This file structure might be overkill for simpler projects, but I’m a fan of consistency and stick with the structure all the time. This means I don’t have to think about it; I know exactly where everything is from project to project. Go ahead and create the necessary directories on your system.</p>
+</div>
+<div class="readable-text intended-text" id="p181">
+<p>Once you’ve got the directories in place, it is time to tell Django where they are. There are two configuration items you’ll need: <code>MEDIA_URL</code> and <code>MEDIA_ROOT</code>. The first defines the base URL used to serve uploaded files—by convention, this is /media/. The second is the base file path of those files on your server. Add the following to your RiffMates/RiffMates/settings.py file:</p>
+</div>
+<div class="browsable-container listing-container" id="p182">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+...
+MEDIA_ROOT = BASE_DIR.parent / 'outside/RiffMates/uploads' <span class="aframe-location"></span> #1
+MEDIA_URL = '/media/' <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 BASE_DIR.parent is the parent of the project directory. Everything after the / is the folder for RiffMates uploads.
+     <br/>#2 The base URL for serving uploads
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p183">
+<p>The Django development server does not serve these files by default, but you can add the capability. In the previous section, you learned about static files and how the development server can serve them. Under the covers, the dev server does this using the <code>static()</code> function. Yep, for those keeping track, that’s a third thing with the same name. The function takes two arguments: the base URL to serve from and the location of the files; it returns a URL configuration that can be used to serve files in <code>DEBUG</code> mode. Although your uploaded files aren’t static, in development, you can pretend they are and essentially add them to the list of things the development server serves up. </p>
+</div>
+<div class="readable-text intended-text" id="p184">
+<p>This is a little bit “hackish,” but the only alternative is to run your own web server when doing development, and that’s a lot of extra work. In production, the web server will take care of this, so you need to make sure you aren’t accidentally running both mechanisms. To do this, wrap the code in a check for <code>DEBUG</code> <code>==</code> <code>True</code>. Open RiffMates/RiffMates/urls.py, and make the changes shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p185">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.15</span> Serve uploaded files as if they were static files, in development mode</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/urls.py
+...
+from django.conf import settings <span class="aframe-location"></span> #1
+from django.conf.urls.static import static <span class="aframe-location"></span> #2
+...
+if settings.DEBUG:<span class="aframe-location"></span> #3
+    urlpatterns += static(settings.MEDIA_URL,
+     <span class="aframe-location"></span>   document_root=settings.MEDIA_ROOT)  #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Allows access to values configured in settings.py
+     <br/>#2 The static() function that registers static serving URLs
+     <br/>#3 Only serve uploaded files this way if you are in DEBUG=True mode. This code goes below your urlpatterns list.
+     <br/>#4 Add the new route returned by static() into urlpatterns.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p186">
+<p>Before moving on to handling uploaded files, you should test your configuration. You can do this by copying any file into the uploads directory. For example, copy the RiffMates logo into ../outside/RiffMates/uploads. With the development server running, visit http://localhost:8000/media/logo.png to verify your upload directory is working. Don’t forget to remove the file when you’re done. </p>
+</div>
+<div class="readable-text" id="p187">
+<h3 class="readable-text-h3"><span class="num-string">7.4.2</span> Storing and referencing uploaded files</h3>
+</div>
+<div class="readable-text" id="p188">
+<p>To allow a user to upload a file, you need a form and a view. Before doing that, though, let’s start by creating the associated model changes and using the Django Admin to verify that it works. </p>
+</div>
+<div class="readable-text intended-text" id="p189">
+<p>You store a reference to an uploaded file in the database using either a <code>FileField</code> or an <code>ImageField</code>. Both hold a path to the file on the server, while the <code>ImageField</code> also validates that the uploaded file is an image. The <code>ImageField</code> uses the Pillow library to process the uploaded file, so a valid image is any format that Pillow handles. This includes the most common bitmap based image formats found on the web, including GIF, JPG, PNG, and WebP. Note that Pillow does not support vector-based image formats—SVG files cannot be stored in an <code>ImageField</code>. If you’re playing with SVG files, you’ll have to use the more generic <code>FileField</code> instead. </p>
+</div>
+<div class="readable-text intended-text" id="p190">
+<p>In chapter 4, you added the <code>Venue</code> model to store information about the clubs hosting bands. At the moment, the venue listing page only has the names of the venues; let’s extend that, so each venue can have a description and an optional image. The first step in this direction is to add fields to the <code>Venue</code> model object: a <code>TextField</code> for the description and an <code>ImageField</code> for the picture. The following listing contains the new fields to be added inside the <code>Venue</code> model within RiffMates/bands/ models.py. </p>
+</div>
+<div class="browsable-container listing-container" id="p191">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.16</span> Adding description and picture fields to the <code>Venue</code> model</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/models.py
+...
+class Venue(models.Model):
+    name = models.CharField(max_length=20)
+    description = models.TextField(blank=True) <span class="aframe-location"></span> #1
+    picture = models.ImageField(blank=True, null=True) <span class="aframe-location"></span> #2
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 A new description field, which can be empty in the Django Admin (blank=True)
+     <br/>#2 A new picture field, which can be NULL in the database and empty in the Django Admin
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p192">
+<p>These changes impact the database: two new columns need to be added to the <code>Venue</code> model’s corresponding table. Run the <code>makemigrations</code> and <code>migrate</code> management commands to update the database. </p>
+</div>
+<div class="readable-text print-book-callout" id="p193">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>If you forgot to install Pillow, don’t worry. Django will remind you when you attempt to make a migration that has an <code>ImageField</code>. </p>
+</div>
+<div class="readable-text" id="p194">
+<p>Once that’s done, you’re set to go, since you’ve already got an Admin class for the Venue. Run the development server, go to the Django Admin, and edit a Venue. You’ll now get <code>description</code> and <code>picture</code> fields, like in figure 7.8. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p195">
+<img alt="figure" height="598" src="../../OEBPS/Images/CH07_F08_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 7.8</span> Django Admin screen with a file upload field</h5>
+</div>
+<div class="readable-text" id="p196">
+<p>Edit the venue, add a description, upload an image, and save the changes. If you check out your uploads directory, you’ll find the image you uploaded. Wait a second—what if you upload another file with the same name? What happens? Django takes care of that for you: when it saves a file to the uploads folder, it checks for naming conflicts, renaming the file with a random ending when necessary. It even makes sure the resulting filename is shorter than the maximum allowed by the field.</p>
+</div>
+<div class="readable-text print-book-callout" id="p197">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>By default, <code>FileField</code> and <code>ImageField</code> use a 100-character varchar to store your filename. You can change this with the <code>max_length</code> argument, similarly to <code>CharField</code>. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p198">
+<h5 class="callout-container-h5 readable-text-h5">Dynamically changing the upload directory</h5>
+</div>
+<div class="readable-text" id="p199">
+<p>Both the <code>FileField</code> and <code>ImageField</code> have an optional argument called <code>upload_to</code>, which you can use to alter the name of the directory a file gets uploaded into. This argument supports the string notation of the <code>strftime()</code> function, allowing you to set the upload directory based on the current date, as shown in the following example:</p>
+</div>
+<div class="browsable-container listing-container" id="p200">
+<div class="code-area-container">
+<pre class="code-area">class Person(models.Model):
+    picture = models.ImageField(upload_to="%Y/%m/%d/")</pre>
+</div>
+</div>
+<div class="readable-text" id="p201">
+<p>The upload is always relative to the <code>MEDIA_ROOT</code> value. Using a date stamp can make your upload directory cleaner, with fewer files in the root. </p>
+</div>
+<div class="readable-text" id="p202">
+<p>Instead of using a string, <code>upload_to</code> also supports calling a function. You pass a reference to the function, which the field then invokes when it needs to create a path. Your code is responsible for providing the path for the uploaded file. Remember to use a reference. You don’t want to call the function yourself; you want the field to do it for you. The path creating function takes two arguments: an instance of the model object and the name of the file being saved.</p>
+</div>
+<div class="browsable-container listing-container" id="p203">
+<div class="code-area-container">
+<pre class="code-area">def user_path(instance, filename):<span class="aframe-location"></span> #1
+    return f"user{instance.owner.id}/{filename}"
+
+
+class Person(models.Model):
+    owner = models.ForeignKey(user, on_delete=models.CASCADE)
+    picture = models.ImageField(upload_to=user_path) <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+      #1 A custom function to determine the upload path
+      <br/>#2 Set the upload_to argument to a reference to the custom path function.
+      <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p204">
+<p>There is a chicken-and-egg problem with this code, though: with a newly created <code>Person</code> object, the <code>picture</code> field gets populated before the <code>Person</code> gets saved. This means the <code>instance</code> argument to the function will not have an ID when the object gets created. You also don’t have access to the user’s information unless that is also part of the model. Basing the filename on the logged user isn’t possible through this mechanism, unless that information is stored in the model. </p>
+</div>
+</div>
+<div class="readable-text" id="p205">
+<h3 class="readable-text-h3"><span class="num-string">7.4.3</span> File upload forms and views</h3>
+</div>
+<div class="readable-text" id="p206">
+<p>You’ve added an <code>ImageField</code> to the <code>Venue</code> model and, through the Django Admin, have uploaded a picture. The Django Admin is for, well, admins, so to create a self-service version of this, you need a new view. Since the data getting filled in is for a model, it makes sense to use a <code>ModelForm</code>. The <code>Venue</code> object is in the <code>bands</code> app, which means you’ll need a new file: RiffMates/bands/forms.py. Inside this file, add the code in the following listing, which uses the <code>modelform_factory</code> shortcut to quickly build a form based on the <code>Venue</code> model. </p>
+</div>
+<div class="browsable-container listing-container" id="p207">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.17</span> Create a form for a <code>Venue</code> using <code>modelform_factory</code></h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/forms.py
+from django import forms
+from bands.models import Venue
+
+VenueForm = forms.modelform_factory(Venue, <span class="aframe-location"></span> #1
+    fields=["name", "description", "picture"]) <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 The factory function returns a ModelForm class and takes the associated model class as well as a list of fields as arguments.
+     <br/>#2 The VenueForm contains name, description, and picture fields.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p208">
+<p>Aren’t <code>ModelForms</code> wonderful? Two lines of code (one if you aren’t old school like me and insist files are restricted to 80 columns), and you’re ready to take data from the user and populate your model.</p>
+</div>
+<div class="readable-text intended-text" id="p209">
+<p>The view for this form is very similar to the one you wrote to input a classified ad, but in this case the security check is a little different. Recall that users get associated with venues through the <code>venues_controlled</code> many-to-many relationship inside the <code>UserProfile</code> object. To keep things simple, anyone who is logged in can add a <code>Venue</code>, but only those with a corresponding <code>venues_controlled</code> entry can edit one. </p>
+</div>
+<div class="readable-text intended-text" id="p210">
+<p>Like with the classified view, this view does double duty: a venue ID of <code>0</code> results in adding a new venue, while a larger venue ID performs an edit. The code after the security check is almost identical. The HTTP mechanism for uploading files is slightly different from regular form fields, and the associated file isn’t in the <code>request.POST</code> attribute but in <code>request.FILES</code>. The form constructor knows how to handle this, and you simply pass it in with the other arguments. </p>
+</div>
+<div class="readable-text intended-text" id="p211">
+<p>This time around, you don’t need to modify the contents of <code>VenueForm</code> before creating the associated <code>Venue</code> object, so the form’s <code>save()</code> method no longer needs the <code>commit=False</code> argument. One last step is to add the newly created <code>Venue</code> object to the user’s <code>venues_controlled</code> relationship. The <code>add()</code> method on a <code>ManyToManyField</code> is smart enough to disallow adding something twice, so you don’t even have to check if the relationship already exists. </p>
+</div>
+<div class="readable-text intended-text" id="p212">
+<p>Add the code in the following listing to RiffMates/bands/views.py, and then afterward, register a route for both adding and editing a venue. You can register the route twice with two different names: the first for adding a venue using the default value for <code>venue_id</code> (and thus not requiring a URL argument) and the second for editing the venue (which does require a URL argument). Don’t forget to name the routes, as you’ll want to link to them later. </p>
+</div>
+<div class="browsable-container listing-container" id="p213">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.18</span> The self-service view for adding and editing venues</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from django.shortcuts import render, get_object_or_404, redirect
+
+from bands.models import Musician, Band, Venue, Room
+from bands.forms import VenueForm
+...
+@login_required
+def edit_venue(request, venue_id=0):
+    if venue_id != 0: <span class="aframe-location"></span> #1
+        venue = get_object_or_404(Venue,
+         <span class="aframe-location"></span>   id=venue_id)  #2
+        if not request.user.userprofile.venues_controlled.filter(
+                id=venue_id).exists(): <span class="aframe-location"></span> #3
+            raise Http404("Can only edit controlled venues")
+
+    if request.method == 'GET': <span class="aframe-location"></span> #4
+        if venue_id == 0:
+            form = VenueForm()
+        else:
+            form = VenueForm(instance=venue)
+
+    else: # POST
+        if venue_id == 0:<span class="aframe-location"></span> #5
+            venue = Venue.objects.create()
+
+        form = VenueForm(request.POST, request.FILES,<span class="aframe-location"></span> #6
+            instance=venue)
+
+        if form.is_valid():
+            venue = form.save()
+
+            # Add the venue to the user's profile <span class="aframe-location"></span> #7
+            request.user.userprofile.venues_controlled.add(venue)
+            return redirect("venues")
+
+    # Was a GET, or Form was not valid
+    data = {
+        "form": form,
+    }
+
+    return render(request, "edit_venue.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 This is the edit case.
+     <br/>#2 Fetch the requested Venue object.
+     <br/>#3 Check if the requested Venue object is part of the user’s venues_controlled relationship. If not, raise a 404 error.
+     <br/>#4 The GET portion is the same as other form processing views.
+     <br/>#5 In the add case, create a new, empty Venue object to associate with the form.
+     <br/>#6 Include request.FILES in form creation to get both the form’s fields and the uploaded file.
+     <br/>#7 Add the (possibly new) venue to the user’s venues_controlled relationship. The .add() method handles the case where the relationship already exists.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p214">
+<p>Of course, you’ll need a template to go with this view. Listing 7.19 shows the contents of the new RiffMates/templates/edit_venue.xhtml file. This file is almost identical to the classified ad form-handling template, with one exception. To handle files, the <code>&lt;form&gt;</code> tag needs an additional argument: <code>enctype="multipart/form-data"</code>. Without this, the upload won’t work properly, and this can be a painful bug to find. </p>
+</div>
+<div class="browsable-container listing-container" id="p215">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.19</span> Template for adding or editing a <code>Venue</code> object</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/edit_venue.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;h1&gt;Venue Details&lt;/h1&gt;
+
+&lt;form enctype="multipart/form-data" method="post"&gt;<span class="aframe-location"></span> #1
+  {% csrf_token %}
+  {{form.as_p}}
+  &lt;button class="btn btn-dark" type="submit"&gt;Save&lt;/button&gt;
+&lt;/form&gt;
+
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Make sure to include the enctype argument, or file uploads won’t work.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p216">
+<p>You’re more or less there, but for ease of use, it would be nice to provide links for the user. Inserting an Add Venue link in the venues.xhtml template is just a single line of HTML. Providing Edit links that only show up if the user is associated with the venue means a bit more work.</p>
+</div>
+<div class="readable-text intended-text" id="p217">
+<p>Inside the existing <code>venues()</code> view, you can annotate each <code>Venue</code> object with an attribute indicating whether the user is associated with the venue. This might seem a little weird, as you’re inserting an attribute on a model, but models are just objects, and Python lets you add attributes to objects dynamically. This has no effect on the database, and the lifetime of the attribute is only the lifetime of the view. Inside RiffMates/bands/views.py, modify the <code>venues()</code> view to include the code in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p218">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.20</span> Adding info about user's logged-in status to <code>Venue</code></h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+
+def venues(request):
+    all_venues = Venue.objects.all().order_by("name") <span class="aframe-location"></span> #1
+    for venue in all_venues: <span class="aframe-location"></span> #2
+        # Mark the venue as "controlled" if the logged in user is
+        # associated with the venue
+      <span class="aframe-location"></span>  profile = request.user.userprofile  #3
+        venue.controlled = \
+            profile.venues_controlled.filter(\
+            id=venue.id).exists() <span class="aframe-location"></span> #4
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 A previously existing line in the view querying all Venue objects
+     <br/>#2 New code that loops through each of the Venue objects to add a new attribute
+     <br/>#3 A quick reference to shorten the following line
+     <br/>#4 Even with the previous reference, this line is unwieldy. The .exists() query returns True if the Venue object is in the user’s venues_controlled relationship.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p219">
+<p>Inside the template, the short-lived <code>.controlled</code> attribute is used to determine whether an edit link should be shown. The changes to the venue listing template are shown in the following listing. Open and edit RiffMates/templates/venues.xhtml. </p>
+</div>
+<div class="browsable-container listing-container" id="p220">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.21</span> Modifications to the venue listing template</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/venues.xhtml --&gt;
+&lt;!-- ... --&gt;
+
+  &lt;h1&gt;Venues&lt;/h1&gt;
+
+  {% if user.is_authenticated %} <span class="aframe-location"></span> #1
+    &lt;a href="{% url 'add_venue' %}"&gt;Add Venue&lt;/a&gt;<span class="aframe-location"></span> #2
+  {% endif %}
+
+&lt;!-- ... --&gt;
+      &lt;li&gt;
+        &lt;b&gt; {{venue.name}} &lt;/b&gt;
+        {% if venue.controlled %} <span class="aframe-location"></span> #3
+          &lt;br/&gt;
+          &amp;nbsp; &amp;nbsp; &amp;nbsp;
+          &lt;a href="{% url 'edit_venue' venue.id %}"
+            &gt;Edit&lt;/a&gt; <span class="aframe-location"></span> #4
+          &lt;br/&gt;
+        {% endif %}
+        {% if venue.picture %} <span class="aframe-location"></span> #5
+          &lt;br/&gt;
+          &amp;nbsp; &amp;nbsp; &amp;nbsp;
+          &lt;img src="{{venue.picture.url}}" height="50"/&gt;
+          &lt;br/&gt;
+        {% endif %}
+        {% if venue.description %} <span class="aframe-location"></span> #6
+          &lt;br/&gt;
+          &lt;i&gt; &amp;nbsp; &amp;nbsp; &amp;nbsp; {{venue.description }} &lt;/i&gt;
+          &lt;br/&gt;
+        {% endif %}
+        Rooms:
+      &lt;/li&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 If the user is logged in, provide a link for adding a venue.
+     <br/>#2 Reference the named route for adding a venue, which points at the edit_venue() function but uses the default argument of venue_id=0.
+     <br/>#3 If the venue is controlled by the user, provide an Edit link.
+     <br/>#4 Reference the named route for editing a venue.
+     <br/>#5 If the venue has a picture, display it.
+     <br/>#6 If the venue has a description, display it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p221">
+<p>You’re all set. Fire up your development server, and go to the venue listing page. If you’re logged in, you’ll now have the Add Venue link. Use that link to add a new venue, including a picture and a description. Log in as someone else, and do it again. On the Venue listing page, you should only see Edit Venue for those venues associated with the current user account. Test out the editing feature by clicking the link and changing the form.</p>
+</div>
+<div class="readable-text intended-text" id="p222">
+<p><strong>Bug alert!</strong></p>
+</div>
+<div class="readable-text intended-text" id="p223">
+<p>The changes to <code>venues()</code> in chapter 7 work if you are logged in. If you’re not logged in, the code crashes. The view accesses the user’s associated profile object, which only exists for authenticated users. Recall that Django refers to unauthenticated users as anonymous. These users are represented in a <code>request</code> object with an instance of an <code>AnonymousUser</code> class, whose <code>.is_authenticated</code> attribute is always <code>False</code>. This class has no related <code>UserProfile</code> object, and attempting to fetch one will result in an error. </p>
+</div>
+<div class="readable-text intended-text" id="p224">
+<p>To fix <code>venues()</code>, you need to make a decision. If you don’t want anonymous users to be able to access the venue information, you can wrap the view with <code>@login_required</code> (see chapter 6 for more on this). Alternatively, if you want the venue information to be public, the view code needs to properly handle the possible lack of an associated profile. The following listing contains code for this latter approach. </p>
+</div>
+<div class="browsable-container listing-container" id="p225">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 7.22</span> A <code>venues()</code> view that handles unauthenticated visitors</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+
+def venues(request):
+    all_venues = Venue.objects.all().order_by("name")
+    profile = getattr(request.user, "userprofile", None) <span class="aframe-location"></span> #1
+  <span class="aframe-location"></span>  if profile: #2
+        for venue in all_venues:
+            # Mark the venue is "controlled" if the logged in user is
+            # associated with the venue
+            venue.controlled = profile.venues_controlled.filter(\
+                id=venue.id).exists()
+    else: <span class="aframe-location"></span> #3
+        # Anonymous user, can't be associated with the venue
+        for venue in all_venues:
+            venue.controlled = False
+    ...</pre>
+<div class="code-annotations-overlay-container">
+     #1 Don’t assume that the .user attribute has a profile; use None if the user is anonymous.
+     <br/>#2 If there is a profile, loop through the venues like before.
+     <br/>#3 If there isn’t a profile, the user can’t control any venues. Set all attributes to False.
+     <br/>
+</div>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p226">
+<h5 class="callout-container-h5 readable-text-h5">How paranoid should you be with files?</h5>
+</div>
+<div class="readable-text" id="p227">
+<p>A lot happens behind the scenes for an image file to be uploaded and then presented to a user. A form gets used to submit a file, the file is stored on the server, and then the server serves the file in other pages. In the case of an image, the web server will set an appropriate mimetype for the file, giving the browser a hint about what is being served. Depending on the browser, that MIME type may be redundant, and anything pointed to by an <code>&lt;img&gt;</code> tag might get treated as an image. </p>
+</div>
+<div class="readable-text" id="p228">
+<p>There is a lot of <em>depending on</em> and <em>might</em> in that previous paragraph. A web server’s features and configuration determine how it decides on a file’s MIME type. By default, most web servers use the file extension as a hint. In theory, a user can upload a valid image file without the right file extension or with none at all. Django and your web browser try to help with this, but there are ways around it: never trust your users! In the case of an image file, the worst case is the image isn’t interpreted as an image. Instead, you’ll get the broken-picture symbol on the page. You could put extra code in the view handling the upload to ensure this doesn’t happen, but this is a thin edge case with little consequences, so it likely isn’t worth the extra work.</p>
+</div>
+<div class="readable-text" id="p229">
+<p>If you’re allowing the user to upload files other than images, you might want to be more careful. A lot depends (there is that word again) on what you’re doing with the uploaded file. If your service simply allows the file to be downloaded again, you may be able to get away with doing nothing with it. If you’re doing data processing on the file, be very careful to check the file is what you expect. Good practice is to use third-party parsing libraries: someone else who is an expert in the file format is more likely to understand the corner cases than you are. </p>
+</div>
+</div>
+<div class="readable-text" id="p230">
+<h3 class="readable-text-h3"><span class="num-string">7.4.4</span> Restricted file downloads</h3>
+</div>
+<div class="readable-text" id="p231">
+<p>So far, all the work with uploaded files has resulted in files that can be downloaded without any restrictions. Everything at /media/ (or wherever your <code>MEDIA_URL</code> points) is available to all users, even those that aren’t logged in. If you need to restrict downloads to logged-in users or wish to write complex logic for which users can see which files, you have two choices: a custom view or a hand-off view. </p>
+</div>
+<div class="readable-text intended-text" id="p232">
+<p>In either case, the uploaded file does not get stored in <code>MEDIA_ROOT</code> but somewhere else. Only Django and the web server have access to these kinds of files, and they aren’t served under /media/, giving you control over who can access them.</p>
+</div>
+<div class="readable-text intended-text" id="p233">
+<p>The custom view choice is quick, dirty, and goes against recommended best practices. <code>FileResponse</code>, in <code>django.http</code>, works similar to <code>HttpReponse</code>, but it allows you to return a binary file object. It has both a streaming mode to return files inline (90s-style custom-GIF visitor counters anyone?) and an attachment mode to prompt the user for a download. </p>
+</div>
+<div class="readable-text intended-text" id="p234">
+<p>Django isn’t optimized for dealing with binary files, and the quick-and-dirty choice doesn’t handle caching or other optimization goodness unless you code it yourself. Even with fine-tuning, you’re unlikely to be able to beat the performance of a web server.</p>
+</div>
+<div class="readable-text intended-text" id="p235">
+<p>The second choice is to take advantage of web server features. The two most popular web servers, Apache and Nginx, both support HTTP headers allowing you to hand off a download request. In this case, you still write a view, but the view returns HTTP headers that point to the file. With the right header in place, the web server does the rest of the work for you. The challenge with this approach is the headers are nonstandard and are different on different web servers. If you want to search the web for examples of how to do this, the header for Apache is <code>X-Sendfile</code> and the header for Nginx is <code>X-Accel-Redirect</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p236">
+<p>Alternatively, you can skip all the hard work and use a third-party library. Both <code>django-private-storage</code> and <code>django-sendfile2</code> provide tools for serving uploaded files from a restricted folder. </p>
+</div>
+<div class="readable-text" id="p237">
+<h2 class="readable-text-h2"><span class="num-string">7.5</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p238"> Modify the <code>musician()</code> view to display an optional description and bio-pic. Add an <code>edit_musician()</code> view, so users can self-serve the creation and editing of their musician profiles. Insert an Add Musician Profile link to the home page and an Edit link to the musician details page if the logged-in user is the owner. Allow staff members to edit <code>Musician</code> objects as well. </li>
+<li class="readable-text" id="p239"> Modify the <code>seeking_ad()</code> view so that staff and administrators are allowed to edit an ad. Don’t forget to change list_ads.xhtml, so the edit links show up as well. </li>
+</ol>
+<div class="readable-text" id="p240">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p241"> A Django <code>Form</code> class helps you process HTML <code>&lt;form&gt;</code> submissions, using form field attributes to describe each input. </li>
+<li class="readable-text" id="p242"> Form fields are rendered by widgets, with each field having a default widget that renders the corresponding HTML. </li>
+<li class="readable-text" id="p243"> The choice of a widget for a field can be overridden, like in the case of a <code>forms.CharField</code> using a <code>forms.Textarea</code> widget to be rendered as a <code>&lt;textarea&gt;</code> instead of an <code>&lt;input&gt;</code>.  </li>
+<li class="readable-text" id="p244"> The <code>request.method</code> attribute contains the HTTP method.  </li>
+<li class="readable-text" id="p245"> A view that handles forms typically has two modes: <code>GET</code> for displaying the form and <code>POST</code> for handling the submission. </li>
+<li class="readable-text" id="p246"> A <code>Form</code> object can be filled with the user’s submitted data by passing in the <code>request.POST</code> value.  </li>
+<li class="readable-text" id="p247"> The <code>django.core.mail</code> module contains the <code>send_mail()</code> function, which can be used to send email using the currently configured email backend.  </li>
+<li class="readable-text" id="p248"> When processing a form, the <code>.is_valid()</code> method must be called. This method returns <code>True</code> if the data is compliant with the form’s definition.  </li>
+<li class="readable-text" id="p249"> When <code>.is_valid()</code> returns <code>True</code>, a dictionary called <code>.cleaned_data</code> is defined on the form containing the user’s submitted input. The keys in the dictionary correspond to the names of the fields.  </li>
+<li class="readable-text" id="p250"> A cross-site request forgery is an attack that tricks the user into doing something on your site they didn’t intend. The <code>{% csrf_token %}</code> tag adds a special key to every form to help prevent this kind of attack.  </li>
+<li class="readable-text" id="p251"> The <code>.clean()</code> method on a <code>Model</code> class can be used to do validation. It is typically used when there are interdependencies between the fields and field-level validation arguments are insufficient.  </li>
+<li class="readable-text" id="p252"> The <code>.clean()</code> method is not called automatically when an ORM class is saved. </li>
+<li class="readable-text" id="p253"> The undocumented <code>Truncator</code> class is a utility that returns a shortened version of a string, truncating on word boundaries.  </li>
+<li class="readable-text" id="p254"> The <code>ModelForm</code> class provides a shortcut for creating forms that correspond to Model definitions.  </li>
+<li class="readable-text" id="p255"> A <code>ModelForm</code> uses an inner <code>Meta</code> class to indicate the configuration of the form, including which model is related and which fields on the model participate in the form.  </li>
+<li class="readable-text" id="p256"> The <code>.save()</code> method on a <code>ModelForm</code> saves the corresponding model object. This method can be called with <code>commit=False</code> to return an unsaved copy of the model instance if you need to perform actions before invoking save.  </li>
+<li class="readable-text" id="p257"> The <code>instance</code> argument to a <code>ModelForm</code> allows you to prepopulate the field contents based on a model object.  </li>
+<li class="readable-text" id="p258"> You can register multiple routes against the same view. This is handy if your view uses default arguments. A common pattern is to have a view for editing be able to create new objects as well using an ID of zero to indicate creation. </li>
+<li class="readable-text" id="p259"> Web pages reference files that aren’t produced by views, such as images, CSS, and JavaScript. These are known as static files. </li>
+<li class="readable-text" id="p260"> Static files should be served by the web server rather than Django, but Django provides utilities for managing them and their URLs. The <code>{% static %}</code> tag dereferences the URL for a static file.  </li>
+<li class="readable-text" id="p261"> Django has the ability to deal with uploaded files, storing them in a directory defined by the <code>MEDIA_ROOT</code> configuration value.  </li>
+<li class="readable-text" id="p262"> The <code>FileField</code> and <code>ImageField</code> ORM fields store references to a file on the disk.  </li>
+<li class="readable-text" id="p263"> A model with file fields can be used with a <code>ModelForm</code>, producing an upload button in the HTML. </li>
+<li class="readable-text" id="p264"> The <code>&lt;form&gt;</code> tag for a form including file uploads must include the <code>enctype ="multipart/form-data"</code> argument. </li>
+<li class="readable-text" id="p265"> When using a <code>ModelForm</code> with uploaded files, the <code>request.FILES</code> argument needs to be passed in addition to <code>request.POST</code>.  </li>
+</ul>
+</div></body>
+</html>

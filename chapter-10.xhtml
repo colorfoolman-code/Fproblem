@@ -1,0 +1,727 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>10 Migration</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">10</span> </span> <span class="chapter-title-text">Migration</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers </h3>
+<ul>
+<li class="readable-text" id="p2">The internals of migration scripts</li>
+<li class="readable-text" id="p3">Writing custom migrations, including manipulating existing data</li>
+<li class="readable-text" id="p4">Combining and optimizing migration files</li>
+<li class="readable-text" id="p5">Dealing with merge conflicts caused by changing a model</li>
+</ul>
+</div>
+<div class="readable-text" id="p6">
+<p>Django <code>Model</code> objects are proxies to tables in a database, and the migration system helps you maintain the relationship between the two. The migration system is a powerful tool that allows you to move forward and backward through state changes and manipulate data while doing so.</p>
+</div>
+<div class="readable-text" id="p7">
+<h2 class="readable-text-h2"><span class="num-string">10.1</span> Migration scripts in detail</h2>
+</div>
+<div class="readable-text" id="p8">
+<p>In chapter 4, you learned about Django’s ORM and how <code>Model</code> classes act as a proxy to tables in the database. You used the <code>makemigrations</code> and <code>migrate</code> commands to push changes down to the database that correspond to the code in your model files. Managing changes to your models can be a bit complicated, and this chapter dives deeper into the migration system. </p>
+</div>
+<div class="readable-text intended-text" id="p9">
+<p>To better understand what happens during the migration process, it is time to create a new Django app. This app won’t have much functionality in it, and for now, it won’t even have any views, but by working with a fresh model file in a new app, you’ll be able to see exactly what happens at each step in the migration process.</p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>A lot goes on in the music industry besides music. There are some very big names that you’ve likely never heard of, without whom you might never have known your favorite bands. Promoters and managers are the people behind the scenes that make concerts happen and help bands fulfill their musical dreams. Our new Django app tracks promoters. To create the new app, you’ll need to run the <code>startapp</code> management command, passing it <code>promoters</code> as an argument. You’ll then also need to update <code>INSTALLED_APPS</code> in settings.py to register the app with your project. For a refresher on creating new apps, see chapter 2. </p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>Throughout this chapter, you’ll be modifying the <code>Promoter</code> model and examining the resulting migration files. You need to start this journey somewhere, so create a <code>Promoter</code> <code>Model</code> with a first and last name field to store the promoter’s info. Add the code in the following listing to models.py in your new promoter app.</p>
+</div>
+<div class="browsable-container listing-container" id="p12">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.1</span> A short <code>Model</code> to use as a starting point for investigating migrations</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/models.py
+from django.db import models
+
+class Promoter(models.Model):
+    first_name = models.CharField(max_length=25)
+    last_name = models.CharField(max_length=25)</pre>
+</div>
+</div>
+<div class="readable-text" id="p13">
+<p>You’ll want some data in your database. The easiest way to do this is to build a <code>ModelAdmin</code> object for <code>Promoter</code>, and then use the Django Admin to enter some data. The following listing shows a simple <code>PromoterAdmin</code> object you can use to do data entry. For a refresher on the Django Admin and its classes, see chapter 5. </p>
+</div>
+<div class="browsable-container listing-container" id="p14">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.2</span> An Admin Model for the new Promoter object</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/admin.py
+from django.contrib import admin
+
+from promoters.models import Promoter
+
+@admin.register(Promoter)
+class PromoterAdmin(admin.ModelAdmin):
+    list_display = ("id", "first_name", "last_name", )</pre>
+</div>
+</div>
+<div class="readable-text" id="p15">
+<p>To save you the effort of digging through Wikipedia, table 10.1 has the data for four famous promoters you can use in this chapter.</p>
+</div>
+<div class="browsable-container browsable-table-container framemaker-table-container" id="p16">
+<h5 class="browsable-container-h5"><span class="num-string">Table 10.1</span> Music industry promoters you can use to populate your database</h5>
+<table>
+<thead>
+<tr>
+<th>
+<div>
+        Name
+       </div></th>
+<th>
+<div>
+        Famous For
+       </div></th>
+<th>
+<div>
+        Lifetime
+       </div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> Allan Williams<br/></td>
+<td> The Beatles<br/></td>
+<td> 1930/02/21–2016/12/30<br/></td>
+</tr>
+<tr>
+<td> Harvey Goldsmith<br/></td>
+<td> Live Aid<br/></td>
+<td> 1946/03/04–<br/></td>
+</tr>
+<tr>
+<td> Phoebe Jacobs<br/></td>
+<td> Duke Ellington, Ella Fitzgerald<br/></td>
+<td> 1919/06/21–2012/04/09<br/></td>
+</tr>
+<tr>
+<td> Michael Lang<br/></td>
+<td> Woodstock<br/></td>
+<td> 1944/12/11–2022/01/08<br/></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="readable-text" id="p17">
+<p>Of course, to be able to enter the data, you need the corresponding tables in the database to exist. You’ll recall from chapter 4 that you accomplish this by creating migration files and migrating them. To create a migration script, you use the <code>makemigrations</code> management command:</p>
+</div>
+<div class="browsable-container listing-container" id="p18">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py makemigrations promoters <span class="aframe-location"></span> #1
+Migrations for 'promoters':
+  promoters/migrations/0001_initial.py
+    - Create model Promoter</pre>
+<div class="code-annotations-overlay-container">
+     #1 The makemigrations management command takes the name of a Django app as an argument.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p19">
+<p>When run, the command reports that a new file has been created: promoters/migrations/0001_initial.py. Django uses this file to know which actions to perform on the database corresponding to changes in the <code>Promoter</code> class. The action required for a new model is table creation. Running the <code>migrate</code> management command causes this to happen:</p>
+</div>
+<div class="browsable-container listing-container" id="p20">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py migrate
+Operations to perform:
+  Apply all migrations: admin, auth, bands, content, contenttypes,
+      promoters, sessions
+Running migrations:
+  Applying promoters.0001_initial... OK</pre>
+</div>
+</div>
+<div class="readable-text" id="p21">
+<p>Once you’ve performed the migration, the table for <code>Promoter</code> gets created. You can now use the Django Admin to enter some data. Go do that now, and I’ll wait for you here. (See, that’s funny because this is a book, and I’m not really here waiting at all. A joke isn’t a good one unless you explain it.)</p>
+</div>
+<div class="readable-text" id="p22">
+<h3 class="readable-text-h3"><span class="num-string">10.1.1</span> An initial migration</h3>
+</div>
+<div class="readable-text" id="p23">
+<p>Nothing covered so far is new. You already knew how to create an app, create a new <code>Model</code> class with corresponding migration files, and migrate it to the database. In fact, you’re probably also accustomed to my odd sense of humor by this point as well. </p>
+</div>
+<div class="readable-text intended-text" id="p24">
+<p>Although you’ve done migrations before, they’ve kind of been magic. It’s time to look behind the curtain. It might seem an obvious point to make, but migration files are Python files. They aren’t the most obvious scripts, though. They mostly consist of just data structures. The actual code that performs a migration is deep within the Django framework; the migration file provides data to inform the process.</p>
+</div>
+<div class="readable-text intended-text" id="p25">
+<p>Consider your newly created migration file for the <code>promoters</code> app: promoters/migrations/0001_initial.py. It contains a <code>Migration</code> class that encapsulates the actions needed in the database for the <code>Promoter</code> <code>Model</code>. There are three members of the <code>Migration</code> class: <code>.initial</code>, <code>.dependencies</code>, and <code>.operations</code>. The <code>.initial</code> value is a Boolean, which is <code>True</code> if this is the first migration to be performed for the app. The <code>.dependencies</code> list contains the names of other migrations that need to be run before this one, which, for 0001_initial.py, is empty. </p>
+</div>
+<div class="readable-text intended-text" id="p26">
+<p>The core of the <code>Migration</code> class is the <code>.operations</code> list. This consists of a series of objects that describe what actions need to be performed on the database. For 0001_initial.py, this list contains a single object: <code>CreateModel</code>. When the Django migration system sees a <code>CreateModel</code> object, it knows to create the tables in the database for the named model. For the <code>Promoter</code> model, there are three fields: the two you specified for first and last names and a third for the object’s ID, which is automatically created by Django. Each field gets specified in the migration using the same classes you use when writing the <code>Model</code> class itself. For the first and last name, that is a <code>CharField</code>, and for the ID, it is a <code>BigAutoField</code>. The following listing shows the entire migration file. </p>
+</div>
+<div class="browsable-container listing-container" id="p27">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.3</span> The initial migration script for the Promoters app</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/migrations/0001_initial.py
+from django.db import migrations, models
+
+class Migration(migrations.Migration): <span class="aframe-location"></span> #1
+    initial = True <span class="aframe-location"></span> #2
+
+    dependencies = [] <span class="aframe-location"></span> #3
+
+  <span class="aframe-location"></span>  operations = [  #4
+        migrations.CreateModel( <span class="aframe-location"></span> #5
+            name="Promoter",
+            fields=[ <span class="aframe-location"></span> #6
+                (
+                   <span class="aframe-location"></span> "id",  #7
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "first_name", <span class="aframe-location"></span> #8
+                    models.CharField(max_length=25)
+                ),
+                ("last_name", models.CharField(max_length=25)),
+            ],
+        ),
+    ]</pre>
+<div class="code-annotations-overlay-container">
+     #1 Each migration file contains a Migration class definition that describes the migration’s corresponding database actions.
+     <br/>#2 .initial indicates whether this is the first migration for the app.
+     <br/>#3 .dependencies is a list of migration filenames that need to be run before this one; for the initial script, this is empty.
+     <br/>#4 The .operations list contains all the actions run by this migration
+     <br/>#5 The initial migration for the Promoter object has a single operation: creating the model.
+     <br/>#6 CreateModel contains a list of fields in the model that correspond to columns in the underlying database table(s).
+     <br/>#7 By default, Django creates an ID field as a primary key, using the BigAutoField type.
+     <br/>#8 The first and last name fields get specified using the same CharField as is used in your model specification.
+     <br/>
+</div>
+</div>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p28">
+<h5 class="callout-container-h5 readable-text-h5">Why plural?</h5>
+</div>
+<div class="readable-text" id="p29">
+<p>You may have noticed I keep writing <em>tables</em> rather than <em>table</em>. Remember that a single <code>Model</code> class may result in multiple database tables. The <code>Promoter</code> class is a single table with three columns, but any class with a <code>ManyToManyField</code> results in both a main table for the model and a relationship table containing the IDs of the related objects. And of course, a model can have more than one many-to-many relationship. Each <code>Model</code> class results in a main table plus another table for each many-to-many relationship defined. </p>
+</div>
+</div>
+<div class="readable-text" id="p30">
+<p>The name of the migration file gets automatically generated when you run <code>makemigrations</code>. It is both important and unimportant at the same time. The run order of the files gets determined by the contents of <code>.initial</code> and <code>.dependencies</code>. Although 0001_initial.py implies it is first, it doesn’t have to be. You could do something creative and muck with the names of the files, and things would still work if the member values got constructed properly. I’ve never tried this; I wouldn’t recommend it, and although the name isn’t important to Django, it really helps a programmer understand what order things happen in. Don’t muck with the filenames. </p>
+</div>
+<div class="readable-text" id="p31">
+<h3 class="readable-text-h3"><span class="num-string">10.1.2</span> Changing a model</h3>
+</div>
+<div class="readable-text" id="p32">
+<p>The migration system hasn’t been around for the entire lifetime of Django. In the olden days, coders had to manage changes to their models manually. This was painful. Several add-ons got created by a variety of coders to help manage this problem, with the most popular being called South. South became so popular that the Django core team decided to integrate it into the framework. </p>
+</div>
+<div class="readable-text intended-text" id="p33">
+<p>Consider what you would need to do if the migration framework did not exist. Having just the promoter’s name in the database isn’t enough information. To track why they’re famous, you add another field. The corresponding database table now needs a new column to go with this field. Before the existence of the migration framework, you’d have to write a SQL script to take care of this change. If you forget during development that a <code>Model</code> class changed, and don’t have a corresponding SQL script, your code would crash. Not only does Django detect changes in your models, but you can also run commands to check whether the state of the database matches the state of the models, helping ensure you haven’t forgotten anything when you push your code live. </p>
+</div>
+<div class="readable-text intended-text" id="p34">
+<p>To see how Django handles the addition of a field, let’s add a field. Before doing that, make sure you’ve put some promoter data in the database using the Django Admin. This data complicates things, and you want to see that complication. Once you’ve got the data in place, add a <code>CharField</code> called <code>famous_for</code>. The following listing shows the new version of the <code>Promoter</code> class. </p>
+</div>
+<div class="browsable-container listing-container" id="p35">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.4</span> Add <code>famous_for</code> to the Promoter class</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/models.py
+from django.db import models
+
+class Promoter(models.Model):
+    first_name = models.CharField(max_length=25)
+    last_name = models.CharField(max_length=25)
+    famous_for = models.CharField(max_length=50) <span class="aframe-location"></span> #1</pre>
+<div class="code-annotations-overlay-container">
+     #1 A new field to store what a promoter is known for
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p36">
+<p>The purpose of migrations is to manage your database over time as your project changes. Once you’ve released code and your project is live, you’ll have data in your database, which makes changing it messier than creating it. In <code>Promoter</code>, the first and last name are required fields, since you haven’t specified <code>null=True</code>. The database expects all rows in the table to contain a value. First and last name are both text, which means the value can be an empty string. From the database’s perspective, an empty string isn’t empty, <code>NULL</code> is empty. </p>
+</div>
+<div class="readable-text print-book-callout" id="p37">
+<p><span class="print-book-callout-head">Note</span> <strong></strong>Recall <code>null=True</code> specifies a value can be <code>NULL</code> in the database, while <code>blank=True</code> specifies whether the Django Admin and other forms allow you to enter an empty string. </p>
+</div>
+<div class="readable-text" id="p38">
+<p>The new <code>famous_for</code> field is also required. When the new column gets added to the table, the database won’t allow the <code>famous_for</code> field on the existing rows to be <code>NULL</code>. You have to put something in each field, for the sake of database integrity. Your choices are to change <code>famous_for</code>, so it isn’t a required field; provide a default value on the field; or provide a default value in the migration file. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>When you run <code>makemigrations</code> on the changed <code>Promoter</code> model, Django detects that <code>famous_for</code> is a required field without a default value and prompts for content to insert during the migration. This wasn’t needed when you created the table, as there was no content in the database, but there is now. Run the <code>makemigrations</code> command as follows, choosing Provide a One-Off Default when prompted:</p>
+</div>
+<div class="browsable-container listing-container" id="p40">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py makemigrations promoters
+It is impossible to add a non-nullable field 'famous_for' to promoters
+without specifying a default. This is because the database needs
+something to populate existing rows.
+Please select a fix:
+ 1) Provide a one-off default now (will be set on all existing rows
+ with a null value for this column)
+ 2) Quit and manually define a default value in models.py.
+Select an option:</pre>
+</div>
+</div>
+<div class="readable-text" id="p41">
+<p>When you select Provide a One-Off Default, Django opens a Python REPL for you where you enter the default value. The use of the shell here is rather clever; it means you can call functions that return a value. Note that if you do this, it is called immediately, and the value gets inserted in the script. The calculation isn’t performed at migration time or per row in the database. </p>
+</div>
+<div class="readable-text intended-text" id="p42">
+<p>For the <code>Promoter</code> migration, an empty string for the <code>famous_for</code> field is sufficient:</p>
+</div>
+<div class="browsable-container listing-container" id="p43">
+<div class="code-area-container">
+<pre class="code-area">Please enter the default value as valid Python.
+The datetime and django.utils.timezone modules are available, so it is
+possible to provide e.g. timezone.now as a value.
+Type 'exit' to exit this prompt
+&gt;&gt;&gt; "" <span class="aframe-location"></span> #1
+Migrations for 'promoters':
+  promoters/migrations/0002_promoter_famous_for.py
+    - Add field famous_for to promoter</pre>
+<div class="code-annotations-overlay-container">
+     #1 A default value used by the migration script to populate famous_for in existing rows
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p44">
+<p>The new migration file gets called 0002_promoter_famous_for.py. The name is rather helpful. It indicates that this is the second migration file to run (there are exceptions to this—more on that later), it touches the <code>Promoter</code> class, and the change is the <code>famous_for</code> field. Like with 0001_initial.py, the new migration script contains a <code>Migration</code> class declaration. This time, the <code>.dependencies</code> attribute got populated, indicating that the 0001_initial.py migration must be run before this one. This time around, the operation is <code>AddField</code>, which adds the new <code>famous_for</code> field. The complete contents of the second migration file are in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p45">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.5</span> The migration file for adding the <code>famous_for</code> field</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/migrations/0002_promoter_famous_for.py
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("promoters", "0001_initial"), <span class="aframe-location"></span> #1
+    ]
+
+    operations = [
+        migrations.AddField( <span class="aframe-location"></span> #2
+            model_name="promoter",
+            name="famous_for",
+            field=models.CharField(default="", max_length=50),
+            preserve_default=False,
+        ),
+    ]</pre>
+<div class="code-annotations-overlay-container">
+     #1 This migration depends on 0001_intitial.py in the promoters app.
+     <br/>#2 AddField describes the addition of the famous_for field to the database.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p46">
+<p>Now that you’ve seen a second migration file, hopefully, you’re getting the idea of how these pieces fit together. Don’t forget to run the <code>migration</code> command to invoke this latest change. If you wish, you can also populate your <code>famous_for</code> fields using the Django Admin. The migrations you’ve seen so far have been purely structural, but once you’re using your database, any changes could also impact existing data. The next section outlines the extra work you need to do in this case. </p>
+</div>
+<div class="readable-text" id="p47">
+<h2 class="readable-text-h2"><span class="num-string">10.2</span> Migration with existing data</h2>
+</div>
+<div class="readable-text" id="p48">
+<p>When you added <code>famous_for</code> to the <code>Promoter</code> model, you gave Django a value for existing rows in the database. Adding content requires a little thought. <em>Deleting</em>, or moving content between columns, is a whole other challenge. Removing a field isn’t hard, but the consequences should be considered fully first. The migration system is about the state of the table structures, not the contents of the tables. Removing a field in your model results in a column getting removed from the database. All data in that column goes away. There is no “undo.” Unless you’ve made a backup of the database, the data is gone. Moving content is equivalent to adding a new column and deleting the old one, so it has all the challenges of deletion with added steps. </p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>Changing your mind about the structure of your models can be problematic. In the <code>Promoter</code> model (and in others) you used a very Western-centric view of people’s names. The assumption that everyone has a first and last name is wrong. Patrick McKenzie has written a great article on this topic, called “Falsehoods Programmers Believe About Names” (<a href="http://mng.bz/5o28">http://mng.bz/5o28</a>). Add it to your reading list, as it is valuable information.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p50">
+<h5 class="callout-container-h5 readable-text-h5">Falsehood programmers believe</h5>
+</div>
+<div class="readable-text" id="p51">
+<p>Articles similar to Patrick’s have become a genre unto themselves. There seems to be a lot of falsehoods we programmers believe. The following are a couple more that are seminal for your reading list:</p>
+</div>
+<ul>
+<li class="readable-text" id="p52"> “Falsehoods Programmers Believe About Time” (<a href="http://mng.bz/6n2p">http://mng.bz/6n2p</a>) </li>
+<li class="readable-text" id="p53"> “Falsehoods Programmers Believe About Email” (<a href="http://mng.bz/orEy">http://mng.bz/orEy</a>) </li>
+<li class="readable-text" id="p54"> “Falsehoods Programmers Believe About Geography” (<a href="http://mng.bz/n18V">http://mng.bz/n18V</a>) </li>
+</ul>
+<div class="readable-text" id="p55">
+<p>There are curated lists of these kinds of articles as well, Kevin Deldycke’s “awesome falsehood” (<a href="http://mng.bz/vP5m">http://mng.bz/vP5m</a>) has a decent round-up.</p>
+</div>
+</div>
+<div class="readable-text" id="p56">
+<p>A better way to store names than using a first and last name field is to store a full name and the name the person wishes to be called (the common name). This doesn’t solve all the problems that Patrick enumerates, but it is a step in the right direction. To change the <code>Promoter</code> model to use this style, you have a problem: you already have data. Adding two new fields isn’t a big deal, but what do you do about the existing first and last names?</p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>Since the existing structure uses Western-centric assumptions, let’s continue with the assumption that composing the first and last name together can constitute our full name, and the first name can be the common name. This doesn’t fix any problems with the existing data’s assumptions, but it does create a space from which you can move forwards. By transferring the first and last name data into full name and common name fields, you can then remove the first and last name fields, leaving your model in a better state.</p>
+</div>
+<div class="readable-text intended-text" id="p58">
+<p>This transformation is done in three steps:</p>
+</div>
+<ol>
+<li class="readable-text" id="p59"> Add the new full name and common name fields. </li>
+<li class="readable-text" id="p60"> Construct the data for the full and common name fields based on the existing first and last names. </li>
+<li class="readable-text" id="p61"> Remove the existing first and last names. </li>
+</ol>
+<div class="readable-text" id="p62">
+<p>The first and third steps are things you already know how to do; you modify the fields in the model and migrate them. Django’s migration framework provides programmatic hooks that allow you to perform the second step as part of a migration. The <code>migrations</code> module has an operation class called <code>RunPython</code>. This class takes two references to functions: one function to be called when moving forward in a migration and another to be called when moving backward (yep, you can move backward—more on how to do that later). </p>
+</div>
+<div class="readable-text intended-text" id="p63">
+<p>Let’s de-Westernize <code>Promoter</code>. First, add the two new fields, and create the corresponding migration file. The following listing shows the state of <code>Promoter</code> after step 1.</p>
+</div>
+<div class="browsable-container listing-container" id="p64">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.6</span> Adding full and common name fields to the Promoter Model</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/models.py
+from django.db import models
+
+class Promoter(models.Model):
+    first_name = models.CharField(max_length=25)
+    last_name = models.CharField(max_length=25)
+    common_name = models.CharField(max_length=25) <span class="aframe-location"></span> #1
+    full_name = models.CharField(max_length=50)
+    famous_for = models.CharField(max_length=50)<span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add new common and full name fields to Promoter.
+     <br/>#2 Note that the order you declare your fields in effects the underlying table structure but doesn’t have to correspond to when you added things to your model; 
+     <code>famous_for</code> can show up after the new fields.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p65">
+<p>With the change in place, create a new migration file by running the <code>makemigrations</code> management command. The resulting file has a rather unwieldy name: 0003_ promoter_common_name_promoter_full_name.py. </p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>The second step in the de-Westernization process is the new one. Inside of a migration file, you use a <code>RunPython</code> class as an operation by providing code that copies data from the first and last name fields into the full and common name fields. This new code goes in a custom migration file. To create one, call <code>makemigrations</code> with the <code>--empty</code> flag. This creates a migration file stub with an automatically generated filename. My obsessive need for control over details means I can’t leave that alone, so I rename the file to be a little more clear. The process for creating and renaming the file is as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p67">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py makemigrations --empty promoters <span class="aframe-location"></span> #1
+Migrations for 'promoters':
+  promoters/migrations/0004_auto_20230904_1552.py
+(venv) RiffMates$ cd promoters/migrations/
+(venv) migrations$ mv 0004_auto_20230904_1552.py 0004_data_fullname.py <span class="aframe-location"></span> #2
+(venv) RiffMates$ cd -</pre>
+<div class="code-annotations-overlay-container">
+     #1 Create a stub migration file in the promoters app.
+     <br/>#2 Rename the file something more descriptive.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p68">
+<p>The resulting stub migration file looks like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p69">
+<div class="code-area-container">
+<pre class="code-area">from django.db import migrations
+
+class Migration(migrations.Migration):
+    dependencies = [ <span class="aframe-location"></span> #1
+        ("promoters", "0003_promoter_common_name_promoter_full_name"),
+    ]
+
+    operations = [] <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 The migration framework automatically makes the new script dependent on the previous one.
+     <br/>#2 A stub migration script starts with no operations.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p70">
+<p>With 0004_data_fullname.py in place, you now have somewhere to write the data translation code. This script gets run after the 0003 migration, so the full and common name fields will exist. To populate those fields, enumerate all the existing rows, copying the first and last name contents into the full and common name fields. This work goes in a function that can live in the migration file. The migration system supports moving forward and backward in table state, so it is best practice to write code that undoes the translation work as well.</p>
+</div>
+<div class="readable-text print-book-callout" id="p71">
+<p><span class="print-book-callout-head">Note</span> <strong></strong>In some situations, you simply can’t move backward through a migration. The transformation on your data may be one-way. If you do not provide a function for moving backward to <code>RunPython</code>, Django raises an exception if someone attempts to undo this migration step.</p>
+</div>
+<div class="readable-text" id="p72">
+<p>To write a Django view that enumerates all <code>Promoter</code> objects, import Promoter and run <code>Promoter.objects.all()</code>. Unfortunately, life in a migration script isn’t that simple. Importing <code>Promoter</code> gives you the current state of the model. The state of <code>Promoter</code> in a migration script may be different from the current state of the model—that’s the purpose of migration scripts. Consider the case where you are on your 10th change to <code>Promoter</code>, the 4th migration script needs the state of Promoter six changes ago.</p>
+</div>
+<div class="readable-text intended-text" id="p73">
+<p>Django can build any version of your model from the information inside the migration scripts. You get at the version corresponding to the migration script by calling <code>apps.get_model()</code>, where <code>apps</code> is one of the two arguments sent in to the function called by <code>RunPython</code>. The second argument is <code>schema_editor</code>, and although it isn’t something normal humans use, it has to be in the function signature. The migration system in Django is pluggable, and you can replace it with your own code. Doing so requires building <code>SchemaEditor</code> objects, which are what the migration system is passing to your function call. I’ve never met anyone, outside the Django core team, who has ever needed to do this though. </p>
+</div>
+<div class="readable-text intended-text" id="p74">
+<p>Listing 10.7 contains the code that translates the first and last name fields into their corresponding full and common name versions. It contains two functions, <code>de_westernize_names()</code> and <code>re_westernize_names()</code>, for migrating forward and backward, respectively. References to these functions are passed to a <code>RunPython</code> object, which is included in the <code>Migration</code> class’s <code>operations</code> list. </p>
+</div>
+<div class="browsable-container listing-container" id="p75">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.7</span> A migration script that calls Python to transform data during migration</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/migrations/0004_data_fullname.py
+from django.db import migrations
+
+<span class="aframe-location"></span>def de_westernize_names(apps, schema_editor):  #1
+    # Can't import Promoter Model, the current version may be newer than
+    # the one in this migration. Use historical version instead.
+    Promoter = apps.get_model("promoters", "Promoter") <span class="aframe-location"></span> #2
+    for promoter in Promoter.objects.all(): <span class="aframe-location"></span> #3
+        promoter.full_name = f"{promoter.first_name} {promoter.last_name}"
+        promoter.common_name = promoter.first_name
+        promoter.save()
+
+def re_westernize_names(apps, schema_editor): <span class="aframe-location"></span> #4
+    Promoter = apps.get_model("promoters", "Promoter")
+    for promoter in Promoter.objects.all():
+        promoter.first_name = promoter.common_name
+        length = len(promoter.first_name)
+        promoter.last_name = promoter.full_name[length + 1:]
+
+    promoter.save()
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("promoters", "0003_promoter_common_name_promoter_full_name"),
+    ]
+
+    operations = [
+        migrations.RunPython( <span class="aframe-location"></span> #5
+            de_westernize_names,
+            re_westernize_names
+        ),
+    ]</pre>
+<div class="code-annotations-overlay-container">
+     #1 This function gets called by RunPython when migrating forward.
+     <br/>#2 The apps.get_model() method returns a Model class, whose state is the same as the current migration.
+     <br/>#3 Data translation for Promoter requires enumerating all objects, and for each one, constructing the .full_name field based on the .first_name and .last_name fields and then copying the .first_name field into the .common_name field.
+     <br/>#4 This function gets called by RunPython when migrating backward. It is similar to de_westernize(), except it undoes the data translation.
+     <br/>#5 RunPython is an operation that takes two function references: the first gets called when migrating forward, and the second when migrating backward.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p76">
+<p>Your data translation migration script is ready. The full process, including removal of the first and last name fields, is three steps, but that doesn’t mean you should run them all together. Now is a good time to test. If you’ve made an error in your script, you might lose data. Your data is four sample lines of Promoters and can easily be re-entered. The real world is seldom that forgiving. You should take a backup of your database and test your scripts by running the <code>migrate</code> management command. Once you’ve done that, validate that the script did what you wanted. If it didn’t, restore your backup, fix your bugs, and try again. Once you’re satisfied that 0004 is working, you can move to the third, and final, step in the process. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>The last step is to remove the first and last name fields. This step shouldn’t contain any surprises. Open the model file, delete the appropriate lines, run <code>makemigrations</code>, and then migrate. The final state of <code>Promoter</code> is shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p78">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.8</span> Promoter without a first and last name field</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/models.py
+from django.db import models
+
+class Promoter(models.Model):
+    common_name = models.CharField(max_length=25)
+    full_name = models.CharField(max_length=50)
+    famous_for = models.CharField(max_length=50)</pre>
+</div>
+</div>
+<div class="readable-text" id="p79">
+<p>The migration file for this change has the lengthy name: 0005_remove_promoter_ first_name_remove_promoter_last_name.py. You need to run the <code>migrate</code> command to have it take effect. Don’t forget, the changes you’re making need to be reflected in the Django Admin, so you’ll need to update your <code>PromoterAdmin</code> class if you wrote one. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p80">
+<h5 class="callout-container-h5 readable-text-h5">Database changes in the real world</h5>
+</div>
+<div class="readable-text" id="p81">
+<p>Depending on the size of your project, how many people are using it, and how many coders are involved, you may need to keep intermediate migration stages alive for long periods of time. Consider the de-Westernization of our <code>Promoter</code> model. If our project had an API that accessed <code>Promoter</code> or other developers had code that was dependent on <code>Promoter</code> containing a first and last name, you may not want to remove those fields immediately. Your production system could stay in stage 0004 for weeks or months, as others catch up to your changes. When you make the intermediary changes, you announce the deprecation of the first and last name fields and a target date for their removal. You only perform the removal after the date has passed and, depending on how much you like your colleagues, after you’ve verified they’re ready for the change. A similar process can be used to rename columns: create a column with the new name, copy the data, keep both columns until the deprecation comes into effect, and then remove the original column.</p>
+</div>
+<div class="readable-text" id="p82">
+<p>The <code>Promoter</code> case is relatively simple. If the data is only ever accessed through the <code>Promoter</code> object, you can write properties that mimic the first and last names without breaking anything. In large, complex systems, there is a chance someone else is integrated directly with your database though, and that requires the columns to continue to exist. This adds the complication of having to maintain consistency across the four name fields. Who said software was easy?</p>
+</div>
+</div>
+<div class="readable-text" id="p83">
+<h2 class="readable-text-h2"><span class="num-string">10.3</span> Squashing a migration</h2>
+</div>
+<div class="readable-text" id="p84">
+<p>Each change you make to your models means another migration file. If you are frequently standing up new instances of your project from scratch, running all these migrations takes time. You may not need the whole state history of your project, only what things look like now. Django’s migration system provides a mechanism for squashing migrations together. It takes two or more migration stages and produces a single file to replace them all. </p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>To better understand the process of squashing migrations, let’s add two new changes to <code>Promoter</code>, with a migration file for each. The first change is to add a date of birth field and the second is to add a date of death field. Apply each change separately, creating a migration after each. The end result of <code>Promoter</code> is shown in the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 10.9</span> Two changes to Promoter to be squashed together</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/promoters/models.py
+from django.db import models
+
+class Promoter(models.Model):
+    common_name = models.CharField(max_length=25)
+    full_name = models.CharField(max_length=50)
+    famous_for = models.CharField(max_length=50)
+    birth = models.DateField(blank=True, null=True) <span class="aframe-location"></span> #1
+    death = models.DateField(blank=True, null=True) <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 First, add the new .birth field, creating a migration immediately afterward. By using blank=True and null=True, this field is allowed to be empty in the database and the Django Admin.
+     <br/>#2 After migrating the .birth field change, follow a similar process to add the .death field.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<p>The migration files for these two changes get named: 0006_promoter_birth.py and 0007_promoter_death.py. If you’ve been coding along, your Promoters app’s migration directory looks like this:</p>
+</div>
+<div class="browsable-container listing-container" id="p88">
+<div class="code-area-container">
+<pre class="code-area">RiffMates/promoters/migrations/
+├── 0001_initial.py
+├── 0002_promoter_famous_for.py
+├── 0003_promoter_common_name_promoter_full_name.py
+├── 0004_data_fullname.py
+├── 0005_remove_promoter_first_name_remove_promoter_last_name.py
+├── 0006_promoter_birth.py
+├── 0007_promoter_death.py
+└── __init__.py</pre>
+</div>
+</div>
+<div class="readable-text" id="p89">
+<p>Once you have the two migrations, you can squash them together. Squashing is done using the <code>squashmigrations</code> management command. This command takes three arguments: the name of the app to be squashed as well as the start and end points of the squashing. The start and end points can either be the full names of the migration files or just enough of their name to uniquely identify them. You can type less by using the number portion of the filename. To squash the birth and death field migrations into a single file, you specify <code>0006</code> and <code>0007</code> as the squashing targets. The command is as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p90">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py squashmigrations promoters 0006 0007
+Will squash the following migrations:
+ - 0006_promoter_birth
+ - 0007_promoter_death
+Do you wish to proceed? [yN] y
+Optimizing...
+  No optimizations possible.
+
+Created new squashed migration
+  0006_promoter_birth_squashed_0007_promoter_death.py
+
+  You should commit this migration but leave the old ones in place;
+  the new migration will be used for new installs. Once you are sure
+  all instances of the codebase have applied the migrations you squashed,
+  you can delete them.</pre>
+</div>
+</div>
+<div class="readable-text" id="p91">
+<p>The command asks if you are sure and results in a new file that starts with the same number as the source of your squashing. The new state of your migration directory is as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p92">
+<div class="code-area-container">
+<pre class="code-area">RiffMates/promoters/migrations/
+├── 0001_initial.py
+├── 0002_promoter_famous_for.py
+├── 0003_promoter_common_name_promoter_full_name.py
+├── 0004_data_fullname.py
+├── 0005_remove_promoter_first_name_remove_promoter_last_name.py
+├── 0006_promoter_birth.py <span class="aframe-location"></span> #1
+├── 0006_promoter_birth_squashed_0007_promoter_death.py <span class="aframe-location"></span> #2
+├── 0007_promoter_death.py <span class="aframe-location"></span> #3
+└── __init__.py</pre>
+<div class="code-annotations-overlay-container">
+     #1 Original script for adding the .birth field
+     <br/>#2 Squashed script containing the addition of both the .birth and .death fields
+     <br/>#3 Original script for adding the .death field
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p93">
+<p>As the note from the command tells you, you can leave the old files around. The Django migration framework ignores them. Of course, if you were willing to keep them around, there really wasn’t a need to squash them in the first place, but if you want to keep them there until you’re sure everything works, they do no damage. The more complicated your migration files are, the more work Django has to do to squash your migrations. There is a chance the tool can get it wrong, and the documentation recommends holding onto your old files until you’ve tested the squashed ones. See <a href="https://mng.bz/7ddx">https://mng.bz/7ddx</a> for more information and to better understand possible pitfalls. </p>
+</div>
+<div class="readable-text" id="p94">
+<h2 class="readable-text-h2"><span class="num-string">10.4</span> More migration choices</h2>
+</div>
+<div class="readable-text" id="p95">
+<p>So far, you’ve mostly been running the <code>migrate</code> management command without any options. When you call <code>migrate</code> without any arguments, it migrates the database forward to the current state of your model files. You can be more explicit, though, and specify the target state. Doing this, you can migrate forward or backward to any allowed position on the migration timeline. </p>
+</div>
+<div class="readable-text intended-text" id="p96">
+<p>For example, the current state of <code>Promoter</code> is the squashed migration script with the birth and death field additions. To back this migration out, you can migrate to stage 0005:</p>
+</div>
+<div class="browsable-container listing-container" id="p97">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py migrate promoters 0005 <span class="aframe-location"></span> #1
+Operations to perform:
+  Target specific migration:
+    0005_remove_promoter_first_name_remove_promoter_last_name, from promoters
+
+Running migrations:
+ Rendering model states... DONE
+ Unapplying promoters.0006_promoter_birth_squashed_0007_promoter_death... OK</pre>
+<div class="code-annotations-overlay-container">
+     #1 Specify both the Django app name and (partial) migration filename to target a specific state.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p98">
+<p>The <code>--plan</code> option to <code>migrate</code> shows what would happen if you run <code>migrate</code> without any arguments. As you’ve just undone the squashed 0006 script, using <code>--plan</code> tells you that a migration is due:</p>
+</div>
+<div class="browsable-container listing-container" id="p99">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py migrate --plan
+Planned operations:
+promoters.0006_promoter_birth_squashed_0007_promoter_death
+    Add field birth to promoter
+    Add field death to promoter</pre>
+</div>
+</div>
+<div class="readable-text" id="p100">
+<p>Not only does <code>--plan</code> tell you which scripts will be executed, but it even includes the details about their effects. In this case, that is the addition of the birth and death fields.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p101">
+<h5 class="callout-container-h5 readable-text-h5">Scary options to migrate</h5>
+</div>
+<div class="readable-text" id="p102">
+<p>There are a few more arguments to <code>migrate</code> that allow you to muck around with the database. Recall from chapter 4 that Django keeps the current state of migration in a table called <code>django_migrations</code>. The <code>--fake</code> and <code>--fake-initial</code> options update this table as if a migration had run, without actually running it. The <code>--fake-initial</code> option restricts the change to only the initial migration. The <code>--run-syncdb</code> option creates tables for the apps but without running migrations. You use these three options if you have existing database structures you’re trying to Django-ify or you’re trying to bypass the migration system for performance reasons. </p>
+</div>
+<div class="readable-text" id="p103">
+<p>Using any of these options can result in the contents of the <code>django_migrations</code> table being out of sync with the migration files in your project. Be careful, as a mismatch may result in Django not detecting future changes or rerunning a migration that has already been done.</p>
+</div>
+<div class="readable-text" id="p104">
+<p>The <code>--prune</code> option removes any migrations from the <code>django_migrations</code> table that no longer exist. A few extra rows in the database are not going to hurt anything, so this really is a neat-freak kind of choice. </p>
+</div>
+</div>
+<div class="readable-text" id="p105">
+<p>The <code>makemigrations</code> command also has some useful optional arguments. You can use <code>--dry-run</code> to see what the result of calling <code>makemigrations</code> would be, without it actually creating the migration script. </p>
+</div>
+<div class="readable-text intended-text" id="p106">
+<p>One challenge you may encounter when working with multiple developers is two people making a change to a model on different branches in the code repo at the same time. Whoever merges last gets a merge conflict. The <code>Model</code> state needs to be fixed by addressing the two overlapping changes. Additionally, you’ll have two migration files with the same starting number, one from your change and one from your colleague’s.</p>
+</div>
+<div class="readable-text intended-text" id="p107">
+<p>The <code>--merge</code> option to <code>makemigrations</code> operates on files with the same numbers, producing a new migration script named with the next number. The new script has no operations but depends on the two conflicting ones. This ensures future migration scripts are dependent on both files. Figure 10.1 illustrates this resolution. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p108">
+<img alt="figure" height="1178" src="../../OEBPS/Images/CH10_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 10.1</span> Dealing with a merge conflict containing migration scripts</h5>
+</div>
+<div class="readable-text" id="p109">
+<p>If you go back and look at the output of <code>squashmigrations</code>, you’ll notice it contains <code>Optimizing…</code>. During the squashing process, Django examines the operations and attempts to reduce the number of them, if possible. For example, if you are squashing together migrations that both create a new table and later add fields to that table, Django replaces that with a single creation step that includes the added field. You can invoke this same optimization process on a single file that hasn’t been squashed by using the <code>optimizemigration</code> management command. Personally, I’ve never used this; I do my best to keep my model changes as small as possible, leaving little need for optimization. </p>
+</div>
+<div class="readable-text intended-text" id="p110">
+<p>Finally, the <code>showmigrations</code> management command gives you detailed information on what migrations are in your project and which got run. You can, optionally, provide the name of one or more apps to filter the output. This is what <code>showmigrations</code> looks like after I rolled back the squashed 0006 migration:</p>
+</div>
+<div class="browsable-container listing-container" id="p111">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py showmigrations promoters
+promoters
+ [X] 0001_initial
+ [X] 0002_promoter_famous_for
+ [X] 0003_promoter_common_name_promoter_full_name
+ [X] 0004_data_fullname
+ [X] 0005_remove_promoter_first_name_remove_promoter_last_name
+ [ ] 0006_promoter_birth_squashed_0007_promoter_death (2 squashed migrations)</pre>
+</div>
+</div>
+<div class="readable-text" id="p112">
+<p>Each <code>X</code> indicates migrations that have been run. For squashed migrations, the command even shows how many scripts got combined to create them. This command is helpful for looking at the current state of migration across your entire project at the same time. </p>
+</div>
+<div class="readable-text" id="p113">
+<h2 class="readable-text-h2"><span class="num-string">10.5</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p114"> Modify the <code>Promoter</code> model by adding a “street address” field, migrating the change. Then, modify it again, adding fields for city, province/state, country, and postal/zip code. Create a migration script, migrate it, and then squash the migrations together. </li>
+<li class="readable-text" id="p115"> Convert the address fields in exercise 1 into a field called <em>address</em>, a single multiline text field containing all the address information. Write migration scripts for adding the new field and converting any data from the old fields to the new ones. Finally, finish the process by removing the old fields and migrating that change as well. </li>
+</ol>
+<div class="readable-text" id="p116">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p117"> Migration scripts get generated by the <code>makemigrations</code> management command and are responsible for syncing the state of your <code>Model</code> files with the corresponding database tables. </li>
+<li class="readable-text" id="p118"> You use the <code>migrate</code> management command to invoke the migration scripts on the database. </li>
+<li class="readable-text" id="p119"> Migration scripts are Python programs that declare the <code>Migration</code> class, used to tell Django what changes need to be performed. </li>
+<li class="readable-text" id="p120"> The first migration script generated for a new Django app is named 0001 _initial.py, with subsequent files starting with an incremented number and the name of the class and field getting changed. </li>
+<li class="readable-text" id="p121"> The <code>Migration</code> class has three fields: a Boolean indicating whether this is an initial script, a list of other scripts that must be run before this one, and a list of operations to perform. </li>
+<li class="readable-text" id="p122"> The name of the migration script is a hint for developers regarding what the script does, but the number is irrelevant to the framework. Django determines the order of script execution based on the <code>depenencies</code> member of the <code>Migration</code> classes. </li>
+<li class="readable-text" id="p123"> The <code>operations</code> list in a <code>Migration</code> class contains one or more classes that indicate what changes need to happen. For example, the <code>CreateModel</code> operation indicates a new <code>Model</code> has been created and one or more tables need to be created in the database. </li>
+<li class="readable-text" id="p124"> The <code>CreateModel</code> operation has a <code>fields</code> member that contains descriptors of the fields in the <code>Model</code>. It uses the same classes to specify fields as a <code>Model</code> class. </li>
+<li class="readable-text" id="p125"> Changing an existing <code>Model</code> impacts the data in the table that is already there. You may need to provide default entries for existing rows in the database. The <code>makemigrations</code> script prompts you if this is the case and gives you access to a REPL to enter the default data to be used by the script. </li>
+<li class="readable-text" id="p126"> Migrations can be run both forward and backward. </li>
+<li class="readable-text" id="p127"> The <code>RunPython</code> operation allows you to call a function to perform side-effects on the database as part of the migration. <code>RunPython</code> takes two function references as arguments, the first to be called when migrating forward and the second for migrating backward. </li>
+<li class="readable-text" id="p128"> You can generate a migration script with no operations using the <code>makemigrations</code> command and passing it the <code>--empty</code> flag. This can be used to create a stub file for custom <code>RunPython</code> operations. </li>
+<li class="readable-text" id="p129"> Renaming or combining fields requires a three-step process: (1) add the new field and migrate the change; (2) add a custom migration script that uses the <code>RunPython</code> operation to migrate the data and migrate the change; and (3) remove the original fields and migrate the change. </li>
+<li class="readable-text" id="p130"> Not all custom migrations can be undone. If a migration can’t be undone, the second argument to <code>RunPython</code> can be left empty. Django raises an exception if such a backward migration gets attempted. </li>
+<li class="readable-text" id="p131"> For efficiency, multiple migration files can be combined using the <code>squashmigrations</code> management command. This command does not remove the old files, which can be left in place, as they are no longer part of the dependency chain. </li>
+<li class="readable-text" id="p132"> The <code>--plan</code> flag of the <code>migrate</code> management command prints out what migrations need to be run. </li>
+<li class="readable-text" id="p133"> The <code>showmigrations</code> management command prints out the current state of all migrations in the system, indicating both those migrations that have been run and those that need to be run.  </li>
+</ul>
+</div></body>
+</html>

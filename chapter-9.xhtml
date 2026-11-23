@@ -1,0 +1,904 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>9 Management commands</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">9</span> </span> <span class="chapter-title-text">Management commands</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Management commands built into Django</li>
+<li class="readable-text" id="p3">Writing your own management commands</li>
+<li class="readable-text" id="p4">Passing command-line arguments to management commands</li>
+<li class="readable-text" id="p5">Creating unit tests for management commands</li>
+</ul>
+</div>
+<div class="readable-text" id="p6">
+<p>Management commands are Python scripts that allow you to control your Django project from the command line. Over two dozen commands are included with Django, and you can also write your own. This chapter covers management commands you haven’t seen so far, along with details on how to build and test custom commands.</p>
+</div>
+<div class="readable-text" id="p7">
+<h2 class="readable-text-h2"><span class="num-string">9.1</span> Management commands in practice</h2>
+</div>
+<div class="readable-text" id="p8">
+<p>You’ve already used a number of management commands throughout this book. You’ve seen how to create a Django project, create a Django app, create a superuser, create and migrate ORM tables, launch a Django-aware REPL, launch your database’s command-line tool, save and load fixtures, and run your unit tests. The common thread here is producing a change in your project without a web interface. A significant percentage of Django commands are about bootstrapping, deploying, testing, and debugging your software. </p>
+</div>
+<div class="readable-text intended-text" id="p9">
+<p>The other common use for commands is to execute offline operations, such as cleaning up old files. As Django doesn’t really run on its own but is activated through a web server, running an operation periodically can be problematic. There are tools out there that act as separate services to do this, but a quick way is to write a management command and then use your operating system’s periodic execution mechanisms. On a Unix-based system, this would be <code>cron</code>, but other operating systems have equivalent services.</p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>Say you wanted to use musician data from RiffMates in a utility script. You could write some raw SQL and access the database directly, but if the database changed, you’d have to change your script. Instead, you could write a management command that provided a querying mechanism for the musician data, which you could then call in your utility script. Your management command works within the context of your project, so you can use the same <code>Musician</code> <code>Model</code> you use in your views to perform your queries. In this chapter, you’ll be writing a management command that does just that.</p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>As for cleaning up, recall how <code>ImageField</code> and <code>FileField</code> in a Model point to uploaded files. Removing an object with these fields does not remove the corresponding files. Occasionally, you’ll want to check for any orphaned files to save on disk space. A short management command is all that is needed to compare the contents of the uploads directory with the database. Writing such a management command is part of the exercises in this chapter. You’ll have everything you need to try it yourself by the time you get there.</p>
+</div>
+<div class="readable-text" id="p12">
+<h3 class="readable-text-h3"><span class="num-string">9.1.1</span> Built-in management commands</h3>
+</div>
+<div class="readable-text" id="p13">
+<p>You can see all the available management commands for your project by running the <code>manage.py</code> script without any arguments. Its output is organized by Django app. When you write your own later, a new section will appear. Django has several of its own apps built in, so in addition to the <code>django</code> section, you’ll see commands grouped under <code>auth</code>, <code>contenttypes</code>, <code>session</code>, and <code>staticfiles</code>. </p>
+</div>
+<div class="readable-text print-book-callout" id="p14">
+<p><span class="print-book-callout-head">Note</span> <strong></strong>Django’s terminology is a bit inconsistent; the <code>manage.py</code> script refers to these as “subcommands,” while the documentation simply calls them “commands.” Don’t be confused; they’re the same thing. Table 9.1 contains a summary of the built-in management commands and their purpose. </p>
+</div>
+<div class="browsable-container browsable-table-container framemaker-table-container" id="p15">
+<h5 class="browsable-container-h5"><span class="num-string">Table 9.1</span> Common management commands that are built into Django</h5>
+<table>
+<thead>
+<tr>
+<th>
+<div>
+         Command 
+       </div></th>
+<th>
+<div>
+         App 
+       </div></th>
+<th>
+<div>
+         Description 
+       </div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> <code>changepassword</code> <br/></td>
+<td>  auth <br/></td>
+<td>  Change a user’s password. Doesn’t require authentication. <br/></td>
+</tr>
+<tr>
+<td> <code>check</code> <br/></td>
+<td>  django <br/></td>
+<td>  Runs a check on the project. This is the same check the development server runs on startup. <br/></td>
+</tr>
+<tr>
+<td> <code>clearsessions</code> <br/></td>
+<td>  sessions <br/></td>
+<td>  Removes expired sessions from the database <br/></td>
+</tr>
+<tr>
+<td> <code>collectstatic</code> <br/></td>
+<td>  staticfiles <br/></td>
+<td>  Copies static files to the configured <br/></td>
+</tr>
+<tr>
+<td> <code>compilemessages</code> <br/></td>
+<td>  django <br/></td>
+<td>  Used to create translation files <br/></td>
+</tr>
+<tr>
+<td> <code>createcachetable</code> <br/></td>
+<td>  django <br/></td>
+<td>  Creates a database table to be used for page caching <br/></td>
+</tr>
+<tr>
+<td> <code>createsuperuser</code> <br/></td>
+<td>  auth <br/></td>
+<td>  Creates a superuser (admin) account in the database <br/></td>
+</tr>
+<tr>
+<td> <code>dbshell</code> <br/></td>
+<td>  django <br/></td>
+<td>  Opens your database’s command-line tool <br/></td>
+</tr>
+<tr>
+<td> <code>diffsettings</code> <br/></td>
+<td>  django <br/></td>
+<td>  Displays differences between your settings and the defaults <br/></td>
+</tr>
+<tr>
+<td> <code>dumpdata</code> <br/></td>
+<td>  django <br/></td>
+<td>  Exports data from the database into a fixture <br/></td>
+</tr>
+<tr>
+<td> <code>findstatic</code> <br/></td>
+<td>  staticfiles <br/></td>
+<td>  Searches for a named static file and prints its details <br/></td>
+</tr>
+<tr>
+<td> <code>flush</code> <br/></td>
+<td>  django <br/></td>
+<td>  Removes all data from the database except migration state <br/></td>
+</tr>
+<tr>
+<td> <code>inspectdb</code> <br/></td>
+<td>  django <br/></td>
+<td>  Outputs a models.py file based on an existing table <br/></td>
+</tr>
+<tr>
+<td> <code>loaddata</code> <br/></td>
+<td>  django <br/></td>
+<td>  Imports a fixture into the database <br/></td>
+</tr>
+<tr>
+<td> <code>makemessages</code> <br/></td>
+<td>  django <br/></td>
+<td>  Builds translation files based on strings in the source <br/></td>
+</tr>
+<tr>
+<td> <code>makemigrations</code> <br/></td>
+<td>  django <br/></td>
+<td>  Creates migration files based on changes to Models <br/></td>
+</tr>
+<tr>
+<td> <code>migrate</code> <br/></td>
+<td>  django <br/></td>
+<td>  Performs migrations on the database <br/></td>
+</tr>
+<tr>
+<td> <code>optimizemigration</code> <br/></td>
+<td>  django <br/></td>
+<td>  Optimizes a migration file <br/></td>
+</tr>
+<tr>
+<td> <code>remove_stale_ contenttypes</code> <br/></td>
+<td>  contenttypes <br/></td>
+<td>  Removes unused content type entries if the <code>contenttypes</code> app is in use <br/></td>
+</tr>
+<tr>
+<td> <code>runserver</code> <br/></td>
+<td>  django <br/></td>
+<td>  Runs the development server <br/></td>
+</tr>
+<tr>
+<td> <code>sendtestemail</code> <br/></td>
+<td>  django <br/></td>
+<td>  Sends a test email <br/></td>
+</tr>
+<tr>
+<td> <code>shell</code> <br/></td>
+<td>  django <br/></td>
+<td>  Runs a Django-aware REPL <br/></td>
+</tr>
+<tr>
+<td> <code>showmigrations</code> <br/></td>
+<td>  django <br/></td>
+<td>  Shows migrations in a project <br/></td>
+</tr>
+<tr>
+<td> <code>sqlflush</code> <br/></td>
+<td>  django <br/></td>
+<td>  Prints the SQL commands that are run when the <code>flush</code> management command executes <br/></td>
+</tr>
+<tr>
+<td> <code>sqlmigrate</code> <br/></td>
+<td>  django <br/></td>
+<td>  Prints the SQL for a named migration <br/></td>
+</tr>
+<tr>
+<td> <code>sqlsequencereset</code> <br/></td>
+<td>  django <br/></td>
+<td>  Prints the SQL for resetting an index sequence <br/></td>
+</tr>
+<tr>
+<td> <code>squashmigrations</code> <br/></td>
+<td>  django <br/></td>
+<td>  Squishes multiple migrations into a single file <br/></td>
+</tr>
+<tr>
+<td> <code>startapp</code> <br/></td>
+<td>  django <br/></td>
+<td>  Creates a new Django app directory <br/></td>
+</tr>
+<tr>
+<td> <code>startproject</code> <br/></td>
+<td>  django <br/></td>
+<td>  Creates a new Django project <br/></td>
+</tr>
+<tr>
+<td> <code>test</code> <br/></td>
+<td>  django <br/></td>
+<td>  Runs unit tests <br/></td>
+</tr>
+<tr>
+<td> <code>testserver</code> <br/></td>
+<td>  django <br/></td>
+<td>  Runs a development server but using a test database populated with the named fixture’s deployment destination <br/></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="readable-text print-book-callout" id="p16">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>The <code>staticfiles</code> app has its own version of <code>runserver</code>, which is a development server that also hosts static content. If <code>staticfiles</code> is configured in your system, <code>runserver</code> will show in that grouping instead. </p>
+</div>
+<div class="readable-text" id="p17">
+<p>The rest of this section covers a few of the most commonly used management commands that aren’t already discussed in detail in the appropriate part of the book. For example, the <code>test</code> management command got covered in chapter 8 along with other content on testing. For a full list of the built-in Django management commands, see <a href="https://mng.bz/qOOK">https://mng.bz/qOOK</a>. </p>
+</div>
+<div class="readable-text" id="p18">
+<h3 class="readable-text-h3"><span class="num-string">9.1.2</span> Changing a password</h3>
+</div>
+<div class="readable-text" id="p19">
+<p>Django assumes that if you have access to management commands, you have administrative powers. Nobody but your system administrators should be allowed in the server account that hosts your Django project. This makes sense: if they’re in there, they can tamper with your settings.py file and turn off all the security checks anyhow. </p>
+</div>
+<div class="readable-text intended-text" id="p20">
+<p>If you are an admin, one of the things you might want to do is reset a user’s password. The Django Admin provides a mechanism for this, but if you are locked out of the admin account, you need another way. The <code>changepassword</code> management command lets you change any user’s password from the command line. It’s pretty straightforward; run the command giving the username to reset, and then follow the prompts:</p>
+</div>
+<div class="browsable-container listing-container" id="p21">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py changepassword nicky
+Changing password for user 'nicky'
+Password:
+Password (again):
+Password changed successfully for user 'nicky'</pre>
+</div>
+</div>
+<div class="readable-text" id="p22">
+<p>In chapter 2, you used the <code>createsuperuser</code> management command to create an admin account. If you tried to use a password that wasn’t particularly secure, Django warned you and gave you the option to bypass password validation. The <code>changepassword</code> command does no such thing: you are bound by the current password security level. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p23">
+<h5 class="callout-container-h5 readable-text-h5">Password validation</h5>
+</div>
+<div class="readable-text" id="p24">
+<p>If you’ve been snooping around in your settings.py file, you may have noticed the <code>AUTH_PASSWORD_VALIDATORS</code> configuration value. This list of dictionaries specifies which password validation code gets executed when a new password gets created. By default, there are four validators; they check for similarity to the username, minimum length, common passwords, and requiring a password to contain a number.</p>
+</div>
+<div class="readable-text" id="p25">
+<p>Like most configurable things in Django, you can write your own validator, which you’d then register in <code>AUTH_PASSWORD_VALIDATORS</code>. Details can be found in the documentation: <a href="http://mng.bz/Xq6l">http://mng.bz/Xq6l</a>. </p>
+</div>
+</div>
+<div class="readable-text" id="p26">
+<h3 class="readable-text-h3"><span class="num-string">9.1.3</span> Configuration</h3>
+</div>
+<div class="readable-text" id="p27">
+<p>At this point in the book, I’ve written <em>settings.py</em> 39 times. Django is very configurable, and all that happens in your settings.py file (40). If you’re trying to understand how your system is configured, it can be useful to see the difference between your current settings and the defaults. The <code>diffsettings</code> management command does just that:</p>
+</div>
+<div class="browsable-container listing-container" id="p28">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py diffsettings
+DEBUG = True
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth',
+    'django.contrib.contenttypes', 'django.contrib.sessions',
+    'django.contrib.messages', 'django.contrib.staticfiles', 'home',
+    'bands', 'content']
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+ROOT_URLCONF = 'RiffMates.urls'  ###</pre>
+</div>
+</div>
+<div class="readable-text" id="p29">
+<p>This output is truncated; the full list can be quite long. In chapter 6 you added <code>LOGIN _REDIRECT_URL</code>, <code>LOGOUT_REDIRECT_URL</code>, and <code>EMAIL_BACKEND</code> to settings.py, so it might not be a surprise to see them. A little less obvious is <code>DEFAULT_AUTO_FIELD</code>. Although you haven’t set it yourself, the skeleton settings.py file created by the <code>createproject</code> command sets this value. It shows up in the output because it is different from the default, even if that difference got created by Django. </p>
+</div>
+<div class="readable-text intended-text" id="p30">
+<p>Likewise, for the <code>INSTALLED_APPS</code> value; it shows here that you’ve added your own apps, but even if you hadn’t, the various <code>django</code> apps included by <code>createproject</code> aren’t in the underlying default configuration. This is where <code>diffsettings</code> can get a little noisy, even things you haven’t changed yourself might not match the base configuration. This means you have to go wading through some values set by <code>createproject</code> to see what you actually changed. </p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>Note the <code>###</code> on the end of the <code>ROOT_URLCONF</code> value; this is how <code>diffsettings</code> indicates a value that has no default. Your project won’t work without a <code>ROOT_URLCONF</code>, but there is no default. Any custom values you add yourself will also appear with the <code>###</code> suffix. If you’d like to see all the default configuration values, the global_settings.py file in the Django source code is the place to look: <a href="http://mng.bz/yZn7">http://mng.bz/yZn7</a>. </p>
+</div>
+<div class="readable-text" id="p32">
+<h3 class="readable-text-h3"><span class="num-string">9.1.4</span> Flushing the database</h3>
+</div>
+<div class="readable-text" id="p33">
+<p>One of the many wonderful experiences in writing a book is learning something new yourself. Until playing around with a few management commands to write this chapter, I wasn’t aware that <code>flush</code> even existed. This command wipes your database, except without resetting your migrations. Obviously, this is a drastic move, but when you’re developing a new project that hasn’t gone into production yet, you likely have a bunch of sample data kicking around from your manual testing. Using the <code>flush</code> command clears all database tables, keeping the structure and migration state. As you might hope, it asks if you’re sure:</p>
+</div>
+<div class="browsable-container listing-container" id="p34">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py flush
+
+You have requested a flush of the database.
+
+This will IRREVERSIBLY DESTROY all data currently in the
+"RiffMates/db.sqlite3" database, and return each table to
+an empty state.
+
+Are you sure you want to do this?
+
+    Type 'yes' to continue, or 'no' to cancel: yes</pre>
+</div>
+</div>
+<div class="readable-text" id="p35">
+<p>Before knowing about <code>flush</code>, I accomplished the same thing by removing the database file and running migrations once again. Using <code>flush</code> instead allows you to skip the second step.</p>
+</div>
+<div class="readable-text intended-text" id="p36">
+<p>There are times when <code>flush</code> isn’t good enough, though. If you haven’t released anything into production yet, there isn’t much value in maintaining every step it took to get to your current state. Often, with a new project, I wipe the database as well as all the migration folders and create a new “initial” state based on my current Models. Once something has been released in production, you can’t do this anymore: you need to track all changes, so they can be applied to the production system. </p>
+</div>
+<div class="readable-text" id="p37">
+<h3 class="readable-text-h3"><span class="num-string">9.1.5</span> SQL commands</h3>
+</div>
+<div class="readable-text" id="p38">
+<p>The ORM is a beautiful thing; it saves you from writing a lot of SQL. Abstractions can be dangerous, though, and there are times when you want to know what is happening underneath. There are two management commands that help you peek under the covers: <code>sqlflush</code> and <code>sqlmigrate</code>. These commands correspond to the <code>flush</code> and <code>migrate</code> commands but print out the equivalent SQL. The <code>sqlflush</code> management command doesn’t require any arguments:</p>
+</div>
+<div class="browsable-container listing-container" id="p39">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py sqlflush
+BEGIN;
+DELETE FROM "bands_band_musicians";
+DELETE FROM "django_session";
+DELETE FROM "bands_room";
+DELETE FROM "content_seekingad";
+DELETE FROM "auth_group_permissions";
+DELETE FROM "auth_user_user_permissions";
+DELETE FROM "bands_musician";
+DELETE FROM "auth_group";
+DELETE FROM "auth_user_groups";
+DELETE FROM "bands_userprofile";
+DELETE FROM "bands_userprofile_venues_controlled";
+DELETE FROM "bands_venue";
+DELETE FROM "django_admin_log";
+DELETE FROM "bands_userprofile_musician_profiles";
+DELETE FROM "auth_user";
+DELETE FROM "auth_permission";
+DELETE FROM "bands_band";
+DELETE FROM "django_content_type";
+UPDATE "sqlite_sequence" SET "seq" = 0 WHERE "name" IN
+    ('bands_band_musicians', 'django_session', 'bands_room',
+    'content_seekingad', 'auth_group_permissions',
+    'auth_user_user_permissions', 'bands_musician', 'auth_group',
+    'auth_user_groups', 'bands_userprofile',
+    'bands_userprofile_venues_controlled', 'bands_venue',
+    'django_admin_log', 'bands_userprofile_musician_profiles',
+    'auth_user', 'auth_permission', 'bands_band',
+    'django_content_type');
+COMMIT;</pre>
+</div>
+</div>
+<div class="readable-text" id="p40">
+<p>As you might expect from <code>flush</code>, all rows from almost all the tables get deleted. The ID key also gets reset to start over again, hence the <code>SET</code> <code>"seq"</code> <code>=</code> <code>0</code> part of the <code>UPDATE</code> statement. </p>
+</div>
+<div class="readable-text intended-text" id="p41">
+<p>The <code>sqlmigrate</code> command is a little more complex. It requires the name of an app and the name of the migration in question. To see the first change made to the bands app after it was initially created, you specify <code>bands</code> and <code>0002</code> (you only need to provide enough of the migration file name for it to be uniquely found—you don’t have to type the whole thing):</p>
+</div>
+<div class="browsable-container listing-container" id="p42">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py sqlmigrate bands 0002
+BEGIN;
+--
+-- Create model Venue
+--
+CREATE TABLE "bands_venue" ("id" integer NOT NULL PRIMARY KEY
+    AUTOINCREMENT, "name" varchar(20) NOT NULL);
+--
+-- Create model Room
+--
+CREATE TABLE "bands_room" ("id" integer NOT NULL PRIMARY KEY
+    AUTOINCREMENT, "name" varchar(20) NOT NULL, "venue_id"
+    bigint NOT NULL REFERENCES "bands_venue" ("id")
+    DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "bands_room_venue_id_16903c8e" ON "bands_room" ("venue_id");
+COMMIT;</pre>
+</div>
+</div>
+<div class="readable-text" id="p43">
+<p>The result, in this case, is the SQL that got run to create the tables for the <code>Venue</code> and <code>Room</code> <code>Model</code>s as well as the database index on the column that relates the two. As everything you do to your models gets done through the migration mechanism, you can always see the underlying SQL with this command. </p>
+</div>
+<div class="readable-text" id="p44">
+<h2 class="readable-text-h2"><span class="num-string">9.2</span> Writing your own management command</h2>
+</div>
+<div class="readable-text" id="p45">
+<p>When you run manage.py on its own and get the list of all the installed management commands, the result is grouped by Django app. As you might guess from this, you can write your own management command. This can be useful to interact with your project data from the command line, for example running batch jobs or doing the occasional bit of clean-up. </p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>To write a command, you simply need to put the right thing in the right place in your app. The “right thing” is a class in a file, with the file name dictating the name of the management command. The “right place” is a bit weird. Django looks for management command files in your app directory inside nested subdirectories, called <em>management/commands</em>. I’ve always figured that this was part of some deeper long-term plan, that there were going to be other kinds of “management” tools, and thus a nested directory would be needed. Whatever the reason for this otherwise empty structure, that’s what Django expects. </p>
+</div>
+<div class="readable-text intended-text" id="p47">
+<p>Let’s start by writing a management command that outputs all <code>Musician</code> objects in the database to the terminal. As the <code>Musician</code> <code>Model</code> lives in the <code>bands</code> app, it makes sense to put the command in there as well. The first thing you need to do is create the nested management/commands directory structure. And as commands are Python files, you also need to create empty __init__.py files to mark the directories as modules. The terminal session in the following listing shows you how to do just that. </p>
+</div>
+<div class="browsable-container listing-container" id="p48">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 9.1</span> The shell commands used to create command directories</h5>
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ mkdir bands/management
+(venv) RiffMates$ mkdir bands/management/commands
+(venv) RiffMates$ touch bands/__init__.py
+(venv) RiffMates$ touch bands/commands/__init__.py</pre>
+</div>
+</div>
+<div class="readable-text" id="p49">
+<p>Having performed these actions, you’ll now have the following contents in the <code>bands</code> app directory:</p>
+</div>
+<div class="browsable-container listing-container" id="p50">
+<div class="code-area-container">
+<pre class="code-area">RiffMates/
+└── bands
+    ├── __init__.py
+    ├── admin.py
+    ├── apps.py
+    ├── fixtures
+    ├── forms.py
+    ├── management <span class="aframe-location"></span> #1
+    │   ├── __init__.py <span class="aframe-location"></span> #2
+    │   └── commands <span class="aframe-location"></span> #3
+    │       └── __init__.py <span class="aframe-location"></span> #4
+    ├── migrations/
+    ├── models.py
+    ├── tests.py
+    ├── urls.py
+    └── views.py</pre>
+<div class="code-annotations-overlay-container">
+     #1 Management directory
+     <br/>#2 __init__.py file to make the directory a module
+     <br/>#3 Nested commands directory
+     <br/>#4 __init__.py file to make the directory a module
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p51">
+<p>With the structure in place, it is time to create the file. To make a management command called <code>musicians</code>, you need a file in the commands directory called musicians.py. Inside that file, you create a class that inherits from <code>django.core .management.base.BaseCommand</code> (another unnecessary level of nesting—the Django developers must have been on an organizational bender). Django doesn’t care what you call your class, as long as you inherit from <code>BaseCommand</code>. As the file name is what determines the command name, you only ever end up with one class in the file. I typically get creative and call my class <code>Command</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p52">
+<p>The key part of your <code>Command</code> class is the <code>.handle()</code> method, which Django calls when your management command gets run. It is best practice to use <code>*args</code> and <code>**options</code> in the signature of <code>.handle()</code>. For the first version of the <code>musicians</code> command, it isn’t necessary, but stick with it for now, and you’ll use these pieces in the next section when you add command-line arguments. </p>
+</div>
+<div class="readable-text intended-text" id="p53">
+<p>By inheriting from <code>BaseCommand</code>, you automatically get some features, like <code>help</code>. If you include a <code>help</code> attribute on your class, Django uses its value to populate the command-line help information. </p>
+</div>
+<div class="readable-text intended-text" id="p54">
+<p>Our <code>musicians</code> command lists all the <code>Musician</code> objects in the database, so the command imports the <code>MusicianModel</code>, performs a query on it, and outputs the result. It is recommended to use <code>self.stdout.write()</code> for output inside of a management command instead of <code>print()</code>. The <code>print()</code> function will work, but by using <code>self.stdout</code>, you can take advantage of the testing capabilities for commands, covered later. The following listing contains the code for the first version of the <code>musicians</code> command. </p>
+</div>
+<div class="browsable-container listing-container" id="p55">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 9.2</span> A management command that displays the Musician objects in the database</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/management/commands/musicians.py
+from django.core.management.base import BaseCommand
+from bands.models import Musician
+
+class Command(BaseCommand):<span class="aframe-location"></span> #1
+    help = "Lists registered musicians" <span class="aframe-location"></span> #2
+
+  <span class="aframe-location"></span>  def handle(self, *args, **options): #3
+        for musician in Musician.objects.all(): <span class="aframe-location"></span> #4
+            self.stdout.write(<span class="aframe-location"></span> #5
+                f"{musician.last_name}, {musician.first_name}"
+            )</pre>
+<div class="code-annotations-overlay-container">
+     #1 Management commands are classes that inherit from BaseCommand.
+     <br/>#2 Provide a help string for the --help command-line flag.
+     <br/>#3 The .handle() method is the command’s invocation point.
+     <br/>#4 Query and loop through all Musician objects.
+     <br/>#5 Output each Musician, using self.stdout.write() instead of print().
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p56">
+<p>With the file in place, you’re ready to go. First off, run <code>manage.py</code> without any arguments, and notice you now have a <code>bands</code> section with the <code>musicians</code> command inside of it:</p>
+</div>
+<div class="browsable-container listing-container" id="p57">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py
+
+Type 'manage.py help &lt;subcommand&gt;' for help on a specific subcommand.
+
+Available subcommands:
+
+[auth]
+    changepassword
+    createsuperuser
+
+[bands]
+    musicians
+
+...</pre>
+</div>
+</div>
+<div class="readable-text" id="p58">
+<p>If you aren’t seeing the <code>bands</code> grouping or the <code>musicians</code> command, double-check that you created the bands/management/commands structure correctly and remembered each of the required __init__.py scripts. If the command is there, then run it:</p>
+</div>
+<div class="browsable-container listing-container" id="p59">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py musicians
+Bonham, John
+Cousin, Nicky
+Hendrix, Jimi
+Lennon, John
+Star, Ringo
+Vai, Steve</pre>
+</div>
+</div>
+<div class="readable-text" id="p60">
+<p>You should see each of the <code>Musician</code> objects in your database output to the screen. I mentioned that Django automatically provides a help interface:</p>
+</div>
+<div class="browsable-container listing-container" id="p61">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py musicians --help
+usage: manage.py musicians [-h] [--version] [-v {0,1,2,3}]
+                           [--settings SETTINGS]
+                           [--pythonpath PYTHONPATH] [--traceback]
+                           [--no-color] [--force-color] [--skip-checks]
+
+Lists registered musicians <span class="aframe-location"></span> #1
+
+options:
+  -h, --help            show this help message and exit
+  --version             Show program's version number and exit.
+  -v {0,1,2,3}, --verbosity {0,1,2,3}
+                        Verbosity level; 0=minimal output,
+                        1=normal output, 2=verbose output,
+                        3=very verbose output
+  --settings SETTINGS   The Python path to a settings module, e.g.
+                        "myproject.settings.main". If this isn't
+                        provided, the DJANGO_SETTINGS_MODULE environment
+                        variable will be used.
+  --pythonpath PYTHONPATH
+                        A directory to add to the Python path, e.g.
+                        "/home/djangoprojects/myproject".
+  --traceback           Raise on CommandError exceptions.
+  --no-color            Don't colorize the command output.
+  --force-color         Force colorization of the command output.
+  --skip-checks         Skip system checks.</pre>
+<div class="code-annotations-overlay-container">
+     #1 The help string from your command class
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p62">
+<p>There is a lot buried in there. For now, just note that your help string is showing up. The rest of the options get covered in the next section when command-line arguments get discussed. </p>
+</div>
+<div class="readable-text" id="p63">
+<h2 class="readable-text-h2"><span class="num-string">9.3</span> Handling arguments</h2>
+</div>
+<div class="readable-text" id="p64">
+<p>When you write a program, you often need to pass in a some configuration information or data that changes the behavior of the script. Consider the <code>musicians</code> management command; it would be great to be able to filter the musicians based on name or date of birth, especially if you have a lot in your database. The kinds of arguments you pass to a command-line script are divided into two categories: positional arguments and flags. A positional argument is a value provided based on its spot on the command-line and is typically a piece of data or a filter on data. A flag is an optional argument that changes the behavior of the command. </p>
+</div>
+<div class="readable-text intended-text" id="p65">
+<p>For example, in Unix, the <code>zip</code> command creates a compressed archive. It takes two or more positional arguments. The first argument is the name of the archive to be created, the second and any subsequent arguments are the names of the files to put in the archive. If you want to know more about what <code>zip</code> is doing, you can add the <code>--verbose</code> flag, and it will print out more information. Figure 9.1 shows the parts of the <code>zip</code> command and its arguments. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p66">
+<img alt="figure" height="209" src="../../OEBPS/Images/CH09_F01_Trudeau.png" width="896"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 9.1</span> Positional and flag arguments to the <code>zip</code> command</h5>
+</div>
+<div class="readable-text" id="p67">
+<p>In Unix systems, flags begin with either a dash (<code>-</code>) or a double-dash (<code>--</code>). Typically, the double-dash format is a readable word, while the single dash is an abbreviation. For example, most Unix commands support <code>-h</code> and <code>--help</code> as optional flags, both causing the command’s help information to be printed to the terminal. With the <code>zip</code> command, <code>--verbose</code> can be shortened to <code>-v</code>. The <code>BaseCommand</code> class implements this flag for you out of the box. </p>
+</div>
+<div class="readable-text print-book-callout" id="p68">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>Normally, I’d write about a function’s arguments, but when you’re writing about command-line arguments and function arguments in the same sentence, that can be confusing. For the rest of this chapter, a function’s arguments will be referred to as <em>parameters</em> to help differentiate.</p>
+</div>
+<div class="readable-text" id="p69">
+<p>All your script’s arguments get passed as strings by the operating system to your program. The Python standard library has a module called <code>argparse</code>, which parses these strings and turns them into positional arguments and flags. Django’s management commands wrap this very same library, so you have less code to write.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p70">
+<h5 class="callout-container-h5 readable-text-h5"><code>argparse</code> references</h5>
+</div>
+<div class="readable-text" id="p71">
+<p>The examples in this chapter don’t require familiarity with <code>argparse</code>; you’ll be fine if you haven’t used it before. It’s a quite complex library, with a lot of choices. To take full advantage of its power, you’ll want to dig in a little deeper:</p>
+</div>
+<ul>
+<li class="readable-text" id="p72"> Python’s documentation: <a href="http://mng.bz/M9jE">http://mng.bz/M9jE</a> </li>
+<li class="readable-text" id="p73"> Python’s <code>argparse</code> how-to: <a href="http://mng.bz/amax">http://mng.bz/amax</a> </li>
+<li class="readable-text" id="p74"> An in-depth tutorial: <a href="http://mng.bz/g7GZ">http://mng.bz/g7GZ</a> </li>
+</ul>
+</div>
+<div class="readable-text" id="p75">
+<p>Normally, when using <code>argparse</code>, you are responsible for instantiating a parser, but the <code>BaseCommand</code> class does this for you. When working with a Django management command, you override the <code>.add_arguments()</code> method, which gets the parser as parameter. Inside your <code>.add_arguments()</code> method, you register any command-line positional arguments and flags you want for your management command. </p>
+</div>
+<div class="readable-text intended-text" id="p76">
+<p>Consider adding three filter flags to our <code>musicians</code> management command: one for the birth year and one for each the first and last name. To do this, you need to call the parser object’s <code>.add_argument()</code> method three times: once for each flag. The first parameter to <code>.add_argument()</code> is the name of the argument you’re registering. You indicate it is a flag by naming it with leading dashes (as opposed to a positional argument, which has no dashes). For flags, you can optionally provide a second parameter with the short-form name of the flag. To add a flag for the musician’s last name, the first two parameters to <code>.add_argument()</code> are <code>--last_name</code> and <code>-l</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>The parser’s <code>.add_argument()</code> method takes 11 different parameters, allowing you to finely control how many instances of an argument there are, default values, what type the string should be converted into, and much more. For our <code>musicians</code> example, let’s keep it simple and just add the <code>help</code> parameter. The string value of <code>help</code> gets included in the help screen for the management command, explaining how your flag gets used. </p>
+</div>
+<div class="readable-text intended-text" id="p78">
+<p>If the only parameters you pass to <code>.add_argument()</code> are the name of the flag and the <code>help</code> option, your flag gets configured to expect a string value after it, which, in this case, is the data used to filter by last name.</p>
+</div>
+<div class="readable-text intended-text" id="p79">
+<p>Recall that the <code>.handle()</code> method takes <code>*args</code> and <code>**options</code> in its signature. When you implement <code>.add_arguments()</code>, the <code>options</code> parameter can be treated like an <code>argparse</code> namespace. That’s the dictionary-like object that contains the positional arguments and flags passed to your management command. </p>
+</div>
+<div class="readable-text intended-text" id="p80">
+<p>To implement a filter based on a musician’s last name, you first check the contents of <code>options["last_name"]</code>. If the <code>--last_name</code> (or <code>-l</code>) flags got used, the value passed to the flag gets included in <code>options</code>. If the flag wasn’t present, then <code>options["last_name"]</code> contains <code>None</code>.</p>
+</div>
+<div class="readable-text intended-text" id="p81">
+<p>Back in chapter 4, you learned how to write database queries using the <code>.filter()</code> method. In particular, you can modify a query using double-underscore field-lookup modifiers. Passing <code>last_name__gte=value</code> to the <code>Musician</code> query returns all the <code>Musician</code> objectss with last names greater than or equal to the provided value. If <code>options["last_name"]</code> isn’t empty, then you filter based on its content. </p>
+</div>
+<div class="readable-text print-book-callout" id="p82">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>To keep things simple, the name queries are case sensitive; otherwise, you have to deal with the fact that ASCII <em>a</em> &gt; <em>A</em>. Querying a last name beginning with <em>Z</em> includes any last names that start with a lowercase letter.</p>
+</div>
+<div class="readable-text" id="p83">
+<p>Writing a filter based on first names is the same as last names, except using a <code>--first_name</code> flag and a <code>first_name__gte</code> field-lookup modifier. Filtering by birth date is a little trickier. To filter a database column that contains a date, you need to pass the query a <code>datetime</code> object. All command-line arguments are strings, so before you create your query, you need to convert the command-line flag into a date. Dates are problematic, as their format differs between regions. As a programmer, my default for handling this problem is to make everyone uncomfortable and require the year-month-day format (it’s the only sane value numerically, and it’s a standard: ISO 8601). </p>
+</div>
+<div class="readable-text intended-text" id="p84">
+<p>It is all well and good to write “just use my format,” but of course, users don’t always pay attention. There is a chance your user won’t read the instructions and may pass you a date that <code>datetime</code> can’t parse. You could just let <code>datetime</code> throw an error and get the resulting ugly stack trace, or you could catch the <code>datetime</code> error and throw your own. Django’s management commands have their own exception: <code>django.core.management.base.CommandError</code>. If you throw one of these, Django formats a pretty error message and even color codes it if the user’s terminal supports it. </p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>Listing 9.3 has the updated code for the <code>musicians</code> management command, which now supports filtering based on the musician’s first name, last name, and date of birth. For each of the three filters, a command line flag is available, so the user can specify the filter. To register a flag, you call <code>.add_argument()</code> on the parse object in the command’s <code>.add_arguments()</code> method. Inside the <code>.handle()</code> method, you query the musicians and modify the query based on which flags got included. The <code>.filter()</code> query method supports field-lookup modifiers, allowing you to filter the contents based on the <code>Musician</code> <code>Model</code> fields. The <code>options</code> object contains the values of any flags used when a management command gets invoked. </p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 9.3</span> Add filtering to your <code>musicians</code> management command</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/management/commands/musicians.py
+from datetime import datetime
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
+from bands.models import Musician
+
+class Command(BaseCommand):
+    help = "Lists registered musicians"
+
+    def add_arguments(self, parser):<span class="aframe-location"></span> #1
+        parser.add_argument("--last_name", "-l", <span class="aframe-location"></span> #2
+         <span class="aframe-location"></span>   help=(  #3
+                "Query musicians whose last name is greater than or equal"
+                " to this value. Note this is case sensitive."
+            )
+        )
+        parser.add_argument("--first_name", "-f", help=("Query musicians "
+            "whose first name is greater than or equal to this value. "
+            "Note this is case sensitive."))
+        parser.add_argument("--birth", "-b", help=("Query musicians "
+            "whose birth date is greater than or equal to this value. "
+            "Date must be given in YYYY-MM-DD format."))
+
+    def handle(self, *args, **options):
+        musicians = Musician.objects.all() <span class="aframe-location"></span> #4
+     <span class="aframe-location"></span>   if options['last_name']: #5
+            musicians = musicians.filter(
+                last_name__gte=options["last_name"] <span class="aframe-location"></span> #6
+            )
+
+        if options['first_name']: <span class="aframe-location"></span> #7
+            musicians = musicians.filter(
+                first_name__gte=options["first_name"]
+            )
+
+        if options['birth']:
+            try:
+                birth = datetime.strptime( <span class="aframe-location"></span> #8
+                    options["birth"], "%Y-%m-%d"
+                )
+            except ValueError:
+                raise CommandError( <span class="aframe-location"></span> #9
+                    "Birth date must be provided in YYYY-MM-DD format")
+
+            musicians = musicians.filter(birth__gte=birth)
+
+        for musician in musicians: <span class="aframe-location"></span> #10
+            self.stdout.write(
+                f"{musician.last_name}, {musician.first_name} "
+                f"({musician.birth})"
+            )</pre>
+<div class="code-annotations-overlay-container">
+     #1 Implement .add_arguments() to register command-line positional arguments and flags.
+     <br/>#2 The parser object passed into .add_arguments() is an argparse parser. Use its .add_argument() method to register a flag. Flags are indicated by leading dashes.
+     <br/>#3 The help parameter gets used by .add_argument() to add flag-specific information to the help screen.
+     <br/>#4 Start by querying all Musician objects.
+     <br/>#5 If the --last_name flag gets used, options["last_name"] contains the flag’s value; otherwise, it is None.
+     <br/>#6 Filter the query set, using all names greater than or equal to the --last_name flag’s value.
+     <br/>#7 Filter based on the --first_name flag.
+     <br/>#8 Parse the --birth value as year-month-day into a datetime object to be used in the filter.
+     <br/>#9 If parsing the date results in an error, catch the error and raise a CommandError instead; the output is friendlier than a stack trace.
+     <br/>#10 Loop through the query set result after all filters have been applied, and then write each musician value using self.stdout.write().
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<p>With the code in place, it is time to test out your command. Here are some possible tests you can run:</p>
+</div>
+<div class="browsable-container listing-container" id="p88">
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">(venv) RiffMates$ python manage.py musicians <span class="aframe-location"></span> #1
+Bonham, John (1948-07-31)
+Cousin, Nicky (2000-01-13)
+Hendrix, Jimi (1942-11-27)
+Lennon, John (1940-10-09)
+Star, Ringo (1942-11-27)
+Vai, Steve (1960-06-06)
+(venv) RiffMates$ python manage.py musicians
+<span class="">↪</span><span class="">↪</span> --last_name Loblaw <span class="aframe-location"></span> #2
+Star, Ringo (1942-11-27)
+Vai, Steve (1960-06-06)
+(venv) RiffMates$ python manage.py musicians --first_name J
+Bonham, John (1948-07-31)
+Cousin, Nicky (2000-01-13)
+Hendrix, Jimi (1942-11-27)
+Lennon, John (1940-10-09)
+Star, Ringo (1942-11-27)
+Vai, Steve (1960-06-06)
+(venv) RiffMates$ python manage.py musicians --first_name O
+<span class="">↪</span><span class="">↪</span> --last_name B <span class="aframe-location"></span> #3
+Star, Ringo (1942-11-27)
+Vai, Steve (1960-06-06)
+(venv) RiffMates$ python manage.py musicians
+<span class="">↪</span><span class="">↪</span> --birth 1950-01-30 <span class="aframe-location"></span> #4
+Cousin, Nicky (2000-01-13)
+Vai, Steve (1960-06-06)
+(venv) RiffMates$ python manage.py musicians
+<span class="">↪</span><span class="">↪</span> --birth tomorrow <span class="aframe-location"></span> #5
+CommandError: Birth date must be provided in YYYY-MM-DD format</pre>
+<div class="code-annotations-overlay-container">
+     #1 Command-line flags are optional; without any, the management command runs no further filters and outputs all musicians.
+     <br/>#2 A greater-than-or-equal filter can be a full string or a single letter.
+     <br/>#3 Flags can be combined. Although all musicians have a last name of B or greater, the first name restriction of O whittles the results down to just two. The filters are implemented as an AND condition.
+     <br/>#4 Filtering based on a date in year-month-day format
+     <br/>#5 datetime can’t parse tomorrow, so a Command- Error is raised; this is more user friendly than a stack trace.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p89">
+<h3 class="readable-text-h3"><span class="num-string">9.3.1</span> Built-in arguments</h3>
+</div>
+<div class="readable-text" id="p90">
+<p>Now that you’ve added flags to the <code>musician</code> management command, the help screen has more stuff in it:</p>
+</div>
+<div class="browsable-container listing-container" id="p91">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py musicians --help
+usage: manage.py musicians [-h] [--last_name LAST_NAME]
+                           [--first_name FIRST_NAME] [--birth BIRTH]
+                           [--version] [-v {0,1,2,3}]
+                           [--settings SETTINGS] [--pythonpath PYTHONPATH]
+                           [--traceback] [--no-color] [--force-color]
+                           [--skip-checks]
+
+<span class="aframe-location"></span>Lists registered musicians  #1
+
+options:
+<span class="aframe-location"></span>  -h, --help            show this help message and exit  #2
+  --last_name LAST_NAME, -l LAST_NAME <span class="aframe-location"></span> #3
+                        Query musicians whose last name is greater than or
+                        equal to this value. Note this is case-sensitive.
+  --first_name FIRST_NAME, -f FIRST_NAME
+                        Query musicians whose first name is greater than
+                        or equal to this value. Note this is case-sensitive.
+  --birth BIRTH, -b BIRTH
+                        Query musicians whose birth date is greater than
+                        or equal to this value. Date must be given in
+                        YYYY-MM-DD format.
+  --version             Show program's version number and exit.
+  -v {0,1,2,3}, --verbosity {0,1,2,3}
+                        Verbosity level; 0=minimal output, 1=normal
+                        output, 2=verbose output, 3=very verbose output
+  --settings SETTINGS   The Python path to a settings module, e.g.
+                        "myproject.settings.main". If this isn't provided,
+                        the DJANGO_SETTINGS_MODULE environment variable
+                        will be used.
+  --pythonpath PYTHONPATH
+                        A directory to add to the Python path, e.g.
+                        "/home/djangoprojects/myproject".
+  --traceback           Raise on CommandError exceptions.
+  --no-color            Don't colorize the command output.
+  --force-color         Force colorization of the command output.
+  --skip-checks         Skip system checks.</pre>
+<div class="code-annotations-overlay-container">
+     #1 The main help string gets set by the help attribute of your command class.
+     <br/>#2 The --help flag gets created for you.
+     <br/>#3 The help content for the --last_name flag based on the help parameter to .add_argument() and the flags for first name and birth date following it.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p92">
+<p>As before, your command class’s <code>help</code> attribute is the main help message, but now, each flag you defined shows in the message as well. Django also provides a few more flags by default.</p>
+</div>
+<div class="readable-text intended-text" id="p93">
+<p>The <code>--version</code> flag prints out the Django version and exits. It isn’t clear to me why they bother, as there is a <code>version</code> management command that does the same thing. </p>
+</div>
+<div class="readable-text intended-text" id="p94">
+<p>The <code>--verbosity</code> flag gets used by the built-in Django management commands to display more or less debug information as part of their output. Currently, using it with the <code>musicians</code> command does nothing, but <code>options["verbosity"]</code> is populated by the flag, so you could change your output based on its value.</p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>The <code>-settings</code> flag changes which configuration Django uses, with the default being your settings.py file. Similarly, you can change your Python path if you need to add additional modules, using <code>--pythonpath</code>.</p>
+</div>
+<div class="readable-text intended-text" id="p96">
+<p>By default, raising a <code>CommandError</code> does not display a stack trace; instead, it prints a colorized error message. If you want to see the stack trace, the <code>--traceback</code> flag outputs it if an exception occurs.</p>
+</div>
+<div class="readable-text intended-text" id="p97">
+<p>Django automatically applies terminal colors to your management command if your terminal supports them. You can turn this off using <code>--no-color</code>, or if you’re using the command in a situation where color is normally off (e.g., piping your command to another command), <code>--force-color</code> forces coloring to be turned on.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p98">
+<h5 class="callout-container-h5 readable-text-h5">Pretty pretty colors</h5>
+</div>
+<div class="readable-text" id="p99">
+<p>In addition to controlling your command’s colors through the <code>--no-color</code> and <code>--force-color</code> flags, you can also change the colors themselves. This isn’t done through the code but through an environment variable: <code>DJANGO_COLORS</code>. Django ships with three different palettes: dark, light, and nocolor. On a Unix-based machine using a bash-compatible shell, you change to the light palette with the following command:</p>
+</div>
+<div class="browsable-container listing-container" id="p100">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ export DJANGO_COLORS="light"</pre>
+</div>
+</div>
+<div class="readable-text" id="p101">
+<p>This shell variable even allows you to control exactly which colors to use. For more information on controlling management command colors, see <a href="http://mng.bz/eEqw">http://mng.bz/eEqw</a>.</p>
+</div>
+</div>
+<div class="readable-text" id="p102">
+<p>The same system checks that get run when the development server gets started are also available through the <code>check</code> management command. These checks also get run by default when you invoke your own commands. To skip them, use the <code>--skip-checks</code> flag. Alternatively, you can set your command class’s <code>requires_system_checks</code> attribute to an empty <code>tuple</code> to disable checking programmatically. </p>
+</div>
+<div class="readable-text" id="p103">
+<h2 class="readable-text-h2"><span class="num-string">9.4</span> Testing, and using STDOUT and STDERR</h2>
+</div>
+<div class="readable-text" id="p104">
+<p>Chapter 8 was all about testing Django views; your custom management commands are code, so they deserve to be tested as well. To help with this, Django provides the <code>django.core.management.call_command</code> function, allowing you to invoke a management command from code. </p>
+</div>
+<div class="readable-text intended-text" id="p105">
+<p>A management command is often all about its output. For example, the <code>musicians</code> command displays musician information to the screen. Recall that I insisted you use <code>self.stdout.write()</code> instead of calling <code>print()</code>; testing is why. The <code>BaseCommand</code> class provides proxies to both STDOUT and STDERR, which the <code>call_command()</code> function interfaces with. By using <code>self.stdout</code> and <code>self.stderr</code>, your tests can capture all of your command’s output to a stream and then validate the stream’s contents. </p>
+</div>
+<div class="readable-text intended-text" id="p106">
+<p>Consider testing the <code>musicians</code> command: first, you you need to create at least one <code>Musician</code> object during setup. Then, you’ll need a test method that runs <code>call_ command()</code>, a stream to capture the output, and assertion code that validates the contents of the stream. The following listing shows exactly that.</p>
+</div>
+<div class="browsable-container listing-container" id="p107">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 9.4</span> Test code for the <code>musicians</code> management command</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+import io
+from django.core.management import call_command
+...
+class TestMusiciansCommand(TestCase):
+    def setUp(self):
+        self.musician = Musician.objects.create( <span class="aframe-location"></span> #1
+            first_name="First",
+            last_name="Last",
+            birth=date(1900, 1, 1)
+        )
+
+    def test_command(self):
+        output = io.StringIO() <span class="aframe-location"></span> #2
+
+        call_command("musicians", stdout=output) <span class="aframe-location"></span> #3
+        self.assertIn("First", output.getvalue()) <span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Create a Musician object in the test database.
+     <br/>#2 Use a string stream to capture STDOUT.
+     <br/>#3 The call_command() function takes the name of a command and optionally redirects STDOUT to a stream.
+     <br/>#4 Assert that the musician’s name ("First") is in the stream.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p108">
+<p>With the new test case created, you now run the <code>test</code> management command, which you learned about in chapter 8. </p>
+</div>
+<div class="readable-text intended-text" id="p109">
+<p>This example only invokes the simplest version of <code>musicians</code>, without any extra arguments. The <code>call_command()</code> function takes optional parameters, specifying the same kinds of positional arguments and flags that are used on the command-line. You can add <code>--last_name</code> <code>B</code> as parameter to <code>call_command()</code>, or if you prefer, you can also specify it as <code>last_name="B"</code>. To write a test case that checks all the functionality in <code>musicians</code>, you need a few more <code>Musician</code> objects and more invocations checking all flag combinations. I’ll leave that to you to play with. </p>
+</div>
+<div class="readable-text print-book-callout" id="p110">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong>If your test invokes <code>call_command()</code> multiple times, don’t forget to create a new <code>StringIO</code> buffer each time; otherwise, you’ll be including old results in your output </p>
+</div>
+<div class="readable-text" id="p111">
+<h2 class="readable-text-h2"><span class="num-string">9.5</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p112"> Create a <code>venues</code> management command that lists all the <code>Venue</code> objects in your database. Include a <code>--rooms</code> flag to optionally display the names of the rooms associated with a venue. Hint: the <code>action="store_true"</code> parameter to <code>add_ arguments()</code> changes your flag, so it acts as a Boolean flag and doesn’t expect any additional arguments.  </li>
+<li class="readable-text" id="p113"> When you delete an object with a <code>FileField</code> or <code>ImageField</code>, Django does not remove the associated file. Write a <code>cleanup</code> command that searches through all the <code>Musician</code> and <code>Venue</code> objects for their associated pictures and compares this to the uploaded files, removing any orphans. Hint 1: use a Python <code>set</code> to contain all picture references and another to contain all file references, and then use the <code>set.difference()</code> method to determine the orphan list. Hint 2: convert the picture values into <code>pathlib.Path</code> objects before comparing them. Hint 3: test your code a lot, printing out results instead of deleting files until you’re absolutely sure it works.  </li>
+</ol>
+<div class="readable-text" id="p114">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p115"> A management command is a Python script that allows you to interact with your Django project from the command-line. </li>
+<li class="readable-text" id="p116"> You’ve used Django management commands throughout the book already, to create a superuser, create and migrate ORM tables, launch a Django-aware REPL, launch your database’s command-line tool, save and load fixtures, and run your unit tests. </li>
+<li class="readable-text" id="p117"> Django comes with many management commands that give you the ability to create superusers, change passwords, import and export data, manage database interactions, run tests, and more. </li>
+<li class="readable-text" id="p118"> The <code>changepassword</code> management command allows you to change a user’s password. It does not require authentication to do so, as Django expects people with access to the command-line to be administrators. </li>
+<li class="readable-text" id="p119"> The <code>diffsettings</code> management command displays the difference between the default configuration of a project and your own.  </li>
+<li class="readable-text" id="p120"> The <code>flush</code> management command wipes all data from your database but keeps the table structure and current migration state. It is useful when developing a new project to clear out test data.  </li>
+<li class="readable-text" id="p121"> The <code>sqlflush</code> and <code>sqlmigrate</code> management commands print out the SQL that would be run for the corresponding <code>flush</code> and <code>migrate</code> commands.  </li>
+<li class="readable-text" id="p122"> Each management command is its own file associated with a Django app, living inside the app’s management/commands directory. The name of the file is the name of the command. The directories are Python modules and require a __init__.py file.  </li>
+<li class="readable-text" id="p123"> Django expects each management command file to contain a class that extends from <code>BaseCommand</code>. </li>
+<li class="readable-text" id="p124"> The <code>.handle()</code> method in your management command class is the entry point for performing an action. It is invoked by Django when the management command gets run.  </li>
+<li class="readable-text" id="p125"> Instead of using <code>print()</code> in a management command, it is recommended to use <code>self.stdout.write()</code> and <code>self.stderr.write()</code>. Using these proxies to the output streams makes it easier to write tests for your management command. </li>
+<li class="readable-text" id="p126"> Command-line arguments are divided into two types: positional arguments and flags. Flags are typically optional and are denoted by a leading dash or double-dash. </li>
+<li class="readable-text" id="p127"> Django automatically creates a <code>--help</code> argument for your command and displays the message found within your command class’s <code>help</code> attribute.  </li>
+<li class="readable-text" id="p128"> The <code>BaseCommand</code> class wraps Python’s <code>argparse</code> library for you, creating a command-line argument parser and parsing any additional arguments to your command.  </li>
+<li class="readable-text" id="p129"> You can register command-line positional arguments and flags with the <code>argparse</code> parser by overriding the command class’s <code>.add_arguments()</code> method. The method gets called with a reference to the parser, which you use to register arguments through its <code>.add_argument()</code> method.  </li>
+<li class="readable-text" id="p130"> The <code>.handle()</code> method gets passed <code>options</code>, which contains the positional arguments and flags passed on the command-line to your management command.  </li>
+<li class="readable-text" id="p131"> If you raise a <code>CommandError</code> in your management command, Django suppresses its stack trace, printing a colorized message instead. This behavior can be overridden using the <code>--traceback</code> flag.  </li>
+<li class="readable-text" id="p132"> The <code>call_command()</code> function allows you to invoke a management command programmatically. This is particularly helpful for writing unit tests for your command.  </li>
+<li class="readable-text" id="p133"> You can capture the output from a management command by passing an <code>io.String</code> stream to the <code>stdout</code> and <code>stderr</code> parameters of the <code>call_command()</code> function.  </li>
+</ul>
+</div></body>
+</html>

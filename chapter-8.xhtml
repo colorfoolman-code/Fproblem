@@ -1,0 +1,707 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>8 Testing your project</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">8</span> </span> <span class="chapter-title-text">Testing your project</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Reasons to write automated tests</li>
+<li class="readable-text" id="p3">Writing and running unit tests in Django</li>
+<li class="readable-text" id="p4">Authenticating a user during a test</li>
+<li class="readable-text" id="p5">Posting data and uploading files during a test</li>
+</ul>
+</div>
+<div class="readable-text" id="p6">
+<p>How do you know that a change in your code isn’t going to break existing functionality? Automated testing is the answer. This chapter shows you how to write tests to check that your project continues to work even while you’re making changes and adding features.</p>
+</div>
+<div class="readable-text" id="p7">
+<h2 class="readable-text-h2"><span class="num-string">8.1</span> Automated testing</h2>
+</div>
+<div class="readable-text" id="p8">
+<p>If you’ve been coding along as you’ve been reading, you have written more than 20 views and likely have over a thousand lines of code. It doesn’t take long before manually testing everything in your project becomes a time-consuming endeavor. This becomes more complicated with a multiuser website: you need to test some views several times, using different credentials to ensure the right people can get where they’re supposed to and the wrong people can’t. </p>
+</div>
+<div class="readable-text intended-text" id="p9">
+<p>This section’s header gives away the solution: automated testing. You write code to test your code. Learning how to write good, automated tests is a skill in itself and an important part of working as a developer. It isn’t uncommon to find a 1:1 relationship between lines of code and lines of tests in larger organizations with a high degree of automation. That means you’ll be spending half your time writing tests.</p>
+</div>
+<div class="readable-text" id="p10">
+<h3 class="readable-text-h3"><span class="num-string">8.1.1</span> The scope of tests</h3>
+</div>
+<div class="readable-text" id="p11">
+<p>Let’s touch on a bit of background before diving into how Python and Django structure automated tests. Automated testing is usually broken down into categories. The category definitions are a little loose, and you’ll find different developers split them at different points. Figure 8.1 shows a four-category version of the testing pyramid. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p12">
+<img alt="figure" height="424" src="../../OEBPS/Images/CH08_F01_Trudeau.png" width="744"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 8.1</span> Hierarchy of testing categories</h5>
+</div>
+<div class="readable-text intended-text" id="p13">
+<p>If you search around on the internet, you’ll find several versions of this diagram, ranging from three levels to seven levels and with different names for each category. The most well-defined category is the one on the bottom: unit tests. A <em>unit test</em> is a test performed on a single component of software. This can be vague though, as two people might not agree on the definition of “component.” Typically, a unit test is at the level of a single function. </p>
+</div>
+<div class="readable-text intended-text" id="p14">
+<p>You want your unit level to be as independent of other parts of your software as possible and with as few side effects as possible. If a series of tests gets done at the unit level, it shouldn’t matter what order they run in; you should always get the same result. This can get tricky because writing to the database is a side effect. I’ll cover this in more detail later in the chapter.</p>
+</div>
+<div class="readable-text intended-text" id="p15">
+<p>The next level up in the testing pyramid is <em>integration tests</em>. These are tests that operate over several units. The purpose here is to ensure that when the different pieces work together, you still get the desired result. This level is sometimes also known as <em>system tests</em>. In software, that has a graphical component: the integration typically is still only at the business logic or server level, not the GUI. </p>
+</div>
+<div class="readable-text intended-text" id="p16">
+<p><em>Behavioral tests</em> are those that map to the requirements. You, or someone on your software team, has decided that a certain feature should exist and perform some action. A behavioral test ensures the feature is working as designed. These are also known as <em>acceptance tests</em>, named after Acceptance Criteria, which are part of a User Story, a common way of writing requirements in Agile development methodologies. This category of testing has become quite popular, as there are frameworks out there which specifically test at this level. One of the most popular is Cucumber (<a href="https://cucumber.io/">https://cucumber.io/</a>).</p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>At the top level of the pyramid, where you might be expecting an ominous looking eye, are <em>UI tests</em>. The name more or less gives it away: these are tests on the user interface. The line between this and behavioral tests can be rather blurry, as it is often hard to prove a feature works without interacting with the UI. At this level, you typically need custom tools that act like a user, interacting with the UI and clicking things. </p>
+</div>
+<div class="readable-text intended-text" id="p18">
+<p>The further up the test pyramid you travel, the slower and more expensive your tests become. Consider a web page where the user inputs their address and sees their cost of shipping calculated. To properly test this, you need all the variations on types of address (houses, apartments, rural routes, PO boxes, etc.) and all the variations on shipping zones. This could result in hundreds of test executions. If you test at the UI level, every single test execution requires the information to be entered in the browser; the data sent to the server; the server to do work; a look-up to happen in the database; the server to formulate a result; and, finally, the result to be displayed in the browser. This round trip is slow and requires you to run both a server and a browser. The vast majority of the logic in this example is in the backend, where the shipping cost gets calculated. By moving the testing down to the unit level, you skip most of the steps, making the test run significantly faster.</p>
+</div>
+<div class="readable-text intended-text" id="p19">
+<p>When you design tests, you want to appropriately select the level of testing. The vast majority of your tests should be at the unit test level. UI tests should focus on UI features, rather than using the UI as the testing interface. As much as possible, push your tests as far down the pyramid as they can go.</p>
+</div>
+<div class="readable-text intended-text" id="p20">
+<p>Speedy tests are important. If you test once a week, and something fails, it is hard to remember what you did to the code a week ago that caused the problem. If you test on every check-in of your code, possibly several times a day, you’ll be more likely to remember what you were doing that caused the failure. Testing more frequently is good; slow tests make you not want to do this. One reason for using a hierarchy of test categories is to set different test frequencies at different levels. Unit tests are small and fast and done at every check-in. Integration tests might get done once or twice a day, and behavioral and UI tests could be part of a nightly process.</p>
+</div>
+<div class="readable-text intended-text" id="p21">
+<p>Most of this chapter focuses on unit tests. Behavioral and UI tests require additional tools that are beyond the scope of this book. The line between unit tests and integration test is fuzzy in the Django world, as bigger views likely call several functions. A common unit-test point for Django code is the view itself.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p22">
+<h5 class="callout-container-h5 readable-text-h5">Test-driven development and behavior-driven development</h5>
+</div>
+<div class="readable-text" id="p23">
+<p>Two testing philosophies have become quite popular in the software world: <em>test-driven development</em> (TDD) and <em>behavior-driven development</em> (BDD). These ideas are based more around when you write your tests than how. TDD and BDD state that you should write your tests before you write your code. The idea is to decide on a function’s interface, write the tests for it, and then write the function. When all a function’s tests pass, you are done writing the function. BDD is similar to TDD, with the focus being at the behavioral level, writing requirements-level tests rather than function-level tests. </p>
+</div>
+<div class="readable-text" id="p24">
+<p>I am a huge proponent of automated testing and think it is a really important part of modern development. Software teams should set standards for their testing and not accept code as being complete unless there are enough tests to go with it. I’m indifferent regarding whether the tests should be written first. You could say I’m a fan of TDD and BDD but a little flexible about the implementation. </p>
+</div>
+</div>
+<div class="readable-text" id="p25">
+<h3 class="readable-text-h3"><span class="num-string">8.1.2</span> Automated testing in Python</h3>
+</div>
+<div class="readable-text" id="p26">
+<p>The Python standard library includes the <code>unittest</code> module to help you write automated tests. (You can write other categories of tests using it as well— don’t let the name confuse you). The library is based on four concepts:</p>
+</div>
+<ul>
+<li class="readable-text" id="p27"> Fixtures </li>
+<li class="readable-text" id="p28"> Test cases </li>
+<li class="readable-text" id="p29"> Test suites </li>
+<li class="readable-text" id="p30"> Test runners </li>
+</ul>
+<div class="readable-text" id="p31">
+<p>A <em>fixture</em>, in this case, is the preparation needed to run a test and any clean-up needed when the test is finished. This terminology overlaps Django’s use of the word <em>fixture</em>, which is data you can load into the database. The ideas are related, though: most of the time, test preparation is about getting your data set up. </p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>A <em>test case</em> is the code that runs to perform your test. In the <code>unittest</code> module, these are defined as classes. A <em>test suite</em> is a collection of test cases, and a <em>test runner</em> is a program that determines which tests to run. Python’s default test runner looks for files whose name begins with “test_” and runs any test cases found inside. </p>
+</div>
+<div class="readable-text intended-text" id="p33">
+<p>Django builds on top of the Python <code>unittest</code> module. It uses the same structure but provides its own test class and runner. Django’s runner knows how to deal with the Django ORM, and each time you run a set of tests, it creates a new copy of a database, which you can populate for your tests. Django also subclasses the test case class providing additional methods that specialize in testing Django views. </p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p34">
+<h5 class="callout-container-h5 readable-text-h5">Other test frameworks</h5>
+</div>
+<div class="readable-text" id="p35">
+<p>There are several third-party libraries that are alternatives to Python’s <code>unittest</code> framework. Two of the most popular are pytest (<a href="https://docs.pytest.org">https://docs.pytest.org</a>) and nose (<a href="https://nose.readthedocs.io/">https://nose.readthedocs.io/</a>). Both of these have plugins for interacting with Django. If you’re already a user of either of these, you can write your Django tests in your favorite flavor, if you wish. </p>
+</div>
+</div>
+<div class="readable-text" id="p36">
+<h2 class="readable-text-h2"><span class="num-string">8.2</span> Your first Django test</h2>
+</div>
+<div class="readable-text" id="p37">
+<p>Django thinks tests are important. You can tell, as it automatically creates a tests.py file when a new app gets added. The skeleton version of this file contains a single import: the <code>django.test.TestCase</code> class. This class inherits from the Python class of the same name. To write a unit test, you inherit from this class and add methods with names that begin with “test_”. </p>
+</div>
+<div class="readable-text intended-text" id="p38">
+<p>Way back in chapter 2 (it seems like so long ago, before we were friends), you wrote your first view: <code>credits()</code>. It is only appropriate that your first test should be for that very same view. The purpose of your test is to exercise the view and validate the results returned from it. Figure 8.2 shows the interleaved execution of a test for <code>credits()</code> and the view itself. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p39">
+<img alt="figure" height="1167" src="../../OEBPS/Images/CH08_F02_Trudeau.png" width="952"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 8.2</span> Testing the <code>credits()</code> view</h5>
+</div>
+<div class="readable-text" id="p40">
+<p>As the <code>credits()</code> view and its corresponding test case are both in the home app, a decent name for the test case is <code>TestHome</code>. Inside this class, you write a method called <code>.test_credits()</code>, which is the code that tests the view. </p>
+</div>
+<div class="readable-text intended-text" id="p41">
+<p>Django’s version of the <code>TestCase</code> class includes an object called <code>.client</code> that you use to interact with the website. The <code>.client</code> object has both <code>.get()</code> and <code>.post()</code> methods, emulating a browser interaction. Note that it only emulates it, so the template gets rendered, but no browser is involved. If there is JavaScript on the page, it doesn’t get run. Using <code>.client.get()</code> is almost like calling a view function directly, except it does it through the URL routing system. </p>
+</div>
+<div class="readable-text intended-text" id="p42">
+<p>Once you’ve invoked a view, you want to make sure it works properly. For a simple view, like <code>credits()</code>, there isn’t much to test besides getting back the right HTTP status code. In this case, the expected value is <code>200</code>, the HTTP response code for “all good.” To ensure you received this value, you call <code>.assertEqual()</code>. This is one of many assertion methods in the Python <code>TestCase</code> class that raises an exception if its stated condition isn’t met. For a full list of the assertion methods, see <a href="https://mng.bz/PZZ2">https://mng.bz/PZZ2</a>. The following listing shows the new contents of home/tests.py. Update your own copy to match. </p>
+</div>
+<div class="browsable-container listing-container" id="p43">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.1</span> A test case for the <code>credits()</code> view</h5>
+<div class="code-area-container">
+<pre class="code-area"># home/tests.py
+from django.test import TestCase <span class="aframe-location"></span> #1
+
+class TestHome(TestCase):<span class="aframe-location"></span> #2
+    def test_credits(self): <span class="aframe-location"></span> #3
+        response = self.client.get("/credits/") <span class="aframe-location"></span> #4
+        self.assertEqual(200, response.status_code) <span class="aframe-location"></span> #5</pre>
+<div class="code-annotations-overlay-container">
+     #1 Base class for all Django test cases
+     <br/>#2 Inherit from TestCase to define a test case.
+     <br/>#3 Methods that begin with test_ are run as tests.
+     <br/>#4 The .client.get() method calls a view through the URL routing system.
+     <br/>#5 Assert that the HTTP response code was the expected 200.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p44">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>The order of arguments to <code>.assertEqual()</code> isn’t important, but I always put the expected value first. Whatever you do, be consistent—this makes it easier to read the error if an assertion fails.</p>
+</div>
+<div class="readable-text" id="p45">
+<p>Django extends the default Python <code>unitest</code> runner with its own. Django’s runner knows about Django apps and will look for files and modules in apps whose names begin with “test”. You invoke the runner using the “test” management command:</p>
+</div>
+<div class="browsable-container listing-container" id="p46">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py test
+Found 1 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+. <span class="aframe-location"></span> #1
+----------------------------------------------------------------------
+Ran 1 test in 0.003s
+
+OK
+Destroying test database for alias 'default'...</pre>
+<div class="code-annotations-overlay-container">
+     #1 You get one period (.) for each test that runs and passes.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p47">
+<p>The output from the <code>test</code> command tells you how many tests got run and alerts you if any failed. To see what failure looks like, change the <code>200</code> to <code>42</code> in the <code>.assertEqual()</code> call, and then run the test again. The results are as follows:</p>
+</div>
+<div class="browsable-container listing-container" id="p48">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py test
+Found 1 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+F <span class="aframe-location"></span> #1
+======================================================================
+FAIL: test_credits (home.tests.TestHome.test_credits)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RiffMates/home/tests.py", line 8, in test_credits
+    self.assertEqual(42, response.status_code)
+AssertionError: 42 != 200
+
+----------------------------------------------------------------------
+Ran 1 test in 0.005s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...</pre>
+<div class="code-annotations-overlay-container">
+     #1 A failed assertion gets shown as F instead of a period (.). An E gets shown if your code raises an exception not caused by an assertion.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p49">
+<p>Test assert methods raise exceptions if their conditions don’t get met. In this case, <code>.assertEqual()</code> has decided that <code>42</code> <code>!=</code> <code>200</code>. Who am I to argue? Since assertions raise exceptions, you get a stack trace indicating where the failure happened. At the bottom of the output, you still see how many tests got run but also how many tests failed.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p50">
+<h5 class="callout-container-h5 readable-text-h5">Django likes trailing slashes</h5>
+</div>
+<div class="readable-text" id="p51">
+<p>Django expects a URL to end with a slash (/). If a URL does not end in a slash, Django issues a permanent redirect (HTTP <code>301</code>) with the correction. Users don’t notice this, as the browser takes care of it. If you forget the trailing slash in your test code, you’ll get the wrong status code in response. Make sure all your URLs in your test suite end in a slash, and you’ll be fine.</p>
+</div>
+</div>
+<div class="readable-text" id="p52">
+<p>That’s your first unit test for a view. One down, a little over 20 more to go. Don’t forget to change <code>42</code> back to <code>200</code>. </p>
+</div>
+<div class="readable-text" id="p53">
+<h2 class="readable-text-h2"><span class="num-string">8.3</span> Testing with the database</h2>
+</div>
+<div class="readable-text" id="p54">
+<p>The <code>credits()</code> view is pretty much the simplest view you can write. Testing more complex views requires a bit more effort, especially if you’re interacting with the ORM. The Django test runner creates a new test database each time it starts up. The good news is you don’t have to worry about your tests modifying your site’s data. The bad news is your test environment has an empty database. </p>
+</div>
+<div class="readable-text intended-text" id="p55">
+<p>When run, each test gets wrapped in a database transaction, which is a way of atomically grouping a series of actions. When the test method completes, Django rolls back the transaction, undoing anything you did in the test method. This might sound like a problem, but it is actually a good thing: the tests can be run in any order, each starting with the exact same state.</p>
+</div>
+<div class="readable-text intended-text" id="p56">
+<p>You likely want some things in your database to use with the tests, and fortunately, you don’t have to do this for every single test call. The Python <code>unittest</code> class has a method called <code>.setUp()</code> that gets invoked just before each test gets run. This is the perfect place to create your ORM objects as class members. </p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>Let’s write a test for the <code>musician()</code> view in the Bands app. You’ll recall this view displays details for the <code>Musician</code> <code>Model</code> passed in as an argument. Figure 8.3 shows the setting up and testing of this view. </p>
+</div>
+<div class="browsable-container figure-container" id="p58">
+<img alt="figure" height="1167" src="../../OEBPS/Images/CH08_F03_Trudeau.png" width="1081"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 8.3</span> Testing the <code>musician()</code> view</h5>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>In the diagram, you see the first thing the test needs to do is create a <code>Musician</code> object in the test database; it does this inside the <code>.setUp()</code> method, keeping it as an attribute of the test case. This makes your <code>Musician</code> object available in all tests. Next, like with the <code>credits()</code> view, you visit the musician view using the <code>.client.get()</code> method. There are two schools of thought here: you can look the URL up, or you can hardcode it. Looking the URL up makes your test more bulletproof. Hardcoding it catches a problem if you’ve accidentally moved the URL route. I tend to hard code my URLs in my tests, but that means if I do want to move a URL, I have to make changes to all my tests. <span class="aframe-location"></span></p>
+</div>
+<div class="readable-text intended-text" id="p60">
+<p>The musician view takes a <code>Musician</code> ID, which is sent in through the URL. The view looks up the corresponding <code>Musician</code> object and then renders a template, displaying the musician information. To test this view, you want to validate the HTTP response code, check the <code>Musician</code> in the view is the correct one, and possibly verify some of the HTML. You already saw how to check the <code>200</code> status code in the <code>credits()</code> view test. The other two things get checked by examining the response object returned by <code>.client.get()</code>. It contains a couple useful attributes: <code>.context</code> is the context object passed to the template rendering engine, and <code>.content</code> contains the actual rendered response. You can assert that the <code>Musician</code> object in the view’s context is the same as the one created by the test, and you can also check for values rendered in the HTML. </p>
+</div>
+<div class="readable-text print-book-callout" id="p61">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong><code>response.content</code> is stored as a binary object, so you need to convert it to a string to do a comparison.</p>
+</div>
+<div class="readable-text" id="p62">
+<p>The following listing contains the test code for the musician view, including the database setup. Add the code to bands/tests.py to try the test out.</p>
+</div>
+<div class="browsable-container listing-container" id="p63">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.2</span> A test case for the musician view</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+from datetime import date
+from django.test import TestCase
+from bands.models import Musician
+
+class TestBands(TestCase):
+    def setUp(self): <span class="aframe-location"></span> #1
+        self.musician = Musician.objects.create(first_name="First",
+            last_name="Last", birth=date(1900, 1, 1))
+
+    def test_musician_view(self):
+        url = f"/bands/musician/{self.musician.id}/"
+        response = self.client.get(url) <span class="aframe-location"></span> #2
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.context['musician'].id,
+            self.musician.id) <span class="aframe-location"></span> #3
+        self.assertIn(self.musician.first_name,
+            str(response.content)) <span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 The .setUp() method is called at class creation and is typically used to create database entries.
+     <br/>#2 Fetch the response for the musician view.
+     <br/>#3 Validate that the musician in the view’s context is the one in our test.
+     <br/>#4 Validate that the musician’s name shows up somewhere in the rendered HTML.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p64">
+<p>With your new test in place, use the <code>test</code> management command to execute it. I have a funny story for you. Ok, not funny “haha,” more like funny “what’s that smell.” Writing this example test actually helped me find a bug. The exercise in chapter 7 adds features to the musician view that require use of the <code>UserProfile</code> object. This view doesn’t require a user to be logged in, though, and the anonymous user doesn’t have an associated <code>UserProfile</code> object. Writing this test caused my initial version of the view to crash, and I had to go back and put a check for the profile’s existence in the code. See? Tests are important. </p>
+</div>
+<div class="readable-text intended-text" id="p65">
+<p>In addition to the <code>.setUp()</code> method, there is also a <code>.setUpClass()</code> class method. This gets called once when the <code>TestClass</code> is created. It may be more efficient to do your initial configuration there. If you’re using the <code>.setUpClass()</code> method, it is important to remember two things: it must be wrapped with the <code>@classmethod</code> decorator, as it is a class method, and you must call the parent’s method using <code>super().setUpClass()</code>, or you will get an error. </p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>Going along with <code>.setUp()</code> and <code>.setUpClass()</code> are <code>.tearDown()</code> and <code>.tearDownClass()</code>. The first gets called each time a test method completes, and the second gets called when the class finishes. The same rules about the decorator and call to <code>super()</code> apply to <code>.tearDownClass()</code>. The tear-down methods are useful in Python to do things like database clean-up. As Django already does this for you, you won’t find you need them as often when writing tests for Django code. The complete flow of creating a test class and running the setup and tear-down for each test is shown in figure 8.4. </p>
+</div>
+<div class="browsable-container figure-container" id="p67">
+<img alt="figure" height="1973" src="../../OEBPS/Images/CH08_F04_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 8.4</span> Order of method invocation of a <code>TestCase</code> class<span class="aframe-location"></span></h5>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p68">
+<h5 class="callout-container-h5 readable-text-h5">Using fixtures instead</h5>
+</div>
+<div class="readable-text" id="p69">
+<p>The Django <code>TestCase</code> class has an attribute named <code>fixtures</code> that takes a list of fixture filenames to load. You can use this instead of explicitly creating content. Fixture data gets loaded into the database once, at class creation time. Django will look for fixtures in your app directories as well as anywhere named in the <code>FIXTURE_DIRS</code> list in settings.py. </p>
+</div>
+<div class="readable-text" id="p70">
+<p>I prefer not to use fixtures in my tests; explicitly creating the objects in the test feels clearer to me. I also don’t like that there is no way of separating test fixtures from app fixtures and that it is easy to accidentally load your test data into the real database. </p>
+</div>
+</div>
+<div class="readable-text" id="p71">
+<h2 class="readable-text-h2"><span class="num-string">8.4</span> Expecting errors</h2>
+</div>
+<div class="readable-text" id="p72">
+<p>You might be feeling pretty good about your test for the musician view, but you still haven’t covered all possible scenarios. The view does a look-up of a <code>Musician</code> object by ID and is supposed to raise a <code>404</code> error if the <code>Musician</code> does not exist. You want to test that this code works as well. A good test ensures that negative cases get handled properly, instead of crashing the code. </p>
+</div>
+<div class="readable-text intended-text" id="p73">
+<p>Typically in a Python script, if an exception is raised, the program exits and a stack trace is displayed, unless the code catches the exception. The musician view raises an <code>Http404</code> error, but that doesn’t exit the program because Django catches it. Django’s error handling for this situation results in a <code>404</code> error page being presented to the user. A <code>404</code> error page sets the HTTP status code to <code>404</code>, hence the name. </p>
+</div>
+<div class="readable-text intended-text" id="p74">
+<p>Testing that a view raises an <code>Http404</code> error is a matter of validating that a status code of <code>404</code> is returned from the call. This is rather similar to checking a normal case, with a different expected return value. Listing 8.3 adds the new scenario to the test class, using an ID of <code>10</code> for the call, which doesn’t exist in the database. Since a new test database is created each time you run your test suite, you know an ID of <code>10</code> doesn’t exist as long as you have created fewer than 10 musicians in the test scenario. If you wanted to be really sure, you could query the ID of the last <code>Musician</code> (<code>Musician.objects .last().id</code>) and add <code>1</code> to its value, but I’ve simply hardcoded a bigger number instead.</p>
+</div>
+<div class="browsable-container listing-container" id="p75">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.3</span> Testing that an error gets handled properly</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+
+class TestBands(TestCase):
+    ...
+    def test_musician_404(self):
+        url = "/bands/musician/10/"<span class="aframe-location"></span> #1
+        response = self.client.get(url)
+        self.assertEqual(404, response.status_code) <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Look up the non-existent musician with ID 10.
+     <br/>#2 Check for the 404 response code.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p76">
+<p>Although Django wraps a <code>404</code> exception, there are scenarios in which you want to test uncaught exceptions. You likely won’t need to do this in a view, but you may want to when testing a utility function. To test that an exception <em>is</em> raised, you need to catch the exception, verify it is the right kind of exception, and fail if an exception wasn’t raised. Alternatively, you can use a utility that does that for you.</p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>The Python <code>unittest</code> module has a special assertion called <code>.assertRaises()</code>, which validates that an exception is raised within a code context block. If your code reaches the end of the block without raising an exception, the test case fails (by raising a different exception). The following listing shows code that adds an example function intended to raise a <code>ValueError</code> as well as a test to verify that it did so. </p>
+</div>
+<div class="browsable-container listing-container" id="p78">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.4</span> Testing an exception got caused</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+def raises_an_error(): <span class="aframe-location"></span> #1
+    raise ValueError()
+
+class TestBands(TestCase):
+    ...
+    def test_raises_an_error(self):
+        with self.assertRaises(ValueError):<span class="aframe-location"></span> #2
+            raises_an_error()</pre>
+<div class="code-annotations-overlay-container">
+     #1 A sample function that raises ValueError
+     <br/>#2 Asserts that a ValueError is raised before the context block exits 
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p79">
+<h2 class="readable-text-h2"><span class="num-string">8.5</span> Authenticating and posting data</h2>
+</div>
+<div class="readable-text" id="p80">
+<p>Let’s tackle a view with a little more complexity. The <code>edit_venue()</code> view from chapter 7 creates or edits a <code>Venue</code> object and ensures only users associated with the <code>Venue</code> are allowed to make changes. To fully test this view, you need two users: a user that owns the <code>Venue</code> and a user that doesn’t. As the view is responsible for both creating and editing the <code>Venue</code>, you don’t need to create a <code>Venue</code> object to test with, as creating it will be part of the test. The structure of the view and the test are visualized in figure 8.5. </p>
+</div>
+<div class="readable-text intended-text" id="p81">
+<p>Recall that this view uses both GET and POST HTTP methods, with GET fetching the form and POST submitting it. You’ve already seen <code>.client.get()</code>; unsurprisingly, there is a corresponding <code>.client.post()</code>. This method takes a dictionary containing the form values that the post submits. </p>
+</div>
+<div class="readable-text intended-text" id="p82">
+<p>The first code you need to add for this scenario is to create test users. The following listing shows the creation of an owner and nonowner account in the <code>.setUp()</code> method. Django’s <code>User</code> Model object has a special method on its query manager for creating users; this is done rather than just creating the object normally, as the password needs to be encrypted before it is stored in the database. </p>
+</div>
+<div class="browsable-container listing-container" id="p83">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.5</span> Add users for testing</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+from django.contrib.auth.models import User <span class="aframe-location"></span> #1
+...
+class TestBands(TestCase):
+    def setUp(self):
+        ...
+       <span class="aframe-location"></span> self.PASSWORD = "notsecure" #2
+        self.owner = User.objects.create_user("owner", <span class="aframe-location"></span> #3
+            password=self.PASSWORD)
+        self.member = User.objects.create_user("member",
+            password=self.PASSWORD)<span class="aframe-location"></span></pre>
+<div class="code-annotations-overlay-container">
+     #1 Import Django’s user model.
+     <br/>#2 Use a common password everywhere; it is only a test suite.
+     <br/>#3 Create owner and nonowner users using the .create_user() method.
+     <br/>
+</div>
+</div>
+</div>
+<div class="browsable-container figure-container" id="p84">
+<img alt="figure" height="1752" src="../../OEBPS/Images/CH08_F05_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 8.5</span> Testing the <code>edit_venue()</code> view</h5>
+</div>
+<div class="readable-text" id="p85">
+<p>With the users added to <code>.setUp()</code>, it is time to start writing the test. This view expects a logged-in user, which you do in a test by calling <code>.client.login()</code>. The following listing logs in the user that will be the owner, does a GET, and validates the resulting HTTP <code>200</code> status code. </p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.6</span> Verify the form can be fetched using GET</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+class TestBands(TestCase):
+    ...
+    def test_edit_venue(self):
+        self.client.login(username="owner",<span class="aframe-location"></span> #1
+            password=self.PASSWORD)
+
+        # Verify the page fetch works
+        url = "/bands/edit_venue/0/" <span class="aframe-location"></span> #2
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)<span class="aframe-location"></span> #3</pre>
+<div class="code-annotations-overlay-container">
+     #1 Log in with the username owner that was created in .setUp().
+     <br/>#2 Call the URL with argument 0, indicating venue creation.
+     <br/>#3 Check the view returned the right HTTP status.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<p>This code uses an argument of <code>0</code> in the URL, indicating the desire to create a new <code>Venue</code> object. As the code is only checking a <code>GET</code>, the <code>0</code> isn’t strictly necessary, but using any other ID would require that <code>Venue</code> to exist or the page would <code>404</code>. Alternatively, you could create a <code>Venue</code> object first and use its ID.</p>
+</div>
+<div class="readable-text intended-text" id="p88">
+<p>After fetching the form, it is time to test adding a new venue. The <code>.client.post()</code> method takes a dictionary that maps to the form fields used in the page. For now, let’s populate only the <code>name</code> and <code>description</code> fields. Listing 8.7 shows the code that tests <code>Venue</code> object creation. To determine whether object creation worked, the database gets queried for the new object; there will be only one. Next, the object’s fields get checked, making sure they match what was sent in the POST. Newly created <code>Venue</code> objects also have the logged-in user assigned as one of their controllers, so this attribute needs to be validated as well. </p>
+</div>
+<div class="browsable-container listing-container" id="p89">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.7</span> Test creating a Venue</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+class TestBands(TestCase):
+    ...
+    def test_edit_venue(self):
+        ...
+        # Create a new Venue
+        data = { <span class="aframe-location"></span> #1
+            "name":"Name",
+            "description":"Description",
+        }
+        response = self.client.post(url, data) <span class="aframe-location"></span> #2
+
+        self.assertEqual(302, response.status_code) <span class="aframe-location"></span> #3
+
+        # Validate the Venue was created
+      <span class="aframe-location"></span>  venue = Venue.objects.first() #4
+        self.assertEqual(data['name'], venue.name) <span class="aframe-location"></span> #5
+        self.assertEqual(data['description'], venue.description)
+        self.assertTrue( <span class="aframe-location"></span> #6
+            self.owner.userprofile.venues_controlled.filter(
+                id=venue.id).exists()
+        )</pre>
+<div class="code-annotations-overlay-container">
+     #1 Dictionary with key–value pairs that correspond to the page’s form
+     <br/>#2 Post the data to the URL that was defined in the previous listing.
+     <br/>#3 A successful creation redirects to another page, using a 302 HTTP status code for redirection.
+     <br/>#4 Fetch the newly created Venue from the database.
+     <br/>#5 Validate the Venue object’s attributes against the expected data.
+     <br/>#6 Verify that the owner’s UserProfile indicates they own the new Venue.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p90">
+<p>The <code>edit_venue()</code> view is used for both creating and editing a <code>Venue</code>, so now, it is time to add code testing <code>Venue</code> object edits. This situation is similar to creation, but instead, the URL contains the <code>Venue</code> object’s ID and the data is set to change a field. The following listing shows the code that needs to be added to the test. </p>
+</div>
+<div class="browsable-container listing-container" id="p91">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.8</span> Test editing a Venue</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+class TestBands(TestCase):
+    ...
+    def test_edit_venue(self):
+        ...
+        # Now edit that Venue
+        url = f"/bands/edit_venue/{venue.id}/" <span class="aframe-location"></span> #1
+        data['name'] = "Edited Name" <span class="aframe-location"></span> #2
+       <span class="aframe-location"></span> response = self.client.post(url, data)  #3
+
+        self.assertEqual(302, response.status_code)
+        venue = Venue.objects.first()
+        self.assertEqual(data['name'], venue.name)<span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Change the URL to point to the Venue getting edited.
+     <br/>#2 Set a new value for the Venue’s name.
+     <br/>#3 Post the change request.
+     <br/>#4 Check that the Venue content has changed.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p92">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong>Remember, <code>Model</code> objects are proxies; they won’t update automatically. When your view changes the database, you need to refetch the <code>Model</code> object.</p>
+</div>
+<div class="readable-text" id="p93">
+<p>The last thing to test is the permission check. Re-attempt the edit with another user, and verify their attempt to edit gets denied. Listing 8.9 shows this new code; it is similar to the previous code, except this time the logged-in user is <em>member</em>.</p>
+</div>
+<div class="browsable-container listing-container" id="p94">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.9</span> Test Venue editing permissions</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+...
+class TestBands(TestCase):
+    ...
+    def test_edit_venue(self):
+        ...
+        # Verify that a non-owner can't edit
+        self.client.login(username="member", password=self.PASSWORD)
+        response = self.client.post(url, data)
+        self.assertEqual(404, response.status_code)<span class="aframe-location"></span> #1</pre>
+<div class="code-annotations-overlay-container">
+     #1 Edit requests from users without permission cause an HTTP 404 error.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p95">
+<p>All told, that’s over 40 lines of code to test a 32-line view. That’s kind of typical. Writing tests that check all the conditions of your code tends to take about the same number of lines of code as the code under test. If writing automated tests isn’t something you do at work, changing to this habit can be startling to your schedule. Suddenly, you’re writing half the number of features in the same time because half the time you’re writing tests. This can make management cranky. Long term, though, this is a far more efficient way of coding. What you’re really doing is reducing the future test time, time that wasn’t originally accounted for in the development portion of your schedule. With tests in place, you can quickly test the entire system as frequently as you like, something you can’t do if you stick with a manual testing approach. </p>
+</div>
+<div class="readable-text" id="p96">
+<h2 class="readable-text-h2"><span class="num-string">8.6</span> Testing with file uploads</h2>
+</div>
+<div class="readable-text" id="p97">
+<p>There is one more scenario that the test for <code>edit_venue()</code> still doesn’t cover: associating an image with the venue. This makes life a little more complicated than just having some text values in the POST dictionary. There are a couple of ways to handle this. First, you could keep a file with your tests, read it, and upload its contents as part of your test. Alternatively, you can create the file on the fly. </p>
+</div>
+<div class="readable-text intended-text" id="p98">
+<p>Django provides the <code>SimpleUploadedFile</code> class as a way to build files. The class gets used if you’re writing a custom file handler, but is equally useful when testing. <code>SimpleUploadedFile</code> takes two arguments when constructed: the name of the file and its binary contents. As the <code>Venue</code> object’s associated file is a picture, the binary contents need to pass the is-an-image validation performed by the underlying <code>ImageField</code>. To save you some time (this is a full service book!) I created a 1-pixel GIF, JPG, and PNG and discovered that the GIF is the smallest. Using Python’s <code>base64</code> library, I encoded the GIF into a string, which gets hardcoded in the test. When the <code>SimpleUploadedFile</code> gets created, the base64 string gets decoded into a binary representation of the GIF. I put this code in the <code>.setUp()</code> method, as it may be useful in another test (spoiler alert: it gets used in the excercises). </p>
+</div>
+<div class="readable-text print-book-callout" id="p99">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong><code>SimpleUploadedFile</code> gets accessed like a stream. If you are testing the same value more than once in a method, re-create it to reset its starting point to the beginning.</p>
+</div>
+<div class="readable-text" id="p100">
+<p>If you were actually doing an HTTP call in your test, you would have to treat the file data specially. This is the same as the need to specify <code>encytype="multipart/form-data"</code> in the <code>&lt;form&gt;</code> tag. The Django test utilities are smart, though, and take care of this situation for you. They automatically recognize file handles in the <code>.client .post()</code> dictionary and put them in the right part of the request. </p>
+</div>
+<div class="readable-text intended-text" id="p101">
+<p>One last tricky little thing: uploaded files go somewhere. You probably don’t want your test file to end up in your uploads folder. If you’re as anal- retentive as I am, you want to remove any files after the test. There is a better solution though: Django provides a decorator that modifies a configuration value for the duration of a test. The decorator is named <code>@override_settings</code>, and it takes one or more keyword arguments, corresponding to the name and value of the configuration value you wish to change. A cleaner approach than dealing with the uploaded file yourself is to let your operating system do it by using its temp directory for uploads. The Python <code>tempfiles</code> module has a function that returns the path of your system’s temp directory, so you don’t have to figure that out yourself. </p>
+</div>
+<div class="readable-text intended-text" id="p102">
+<p>The following listing contains a new test method that creates a <code>Venue</code> <code>Model</code>, this time including an uploaded file. In real life (as opposed to “book life”), this code would be included as the creation part of <code>test_edit_venue()</code>, as it also tests the other fields, but for learning purposes, I’ve separated it out into its own thing. </p>
+</div>
+<div class="browsable-container listing-container" id="p103">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 8.10</span> Test Venue creation, including a file upload</h5>
+<div class="code-area-container">
+<pre class="code-area"># bands/tests.py
+from base64 import b64decode
+from django.core.files.uploadedfile import SimpleUploadedFile
+...
+class TestBands(TestCase):
+    ...
+    def setUp(self):
+        ...
+        # Base64 encoded version of a single pixel
+        # GIF image
+        self.image = "R0lGODdhAQABAIABAP///wAAACwAAAAAAQABAAACAkQBADs="
+        self.image = b64decode(image) <span class="aframe-location"></span> #1
+
+    @override_settings(
+        MEDIA_ROOT=tempfile.gettempdir()) <span class="aframe-location"></span> #2
+    def test_edit_venue_picture(self):
+
+        file = SimpleUploadedFile("test.gif", self.image) <span class="aframe-location"></span> #3
+        data = {
+            "name": "Name",
+            "description": "Description",
+            "picture": file,
+        }
+
+        self.client.login(username="owner", password=self.PASSWORD)
+        url = "/bands/edit_venue/0/"
+        response = self.client.post(url, data)
+
+        self.assertEqual(302, response.status_code)
+        venue = Venue.objects.first()
+        self.assertIsNotNone(venue.picture)<span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Decode the binary representation of a GIF from the preceding base64-encoded string.
+     <br/>#2 Override the MEDIA_ROOT configuration value to point to the operating system’s temp directory, so any uploaded files get cleaned up.
+     <br/>#3 Create an in-memory file for testing based on the GIF binary data.
+     <br/>#4 Like in previous tests, check the object got created, this time validating the .picture attribute.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p104">
+<p>There it is—that’s the complete picture (OK, there are bad puns, and then there are bad puns I shouldn’t be allowed to get away with). You’ve got the tools now to create tests for all the views you’ve written so far. </p>
+</div>
+<div class="readable-text" id="p105">
+<h2 class="readable-text-h2"><span class="num-string">8.7</span> More testing techniques</h2>
+</div>
+<div class="readable-text" id="p106">
+<p>The start of this chapter introduced the testing pyramid and some terms used in the programming industry. Everything so far falls into the unit test and integration test levels. You can test Django projects at the UI level as well, but it requires a bit more work. </p>
+</div>
+<div class="readable-text" id="p107">
+<h3 class="readable-text-h3"><span class="num-string">8.7.1</span> LiveServerTestCase for Selenium</h3>
+</div>
+<div class="readable-text" id="p108">
+<p>There are several UI testing tools out there for websites, with one of the most popular being Selenium (<a href="https://www.selenium.dev/">https://www.selenium.dev/</a>). There are entire books on using Selenium; here, I’ll just give you a quick taste. Selenium integrates with web browsers and drives them the same way a user does. There are two general modes: click-and-record and API-based. Click-and-record uses a tool that tracks what you do to a web page, allowing you to play it back again as part of your tests. Or you can write scripts that use the API instead. These scripts include code that searches for tags in the HTML and interacts with them, by, for example, clicking links. </p>
+</div>
+<div class="readable-text intended-text" id="p109">
+<p>Click-and-record is faster to get going and requires less training. If you can learn to hit the Record button and use the web page you want to test, you’re pretty much there. This method does tend to be a little more fragile. Small changes to the page may cause the script to break.</p>
+</div>
+<div class="readable-text intended-text" id="p110">
+<p>The API method requires more work and a bit of careful planning when you write your HTML. The easiest way to find an item in a web page is to search by its ID. Of course, you may not have put IDs on all of your tags. There are other ways to search, but they tend to suffer from the same fragility as the click-and-record method. I generally prefer to use the API and write a testable web page with IDs in all the tags.</p>
+</div>
+<div class="readable-text intended-text" id="p111">
+<p>Django’s <code>TestCase</code> class calls views directly, meaning any JavaScript doesn’t get called. If you want to test the page the way a browser sees it, you need a server. You could use the development server, but then, you have to make sure the state of your site is correct before running the Selenium script. Instead, you use <code>django.test .LiveServerTestCase</code> or its sibling <code>StaticLiveServerTestCase</code>. These test classes cause Django to run the development server during testing. As both classes inherit from <code>TestCase</code>, you can still use <code>.setUp()</code> to create any required data and then call the Selenium API from the test methods. As the name implies, the <code>StaticLiveServerTestCase</code> also runs a static server, so your static files, like CSS and JavaScript, get served by the test harness. For more information on writing a Selenium test with Django, see the sample script in the documentation: <a href="https://mng.bz/wxx7">https://mng.bz/wxx7</a>. </p>
+</div>
+<div class="readable-text" id="p112">
+<h3 class="readable-text-h3"><span class="num-string">8.7.2</span> Third-party helpers</h3>
+</div>
+<div class="readable-text" id="p113">
+<p>This section could also be titled <em>Shameless Plug</em>. I’d like to point you at one of my own third-party libraries: Django Awl (<a href="https://github.com/cltrudeau/django-awl">https://github.com/cltrudeau/django-awl</a>). This library is an odds-and-ends collection of stuff I tend to use in every Django project. I kept rewriting the same code for each new project and figured it was better to have a library instead. The <code>awl.waelsteng</code> module contains helpers for testing. There are tools for testing your Django Admin customizations, a class that acts like a request object in case you want to call a view without using the URL routing feature, and a custom test runner. </p>
+</div>
+<div class="readable-text intended-text" id="p114">
+<p>The Python <code>unittest</code> test runner (and its Django child) accepts arguments on the command line, allowing you to run a subset of the tests. For example, if you wished to run only the <code>test_musician_view()</code> method you could:</p>
+</div>
+<div class="browsable-container listing-container" id="p115">
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">(venv) RiffMates$ python manage.py test
+<span class="">↪</span> bands.tests.TestBands.test_musician_view</pre>
+</div>
+</div>
+<div class="readable-text" id="p116">
+<p>Man, is that a lot of typing. The main reason I wrote <code>WRunner</code> was to provide a shortcut for calling a single test. <code>WRunner</code> treats an equal sign (<code>=</code>) prefix as shortcut and looks for any test in your suite that matches what comes after the sign. The previous test could be found with</p>
+</div>
+<div class="browsable-container listing-container" id="p117">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py test =music</pre>
+</div>
+</div>
+<div class="readable-text" id="p118">
+<p>It doesn’t stop at the first match, so if you have several tests with the word <em>music</em> in their names, they’d all get invoked. As I’m already doing self-promotion, here is one more: <code>context_temp</code> (<a href="https://github.com/cltrudeau/context_temp">https://github.com/cltrudeau/context_temp</a>). This library has two context managers, one that creates a temporary directory and another that creates a temporary file. The temp file or directory gets created when the context block gets entered and removed when it exits. If you need a temporary file or directory and don’t want to worry about cleaning them up, this context manager tool could be for you. </p>
+</div>
+<div class="readable-text" id="p119">
+<h2 class="readable-text-h2"><span class="num-string">8.8</span> Measuring tests and code quality</h2>
+</div>
+<div class="readable-text" id="p120">
+<p>How do you know if you’ve tested everything? You can never be 100% sure, but there are things you can measure. Coverage (<a href="https://pypi.org/project/coverage/">https://pypi.org/project/coverage/</a>) is a third-party library you use when running your tests to track what project code got executed. After your tests complete, you get a summary showing the percentage of your code that ran under the test. </p>
+</div>
+<div class="readable-text intended-text" id="p121">
+<p>Measuring coverage gives you a sense of how much of your code has been tested, but it isn’t perfect. Just because a line executed doesn’t mean all possible conditions for that line got checked. Also, your code might have flaws that your tests don’t trigger. In certain cases, failing to check for <code>None</code> may cause your code to crash, but if you don’t have a test that checks it, your 100% coverage statement is a fake safety blanket. It isn’t a silver bullet, but you can’t improve what you can’t measure, so it is still a good idea.</p>
+</div>
+<div class="readable-text intended-text" id="p122">
+<p>In addition to checking your code’s functionality, you may want to check its quality. This is another deep subject, complete with fun phrases like <em>code smell</em>. There are dozens of tools out there that give feedback on your code. I typically have a shell script in my projects that runs the tests, measures the coverage, and runs a quality measure. If anything complains, I try to fix it immediately. </p>
+</div>
+<div class="readable-text intended-text" id="p123">
+<p>The following are some code quality tools you might be interested:</p>
+</div>
+<ul>
+<li class="readable-text" id="p124"> <em>Linters</em>—These check for logical and stylistic problems. Popular Python linters are PyFlakes (<a href="https://github.com/PyCQA/pyflakes">https://github.com/PyCQA/pyflakes</a>), Pylint (<a href="https://pypi.org/project/pylint/">https://pypi.org/project/pylint/</a>), ruff (<a href="https://pypi.org/project/ruff/">https://pypi.org/project/ruff/</a>), and MyPy for type enforcement (<a href="http://mypy-lang.org/">http://mypy-lang.org/</a>). </li>
+<li class="readable-text" id="p125"> <em>Reformatting tools</em>—These make your code compliant with common style recommendations. Popular Python reformatting tools are Black (<a href="https://github.com/ambv/black">https://github.com/ambv/black</a>), ruff (<a href="https://pypi.org/project/ruff/">https://pypi.org/project/ruff/</a>), and isort for import sorting (<a href="https://github.com/timothycrosley/isort">https://github.com/timothycrosley/isort</a>). </li>
+<li class="readable-text" id="p126"> <em>Static analysis tools</em>—These check the logic in your code and alert on common fail points and security weaknesses. Popular Python static analysis tools are SonarQube (<a href="https://www.sonarqube.org/">https://www.sonarqube.org/</a>) and Codacy (<a href="http://codacy.com/">http://codacy.com/</a>). Note that both of these are commercial products with free and open source plans. </li>
+</ul>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p127">
+<h5 class="callout-container-h5 readable-text-h5">... not as I do</h5>
+</div>
+<div class="readable-text" id="p128">
+<p>When writing the book, I added new features to RiffMates as I went along, chapter by chapter. As testing wasn’t covered until this chapter, I was lazy and didn’t write unit tests for the project. This is bad practice, and it bit me. I found all sorts of problems in the sample code when I started writing tests. Writing automated tests should be treated as part of coding, not an “after task,” as not having them piles up and becomes problematic.</p>
+</div>
+<div class="readable-text" id="p129">
+<p>All the code in this chapter is in RiffMates/bands/tests.py, but that doesn’t give good coverage of the project—it doesn’t even cover all the views in the Bands app. To help catch problems, the sample code also contains RiffMates/tests/test_all.py. The name is a bit misleading, as it doesn’t quite test everything, but it brings the coverage number up above 80%, which is a common threshold for being “good enough.”</p>
+</div>
+</div>
+<div class="readable-text" id="p130">
+<h2 class="readable-text-h2"><span class="num-string">8.9</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p131"> In chapter 7’s exercises, you added a view called <code>edit_musician()</code>, where users could create and manage their own musician profile page. Add a test for that view. Include testing for fetching the form, submitting the form, and adding a musician with a picture. A user can edit the musician profile they created, and so can staff and superusers. Test that those types of users can edit, while a nonowner cannot. Note that you can create a superuser with the <code>User.objects .create_superuser()</code> method.  </li>
+<li class="readable-text" id="p132"> Write a test for the <code>musicians()</code> view that validates that pagination is working. The view needs to be called multiple times with a variety of query parameters to test different settings for the number of items per page as well as the next and previous arguments. Note that the paginator’s <code>.has_previous()</code> and <code>.has _next()</code> are methods, not attributes; you didn’t need the parenthesis in the template, but you do when calling them in code.  </li>
+</ol>
+<div class="readable-text" id="p133">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p134"> Automated testing is typically approached hierarchically, with each level of tests having a separate purpose and possibly approach. </li>
+<li class="readable-text" id="p135"> A unit test is the lowest level in the hierarchy and is performed on a single component of software, typically a function or class method. </li>
+<li class="readable-text" id="p136"> Integration tests verify that components interact well together and operate across several units. </li>
+<li class="readable-text" id="p137"> Behavioral tests, sometimes known as <em>acceptance tests</em>, specify a feature within your program and are often a user-facing process.  </li>
+<li class="readable-text" id="p138"> UI tests focus on the user interface. These usually require specialty tools that simulate human interaction with your software. </li>
+<li class="readable-text" id="p139"> Testing your software from the top down is expensive: every UI interaction interacts with the entire stack. This slows your testing down and causes low-level components to be tested redundantly. The automated testing hierarchy is often visualized as a pyramid, with the majority of tests being at the bottom of the hierarchy, at the unit test level. </li>
+<li class="readable-text" id="p140"> Python’s standard library includes the <code>unittest</code> module that defines the structure of automated testing.  </li>
+<li class="readable-text" id="p141"> The <code>unittest</code> module searches for <code>TestCase</code> classes, running methods that begin with <code>test_</code>. The <code>TestCase</code> class also has methods for common setup and tear-down activities required for the test.  </li>
+<li class="readable-text" id="p142"> A test runner is responsible for finding tests, executing them, and reporting on whether they have passed. </li>
+<li class="readable-text" id="p143"> Django inherits from Python’s <code>TestCase</code>, providing additional features specific to the web framework. </li>
+<li class="readable-text" id="p144"> Django’s test runner looks for <code>tests.py</code> files in the app directories and runs all methods that begin with <code>test_</code> inside a class that inherits from <code>TestCase</code>. </li>
+<li class="readable-text" id="p145"> You invoke the Django test runner using the <code>test</code> management command. </li>
+<li class="readable-text" id="p146"> The <code>TestCase</code> class provides a number of “assert” methods that raise an exception if their test condition isn’t met. The most commonly used one is <code>.assertEqual()</code>.  </li>
+<li class="readable-text" id="p147"> The Django <code>TestCase</code> class creates a test copy of a database, setting up everything the ORM needs to work with your apps. The database begins empty, so you need to populate Model objects for your tests. </li>
+<li class="readable-text" id="p148"> Each test method gets wrapped in a database transaction, so the actions your test performs on the database get undone after the method completes. This ensures tests start in a known environment and can be run in any order. </li>
+<li class="readable-text" id="p149"> The <code>.setUp()</code> and <code>.setUpClass()</code> methods get used to create the environment needed for your tests, including populating any ORM Models.  </li>
+<li class="readable-text" id="p150"> Django’s <code>TestCase</code> class has a <code>.client</code> object that allows you to authenticate to the system and invoke both GET and POST methods through the URL router.  </li>
+<li class="readable-text" id="p151"> The <code>.client.get()</code> and <code>.client.post()</code> methods return a response object that contains the context dictionary sent to the template engine, the resulting rendered content, and the HTTP status code for the call.  </li>
+<li class="readable-text" id="p152"> Your tests should cover as many of the scenarios in your view as possible, including negative cases where errors should be displayed. For example, you can verify a <code>404</code> page was displayed by checking the <code>status_code</code> field of the response object. </li>
+<li class="readable-text" id="p153"> The <code>.client.post()</code> method takes a dictionary representing the form data included for an HTTP POST call. It recognizes file handles and puts them in the appropriate part of the request object.  </li>
+<li class="readable-text" id="p154"> To test pages that require authentication, your <code>TestCase</code> class needs to create at least one user account in the test database. The <code>.client.login()</code> method allows you to log in as a user before visiting a page.  </li>
+<li class="readable-text" id="p155"> <code>SimpleFileUpload</code> allows you to create an in-memory representation of a file that can be used to test views that handle file uploads. </li>
+<li class="readable-text" id="p156"> <code>LiveServerTestCase</code> and <code>StaticLiveServerTestCase</code> run the Django development server, so you can test with click-and-record tools, such as Selenium. </li>
+<li class="readable-text" id="p157"> There are many third-party libraries that can help both your testing and ensuring your code meets common quality conventions.  </li>
+</ul>
+</div></body>
+</html>
