@@ -1,0 +1,806 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>6 User management</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">6</span> </span> <span class="chapter-title-text">User management</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Writing multiuser websites</li>
+<li class="readable-text" id="p3">Storing user data</li>
+<li class="readable-text" id="p4">Restricting views to logged-in users</li>
+<li class="readable-text" id="p5">Preforming authorization in views</li>
+<li class="readable-text" id="p6">Doing password resets</li>
+</ul>
+</div>
+<div class="readable-text" id="p7">
+<p>This chapter introduces you to the features of Django that enable multiuser websites. You’ll learn how user authentication and authorization works, along with the ability to store data linked to a user’s account.</p>
+</div>
+<div class="readable-text" id="p8">
+<h2 class="readable-text-h2"><span class="num-string">6.1</span> Multiuser websites</h2>
+</div>
+<div class="readable-text" id="p9">
+<p>By adding Django Admin functionality to RiffMates, you have already turned it into a multiuser site. At the moment, though, it is rather simplistic: you have administrators who use the Django Admin tools and everybody else. What if you want musicians to be able to edit their own profiles, create bands, and invite people to bands? The primary idea behind RiffMates is to create a space for classified ads, where bands can seek musicians and musicians can seek bands. You could manage all this through email, having the musicians send a note to your admins, but that is a lot of work for your admins. Instead, you want your musicians and others to be able to serve themselves. </p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>Self-service sounds great, but what if two bands are rivals? You can’t have the Sharks and the Jets editing each other’s profiles—that won’t end well. Multiuser sites really are about being able to control who does what where. To provide this kind of control, you need two things: authentication and authorization. These are related concepts, and one sometimes implies the other. <em>Authentication</em> is proving who you are, while <em>authorization</em> is the system allowing you to perform an action. User accounts pair a login ID and password to provide the authentication part, while your code determines authorization.</p>
+</div>
+<div class="readable-text intended-text" id="p11">
+<p>As part of authentication, Django comes with a built-in ORM Model object for tracking users and passwords. It handles the encryption of the passwords for you and validation when a user enters a password to prove who they are. This is accomplished through middleware. <em>Middleware</em> is code that sits between the routing of the URL and the calling of the view and can affect what is sent to the view or whether the view gets called at all. Django provides some middleware out of the box, including session management. <em>Session management</em> is what determines whether a user gets logged in or not and when to log them out automatically, expiring the session. As with most things in Django, middleware is pluggable, and you can write your own, but doing so isn’t covered in this book. In figure 6.1, you can see the middleware component in the framework part of the diagram. Additionally, the view in the diagram has a decorator: <code>@login_required</code>. This is the simplest form of authorization: the view can only be used by those who are authenticated. </p>
+</div>
+<div class="readable-text intended-text" id="p12">
+<p>A view may also contain further authorization logic. For example, a page might be a private area only band members can see. The URL for such a page has a <code>Band</code> ID, is wrapped with the <code>@login_required</code> decorator to ensure a musician attempting access gets authenticated, and validates that the user account belongs to a musician that is a member of the band. If authorization fails, the usual response is to raise an <code>Http404</code> error. </p>
+</div>
+<div class="readable-text intended-text" id="p13">
+<p>As soon as you have user accounts, you have a password management problem. People are forgetful, and the late-night, hard-living lifestyle of musicians makes them even more so. Django provides views and utilities for both user creation and password management, but as most of this needs to look like your site, it isn’t quite ready out of the box; you have to do some customization to make it work.</p>
+</div>
+<div class="readable-text intended-text" id="p14">
+<p>This chapter is all about user accounts: how to create them, how to manage them, how to use them to authenticate and authorize users, and how to manage password resets. </p>
+</div>
+<div class="browsable-container figure-container" id="p15">
+<img alt="figure" height="1025" src="../../OEBPS/Images/CH06_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.1</span> Session management and login control through middleware<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p16">
+<h2 class="readable-text-h2"><span class="num-string">6.2</span> Storing user data</h2>
+</div>
+<div class="readable-text" id="p17">
+<p>In the previous chapter, you used the <code>createsuperuser</code> command to create an admin account to access the Django Admin. On the Django Admin home page, there is a listing of ORM objects registered with the site—one of which being the <code>User</code> object. Each user account in the system is represented by an entry in the database proxied by a <code>django.contrib.auth.models.User</code> object. The <code>User</code> object stores a username and password in the database. All of this is an oversimplification (read: lie); Django’s user management system is quite flexible and allows you to customize heavily, but for the time being, the mental model of a plain <code>User</code> object is easier to consider. </p>
+</div>
+<div class="readable-text" id="p18">
+<h3 class="readable-text-h3"><span class="num-string">6.2.1</span> Choosing a user account mechanism</h3>
+</div>
+<div class="readable-text" id="p19">
+<p>Most of the time, you want to associate data with a user account. Consider a musician’s account; you already have a <code>Musician</code> ORM object, and now, it would be nice to associate the user account with that data. Django provides two ways of defining account-associated storage:</p>
+</div>
+<ul>
+<li class="readable-text" id="p20"> Using a profile ORM object </li>
+<li class="readable-text" id="p21"> Replacing the <code>User</code> ORM object with a custom model </li>
+</ul>
+<div class="readable-text" id="p22">
+<p>A user profile object is a separate <code>Model</code> with a special kind of foreign key pointing to the Django <code>User</code> account object. The profile object stores your custom data, while the <code>User</code> <code>Model</code> provides shortcuts for access through the relationship. The special foreign key is called a <code>OneToOneField</code>, and it constrains the relationship so that a profile object can only be associated with a single user account object, and vice versa. The <code>OneToOneField</code> isn’t specific to profile objects; you can use them in any code where you wish to have a foreign key relationship in the database with a single relation restriction. </p>
+</div>
+<div class="readable-text intended-text" id="p23">
+<p>The second option is the hardcore, I-want-to-customize-everything-option. The user profile approach locks you into using the Django <code>User</code> <code>Model</code>’s credential mechanism. Replacing the <code>User</code> object altogether allows you to replace the credentials, for example, using an email address instead of a username as the login. Django’s flexibility around user accounts comes at a complexity cost: in addition to the <code>User</code> object, there is also a user manager object. To replace the <code>User</code> altogether, you also have to replace the manager object. Figure 6.2 compares the user profile and replacement approaches, showing both the objects and related database changes.</p>
+</div>
+<div class="readable-text intended-text" id="p24">
+<p>Choosing which customization option to use is important, as changing your project in the future is painful. Django is only capable of using one user account mechanism at a time, and switching from one style to the other usually requires custom migration scripts. You also have a potential data problem: consider using usernames and then switching to email address as a login credential. You need to make sure all of your users have email addresses in the system and that they are unique. This is a design decision you should make as close to the beginning of your project as possible—and that you should stick with.</p>
+</div>
+<div class="readable-text intended-text" id="p25">
+<p>As the hardcore option is, well, hardcore, this book will stick to the user profile case. If you’re interested in more customization than is covered in this chapter, see <a href="https://mng.bz/RZZn">https://mng.bz/RZZn</a>.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p26">
+<h5 class="callout-container-h5 readable-text-h5">Proxy models</h5>
+</div>
+<div class="readable-text" id="p27">
+<p>Django allows a third option for customizing the user account if all you want is behavioral changes. An ORM model can be declared a <em>proxy model</em> by inheriting from the model being proxied and adding <code>proxy = True</code> to the model settings in the <code>Meta</code> subclass. </p>
+</div>
+<div class="readable-text" id="p28">
+<p>A proxy model object uses the same table as its parent; the attributes and their corresponding columns are the same. Both the proxy and its parent abstract the same rows in the same table. What can change in a proxy is its behavior. For example, you can add a different <code>ordering</code> attribute to the <code>Meta</code> subclass, and your default sorting of the proxy will be different from its parent. </p>
+</div>
+</div>
+<div class="browsable-container figure-container" id="p29">
+<img alt="figure" height="1551" src="../../OEBPS/Images/CH06_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.2</span> User profiles vs. replacing the User ORM object for user data storage<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p30">
+<h3 class="readable-text-h3"><span class="num-string">6.2.2</span> Adding a user profile</h3>
+</div>
+<div class="readable-text" id="p31">
+<p>When designing a user profile object, you want to think about what kind of data needs to be associated with the user account. Some data in your system will be strictly associated with your user and nothing else. For example, the user’s date of birth isn’t covered in Django’s <code>User</code> <code>Model</code> object and might only be associated with that account. Alternatively, if your system associates all sorts of information about birthdays together and represents both the user’s birthday as well as their friends who don’t necessarily have accounts, you might have a birthday object. In this case, the user profile would contain a key to the user’s birthday object instead. </p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>Consider who the RiffMates users are and the kinds of things they do on the site. Some questions to answer are, can a person</p>
+</div>
+<ul>
+<li class="readable-text" id="p33"> Have more than one musician profile? </li>
+<li class="readable-text" id="p34"> Control more than one venue? </li>
+<li class="readable-text" id="p35"> Be both a musician and a venue operator? </li>
+</ul>
+<div class="readable-text" id="p36">
+<p>I’m sure there are many more, but those three are enough to think about what a user profile object should contain. If you convert a <code>Musician</code> object into a user profile, you can’t answer “yes” to any of the preceding questions. It is best to create a separate <code>Model</code> object simply for user data and use relationships between it and the <code>Musician</code> and <code>Venue</code> objects. The following listing shows just such an object; it has a one-to-one relationship with the <code>User</code> object and many-to-many relationships with <code>Musician</code> and <code>Venue</code> objects. </p>
+</div>
+<div class="browsable-container listing-container" id="p37">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.1</span> The <code>UserProfile</code> class</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/models.py
+from django.db import models
+from django.contrib.auth.models import User <span class="aframe-location"></span> #1
+...
+class UserProfile(models.Model):
+    user = models.OneToOneField(User,
+        on_delete=models.CASCADE) <span class="aframe-location"></span> #2
+    musician_profiles = models.ManyToManyField(Musician,
+        blank=True) <span class="aframe-location"></span> #3
+    venues_controlled = models.ManyToManyField(Venue, blank=True)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import Django’s User model object.
+     <br/>#2 Create a one-to-one relationship between the UserProfile and the User.
+     <br/>#3 Store relationships between this user account and any Musician or Venue objects. Set blank=True, so these can be empty fields in the Django Admin.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p38">
+<p>As the comment in the listing implies, this code gets added to the RiffMates/bands/models.py file. To make user management easier, the Django Admin understands the relationship between a user profile object and the user account. It allows you to define a form to be used within the user account management screens to deal with the associated data. To use this feature you need to define a <em>stacked inline form</em> and tell the Django Admin to use it. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>Django provides you a base class for defining stacked inline forms, called <code>admin.StackedInline</code>. After inheriting from this class and pointing at the associated user profile, Django Admin takes care of the rest. This new form gets associated with the <code>User</code> object admin form by creating a new class in your admin.py file. This <code>UserAdmin</code> class inherits from the built-in admin class for a <code>User</code> and adds the new stacked inline form to an attribute called <code>inlines</code>. Finally, you replace the default class by unregistering it and registering your new one. Add the code in the following listing to your RiffMates/bands/admin.py file. </p>
+</div>
+<div class="browsable-container listing-container" id="p40">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.2</span> Code for managing your <code>UserProfile</code> class through the Django Admin</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area"># RiffMates/bands/admin.py
+...
+from django.contrib.auth.admin import UserAdmin as
+<span class="">↪</span> BaseUserAdmin <span class="aframe-location"></span> #1
+from django.contrib.auth.models import User <span class="aframe-location"></span> #2
+...
+from bands.models import Musician, Band, Venue, Room,
+<span class="">↪</span> UserProfile <span class="aframe-location"></span> #3
+...
+class UserProfileInline(admin.StackedInline): <span class="aframe-location"></span> #4
+    model = UserProfile <span class="aframe-location"></span> #5
+    can_delete = False
+
+
+class UserAdmin(BaseUserAdmin):<span class="aframe-location"></span> #6
+    inlines = [UserProfileInline] <span class="aframe-location"></span> #7
+
+
+admin.site.unregister(User) <span class="aframe-location"></span> #8
+admin.site.register(User, UserAdmin)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import and rename UserAdmin, so it can be replaced.
+     <br/>#2 Import Django’s User object.
+     <br/>#3 Add the UserProfile object to the list of imported models.
+     <br/>#4 Create a form by inheriting from admin.StackedInline.
+     <br/>#5 Associate the stacked inline form with the UserProfile object.
+     <br/>#6 Create a new object to admin the User model, inheriting from the original.
+     <br/>#7 Use the new UserProfileInline class as a stacked form.
+     <br/>#8 Remove the old admin object for the User, and add the UserAdmin as its replacement.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p41">
+<p>With the model and admin code changes done, you’re ready to test it out. As the <code>UserProfile</code> object is a new ORM Model, you need to run the <code>makemigrations</code> and <code>migrate</code> management commands. Once you’ve done that, run the development server, and then log in to the Django Admin by visiting http://localhost:8000/admin/, using your superuser credentials. </p>
+</div>
+<div class="readable-text intended-text" id="p42">
+<p>Once you’re on the Django Admin home page, click Add next to the Users object control in the left-hand nav. Let’s create an account for your cousin Nicky. Figure 6.3 is a simplified representation of the Django Admin Add User screen. It is divided into two sections: one for account information and the stacked-inline form with your user profile data. The actual Add User screen has more details on it, including information about how to choose a proper password, how to multiselect Musicians, and more, but I’ve left that out in the diagram to reduce clutter.</p>
+</div>
+<div class="browsable-container figure-container" id="p43">
+<img alt="figure" height="765" src="../../OEBPS/Images/CH06_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.3</span> Simplified version of the Django Admin Add User screen</h5>
+</div>
+<div class="readable-text intended-text" id="p44">
+<p>You create Nicky’s credentials by filling in the username field (<em>nicky</em>) and choosing a password. This is also where you can associate Nicky’s account with one or more <code>Musician</code> or <code>Venue</code> objects. For our purposes, associate Nicky with the CBGB venue and nothing else. If you don’t do this, some of the code later will crash. You’ll learn<span class="aframe-location"></span> why and how to prevent the problem before the end of the chapter. </p>
+</div>
+<div class="readable-text intended-text" id="p45">
+<p>When you click Save, you are taken to another version of the Add User screen with even more information on it. The Django Admin splits account creation into a two-step process. The first step creates the username and password, while the second step allows you to fill in more information about the user and manage their permissions. If you want to make Nicky an admin or staff member, this second page is where that is done. There are also fields for managing permissions. The chapter on the Django Admin introduced the idea of a staff member being someone with access to the Django Admin but not necessarily permissions to do everything. The permission fields on this second screen are where you control this access. This isn’t a feature I ever take advantage of, personally. I tend to keep my sites simple: you’re either an admin or not.</p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>Now that Nicky’s account has been created, you can do exactly nothing with it. The login you have been using so far is only for the Django Admin. If Nicky isn’t a superuser, she can’t log in. Before playing with nonsuperuser account logins, you’ll need a view that has restricted access. </p>
+</div>
+<div class="readable-text" id="p47">
+<h2 class="readable-text-h2"><span class="num-string">6.3</span> Restricting access to views</h2>
+</div>
+<div class="readable-text" id="p48">
+<p>With a little configuration, Django handles the authentication of a user account (more on this in a bit); the authorization of an action is up to you. The simplest form of authorization is to allow anyone that has an active account to take an action. When you wrap a view with the built-in <code>@login_required</code> decorator, that view’s authorization is restricted to only users with accounts. </p>
+</div>
+<div class="readable-text intended-text" id="p49">
+<p>Let’s start by creating a new page that can only be viewed by authenticated users. As the view needs to show some content, you’re going to need a new template. An all-purpose template can be handy for messaging the user; all it needs is a single variable displayed using the <code>|</code> <code>safe</code> filter, allowing you to write HTML content into the page. Create RiffMates/templates/general.xhtml, and insert the content from the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p50">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.3</span> A generic template that can be used by many views to message the user</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/general.xhtml --&gt;
+{% extends "base.xhtml" %}<span class="aframe-location"></span> #1
+
+{% block title %}
+  {{block.super}}: {{title}} <span class="aframe-location"></span> #2
+{% endblock %}
+
+{% block content %}
+  {{content|safe}} <span class="aframe-location"></span> #3
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Inherit the base template for a look and feel consistent with the rest of your website.
+     <br/>#2 Alter the page’s title.
+     <br/>#3 Use the | safe filter to prevent HTML content being escaped by Django.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p51">
+<p>Any view using this template can show arbitrary HTML to the user by populating <code>content</code> in the context dictionary. The <code>restricted_page</code> view has very little logic; it simply renders an HTML message using the general.xhtml template. Wrapping the view in the <code>@login_required</code> decorator takes care of the authorization. Add the code in the following listing to RiffMates/bands/views.py, creating your first view with authorization. </p>
+</div>
+<div class="browsable-container listing-container" id="p52">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.4</span> A view only visible to authenticated users</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area"># RiffMates/bands/views.py
+from django.contrib.auth.decorators import
+<span class="">↪</span> login_required <span class="aframe-location"></span> #1
+...
+@login_required <span class="aframe-location"></span> #2
+def restricted_page(request):
+    data = {
+        'title': 'Restricted Page',
+        'content': '&lt;h1&gt;You are logged in&lt;/h1&gt;',<span class="aframe-location"></span> #3
+    }
+
+    return render(request, "general.xhtml", data)<span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the authorization decorator.
+     <br/>#2 Wrap the view requiring authentication.
+     <br/>#3 The HTML message to display in the rendered page
+     <br/>#4 Render content using the generic template.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p53">
+<p>In addition to adding the view, you’ll also need to register it. Add a <code>path</code> object defining <code>"restricted_page/"</code> to RiffMates/bands/urls.py. With the new view and route in place, load up the development server and visit http://localhost:8000/bands/restricted _page/. </p>
+</div>
+<div class="readable-text intended-text" id="p54">
+<p>Did it work? Depending on what state you were in when you visited the page, you may have seen the expected message or an error. If you were still authenticated as the superuser, from using the Django Admin, you would be able to see the page. Any authenticated account sees You Are Logged In on the restricted page.</p>
+</div>
+<div class="readable-text intended-text" id="p55">
+<p>If you got an error message, go back to the Django Admin (http://localhost:8000/admin/), log in, and then visit the page. To see the error message, go to the Django Admin, and in the top-right corner, click the Log Out link. When you click the link, the Django Admin informs you that you are successfully logged out. Once logged out, go back to the restricted page. This time, you will see a <code>404</code> message.</p>
+</div>
+<div class="readable-text intended-text" id="p56">
+<p> The <code>404</code> error is not generated because you aren’t authenticated; it is because there is no login screen yet. The <code>@login_required</code> decorator checks your session to see if you are authenticated, and if you are not, it redirects to the login page. Django has a default value for the login page of /accounts/login/. If you look closely at the <code>404</code> message, you’ll see this URL along with an extra query parameter called <code>next</code>. The value of <code>next</code> is where the login view will send you if you successfully authenticate. Figure 6.4 shows the steps involved in visiting a <code>@login_required</code> wrapped view. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p57">
+<img alt="figure" height="1018" src="../../OEBPS/Images/CH06_F04_Trudeau.png" width="828"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.4</span> Authentication verification steps for visiting a <code>@login_required</code> wrapped view</h5>
+</div>
+<div class="readable-text intended-text" id="p58">
+<p> Django treats the login for Django Admin as a special case and does its own authentication. This is because you may or may not use the Django Admin in your site, and your site’s login page should look like your site, not the Django admin. Django provides a built-in view for authentication, but you have to write the template to go with it.</p>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>There are several views Django provides for authentication and user management; they are all in the <code>django.contrib.auth.urls</code> module and can be included directly into your site by adding them to your main urls.py file. Add the following to <code>urlpatterns</code> inside RiffMates/RiffMates/urls.py—I usually keep mine next to the admin route:</p>
+</div>
+<div class="browsable-container listing-container" id="p60">
+<div class="code-area-container">
+<pre class="code-area">path('accounts/', include('django.contrib.auth.urls')),</pre>
+</div>
+</div>
+<div class="readable-text" id="p61">
+<p>The URL/view mappings defined in that module include a view for a login page, now registered under /accounts/login/. This view has all the login page logic, but it expects a template called <code>registration/login.xhtml</code>. The view uses a Django Form that the user fills providing their username and password. Chapter 7 shows you how to write your own forms; for now, you need to know two things: first, an object called <code>form</code> has a method called <code>.as_p()</code> that renders the <code>&lt;input&gt;</code> tags of the login page, and second, there is a bit of “black magic” called a <code>{% csrf_token %}</code> tag used for security. The black magic bits will be explained in Chapter 7. Create a directory called <em>registration</em> under RiffMates/templates, and add the contents from the following listing to a file named login.xhtml. </p>
+</div>
+<div class="browsable-container listing-container" id="p62">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.5</span> Login template for the built-in view</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/registration/login.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;h1&gt;Login&lt;/h1&gt;
+
+&lt;form method="post"&gt;
+  {% csrf_token %}
+  {{form.as_p}}
+  &lt;button class="btn btn-dark" type="submit"&gt;Login&lt;/button&gt;
+&lt;/form&gt;
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p63">
+<p>Your login view is registered, and you have written the corresponding template. You’re all set to try it out. Revisit http://localhost:8000/bands/restricted_page/. Unfortunately, logging out is not a simple matter. You’ll learn how to create a logout button shortly, but in the meantime, you have to visit the Django Admin and use their logout link. If you’re playing around with accounts and you’re logged in as <em>nicky</em> (or any other non-staff account), you’ll have to log in with your admin account to log out altogether. </p>
+</div>
+<div class="readable-text" id="p64">
+<h2 class="readable-text-h2"><span class="num-string">6.4</span> Authorization in views</h2>
+</div>
+<div class="readable-text" id="p65">
+<p>The <code>@login_required</code> decorator quickly gives you the ability to restrict a view to only authenticated users. Often, though, you want finer-grained control than this. Your view can contain logic for authorization. For example, let’s create a view that is limited to a musician and their bandmates: <code>musician_restricted</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>This view still uses <code>@login_required</code>, as you want to ensure users got authenticated first. The <code>request</code> object passed to a view includes information on the authentication state, including who the authenticated user is. The <code>musician_restricted</code> view takes a Musician object ID as a parameter and checks if the authenticated user is either that musician or one of their bandmates. This relationship is found through the use of the user profile data object.</p>
+</div>
+<div class="readable-text intended-text" id="p67">
+<p>The steps for this view are as follows:</p>
+</div>
+<ol>
+<li class="readable-text" id="p68"> Use <code>get_object_or_404()</code> to turn the <code>musician_id</code> argument into a Musician object.  </li>
+<li class="readable-text" id="p69"> Check if the user profile object’s <code>musician_profiles</code> field contains the argument musician (user is this musician). </li>
+<li class="readable-text" id="p70"> If the user profile doesn’t point to the argument musician, loop through all the bands associated with the argument musician and check if any of the user’s musician profiles intersect with band membership. </li>
+<li class="readable-text" id="p71"> If the user is neither the musician nor a bandmate, raise an error. </li>
+</ol>
+<div class="readable-text" id="p72">
+<p>The code for these steps is provided in listing 6.6. Add it to the RiffMates/bands/views.py file, and then register a new <code>path</code> object in RiffMatest/bands/urls.py for the URL <code>musician_restricted</code>. Don’t forget to add an expression for the <code>musician_id</code> argument, similar to how you did for the unrestricted version of this view in Chapter 4. </p>
+</div>
+<div class="browsable-container listing-container" id="p73">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.6</span> View with authorization code for musician profiles or band-mates</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from django.http import Http404 <span class="aframe-location"></span> #1
+...
+@login_required
+def musician_restricted(request, musician_id):
+    musician = get_object_or_404(Musician, id=musician_id)
+    profile = request.user.userprofile <span class="aframe-location"></span> #2
+   <span class="aframe-location"></span> allowed = False  #3
+
+    if profile.musician_profiles.filter( <span class="aframe-location"></span> #4
+            id=musician_id).exists():
+        allowed = True
+    else:
+        # User is not this musician, check if they're a band-mate
+        musician_profiles = set(
+            profile.musician_profiles.all()<span class="aframe-location"></span> #5
+        )
+        for band in musician.band_set.all():
+            band_musicians = set(band.musicians.all())
+            if musician_profiles.intersection(
+               <span class="aframe-location"></span>     band_musicians):  #6
+                allowed = True <span class="aframe-location"></span> #7
+                break
+
+    if not allowed: <span class="aframe-location"></span> #8
+        raise Http404("Permission denied")
+
+
+
+    content = f"""
+        &lt;h1&gt;Musician Page: {musician.last_name}&lt;/h1&gt;
+    """
+    data = {
+        'title': 'Musician Restricted',
+        'content': content,
+    }
+
+    return render(request, "general.xhtml", data)</pre>
+<div class="code-annotations-overlay-container">
+     #1 Raise the Http404 exception for disallowed access.
+     <br/>#2 request.user is the authenticated user, and .userprofile is the reverse relationship to the UserProfile ORM model.
+     <br/>#3 Set to True if authorization succeeds.
+     <br/>#4 Query the user’s associated Musician objects for the argument musician_id. The .exists() query returns True if a matching relationship is found.
+     <br/>#5 Store all the user’s associated Musician objects as a set.
+     <br/>#6 Store all the band’s associated Musician objects as a set, and then intersect it with the user’s musicians.
+     <br/>#7 A nonempty intersection between the sets means one of the user’s Musician objects was in the band’s musician list
+     <br/>#8 If allowed is not True, authorization is denied. Raise an error.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p74">
+<p>You can start out your testing by trying the negative case: log in as Nicky, and then try to view any Musician. Visiting http://localhost:8000/bands/musician_restricted/1/ results in a <code>404</code> error, as Nicky is not Steve Vai, nor is she in his band.</p>
+</div>
+<div class="readable-text intended-text" id="p75">
+<p>To try the positive case, you need to make some changes to Nicky in the Django Admin. Log out of Nicky, and then log in to the Django Admin. Use the Admin to perform the following steps:</p>
+</div>
+<ol>
+<li class="readable-text" id="p76"> Add a new Musician object for Nicky (first name: Nicky, last name: Cousin, date of birth: 2001-01-13). </li>
+<li class="readable-text" id="p77"> Edit Nicky’s user account, and add the association for the newly created Musician object. </li>
+<li class="readable-text" id="p78"> Edit the Wishful Thinking Band object, adding Nicky’s Musician object as a member. </li>
+</ol>
+<div class="readable-text" id="p79">
+<p>Once you’ve performed these steps, log out of the Django Admin, and then log back in as Nicky. Now, when you visit http://localhost:8000/bands/musician_restricted/1/, you can see Steve Vai’s page. Try visiting using Jimi Hendrix (id = 4), instead. As Jimi isn’t part of Wishful Thinking, you should, once again, see a <code>404</code> page.</p>
+</div>
+<div class="readable-text" id="p80">
+<h3 class="readable-text-h3"><span class="num-string">6.4.1</span> Handling logouts</h3>
+</div>
+<div class="readable-text" id="p81">
+<p>Before Django 5.0, logging the user out was fairly simple: there was a Logout link you could embed in your HTML. For security reasons, “simple” was deprecated in Django 4.1, and as of Django 5.0, you now need to have a logout form. Chapter 7 describes forms in detail, but waiting until then means you’d have to constantly be logging into the Django Admin just to log out. </p>
+</div>
+<div class="readable-text intended-text" id="p82">
+<p>It is common practice to have a header with the user’s info and frequent actions at the top of your site’s pages. Let’s go on a bit of a tangent and build such a header, including a logout action. The following listing contains the code you need to add to RiffMates/templates/base.xhtml to include Login and Logout links, depending on the user’s state.</p>
+</div>
+<div class="browsable-container listing-container" id="p83">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.7</span> Something approximating a nav bar</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">&lt;!-- RiffMates/templates/base.xhtml --&gt;
+&lt;!-- ... --&gt;
+&lt;body&gt;
+
+  &lt;div style="float: right;"&gt; <span class="aframe-location"></span> #1
+   <span class="aframe-location"></span> {% if user.is_authenticated %}  #2
+      Hello, {{user.username}}! &amp;nbsp;
+
+      &lt;form id="logout-form" method="post" <span class="aframe-location"></span> #3
+          action="{% url 'logout' %}"
+          style="display: inline;"&gt;
+        {% csrf_token %}
+        &lt;button type="submit"
+          style="background: none; border: none; cursor: pointer;
+          <span class="">↪</span>  padding: 0; text-decoration: underline;"
+          &gt;Logout&lt;/button&gt;
+      &lt;/form&gt;
+    {% else %}
+      &lt;a href="{% url 'login' %}"&gt;Login&lt;/a&gt; <span class="aframe-location"></span> #4
+    {% endif %}
+  &lt;/div&gt;
+
+  &lt;!-- ... --&gt;</pre>
+<div class="code-annotations-overlay-container">
+     #1 Style the nav so that it pulls to the right of the page.
+     <br/>#2 If the user is authenticated, greet them.
+     <br/>#3 The &lt;form&gt; tag needed to log a user out
+     <br/>#4 A link to the login page
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p84">
+<p>The <code>&lt;form&gt;</code> for logging out a user is a bit messy and includes some horrific inline CSS styling. Forms don’t work with links; they require buttons. And buttons don’t look like links; they look like buttons. That long, ugly style chunk is to make the button look more like a link. </p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>You can configure Django to go where you want when a user logs out. A common choice is to send them to the home page. As you haven’t built a home page yet, let’s send them to the band listing page. Add the following snippet to your settings file:</p>
+</div>
+<div class="browsable-container listing-container" id="p86">
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/RiffMates/settings.py
+...
+# Account Management
+LOGIN_REDIRECT_URL = '/bands/bands/'  <span class="aframe-location"></span> #1
+LOGOUT_REDIRECT_URL = '/bands/bands/' <span class="aframe-location"></span> #2</pre>
+<div class="code-annotations-overlay-container">
+     #1 Where to redirect to if there is no next argument provided to the login page
+     <br/>#2 Where to redirect to when the user logs out 
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p87">
+<h2 class="readable-text-h2"><span class="num-string">6.5</span> Using signals to automatically create a user profile</h2>
+</div>
+<div class="readable-text" id="p88">
+<p>The <code>musician_restricted</code> view has a dangerous assumption in it: it directly accesses the user’s associated user profile object without validating it exists. If you log in as the admin account and visit the view, you see a <code>500</code> error <code>RelatedObjectDoesNotExist</code>, as the admin doesn’t have a user profile. </p>
+</div>
+<div class="readable-text intended-text" id="p89">
+<p>At the moment, the user profile object only gets created if you create a <code>User</code> in the Django Admin and that user has either a <code>Musician</code> or <code>Venue</code> associated with it. There are two solutions to this problem; the simplest is to always check for the existence of a user profile before using it. In the previous example, you could raise a <code>404</code> error if the user profile does not exist.</p>
+</div>
+<div class="readable-text intended-text" id="p90">
+<p>Alternatively, you can write code that automatically creates a <code>UserProfile</code> object immediately after a <code>User</code> ORM object is made. This requires a bit more programming, but it makes your code safer, as forgetting to check for a user profile’s existence won’t crash your site.</p>
+</div>
+<div class="readable-text intended-text" id="p91">
+<p>Django has a signaling system that allows you to react to certain events as they occur. This mechanism is designed as if it were meant for bigger things, but for the most part, it is used to interact with the ORM. In practice, I’ve only ever used it to do exactly what is described in this section: creating a second <code>Model</code> object as a side effect to the creation of a first.</p>
+</div>
+<div class="readable-text intended-text" id="p92">
+<p>Signals use the <em>observer/observable</em> pattern, meaning you register interest in an action and are notified when that action takes place. Figure 6.5 shows an overview of the model, signal registry, and signal handler interactions. Most ORM actions have two signals associated with each, a <em>pre signal</em> and a <em>post signal</em>. Pre signals are emitted just before the action is to take place, and post signals indicate the action has happened. It is possible to prevent an action inside a pre handler. For example, when saving an object, there is both a <code>pre_save</code> and <code>post_save</code> signal. If you register for the <code>pre_save</code> signal, the return value of your handler indicates whether you want the save to take place. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p93">
+<img alt="figure" height="567" src="../../OEBPS/Images/CH06_F05_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.5</span> Registering and handling a signal from a Model</h5>
+</div>
+<div class="readable-text" id="p94">
+<p>To create a <code>UserProfile</code> object as a side-effect to the <code>User</code> object being created, you trap the <code>post_save</code> signal, which is defined in <code>django.db.models.signals</code>. To register a signal handler, you use the <code>@receiver</code> decorator to wrap your handler function. The decorator connects a <em>sender</em> to a signal. The sender is the <code>Model</code> object whose actions you wish to receive. </p>
+</div>
+<div class="readable-text intended-text" id="p95">
+<p>There is no signal for a create action, only for save, which means your code needs to know the difference between a save for the first time and save for updating an object. To make it more complicated, there are also several ways to create a <code>Model</code> object:</p>
+</div>
+<ul>
+<li class="readable-text" id="p96"> In your code </li>
+<li class="readable-text" id="p97"> In the Django Admin </li>
+<li class="readable-text" id="p98"> As a result of loading a fixture </li>
+</ul>
+<div class="readable-text" id="p99">
+<p>All three of these cases need to be dealt with in your signal handler. Signal handlers take at least one argument: the sender of the signal. Specific signals may also send other parameters, so it is best practice to include <code>**kwargs</code> in your function signature. The <code>post_save</code> signal includes three additional arguments to the function:</p>
+</div>
+<ul>
+<li class="readable-text" id="p100"> <code>created</code> is <code>True</code> if the save action created the object and <code>False</code> on object updates. </li>
+<li class="readable-text" id="p101"> <code>raw</code> is <code>True</code> if the save is from a fixture being loaded. </li>
+<li class="readable-text" id="p102"> <code>instance</code> contains the created object. </li>
+</ul>
+<div class="readable-text" id="p103">
+<p>To write a signal that automatically creates a <code>UserProfile</code> object, you need a function registered as a signal handler for <code>post_save</code> against the <code>User</code> ORM object. If the function got called for (1) a newly created object that (2) wasn’t created by loading a fixture, then you can create a corresponding <code>UserProfile</code> object.</p>
+</div>
+<div class="readable-text intended-text" id="p104">
+<p>There is one small thing that prevents it from being this simple. Remember the <code>StackedInline</code> form for the <code>UserProfile</code> object in the Django Admin? If you use this inline form, the Django Admin will create both the <code>User</code> and <code>UserProfile</code> objects at the same time, <em>before</em> the signal gets fired. When you created the <code>nicky</code> user account, if you did not associate her with any <code>Musician</code> or <code>Venue</code> objects, the <code>UserProfile</code> would not be created. If you had associated her, the <code>UserProfile</code> object would be created. To get around this, the signal handler checks for an already existing <code>UserProfile</code> object and only creates a new one if it doesn’t already exist.</p>
+</div>
+<div class="readable-text intended-text" id="p105">
+<p>Listing 6.8 contains the code for automatically creating a <code>UserProfile</code> object when a <code>User</code> object first gets saved. Add this code to your RiffMates/bands/models.py file below the <code>UserProfile</code> object. </p>
+</div>
+<div class="browsable-container listing-container" id="p106">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.8</span> View with authorization code for musician profiles or bandmates</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/views.py
+...
+from django.db.models.signals import post_save <span class="aframe-location"></span> #1
+from django.dispatch import receiver <span class="aframe-location"></span> #2
+...
+@receiver(post_save, sender=User) <span class="aframe-location"></span> #3
+def user_post_save(sender, **kwargs):
+    # Create UserProfile object if User object is new
+    # and not loaded from fixture
+    if kwargs['created'] and not kwargs['raw']: <span class="aframe-location"></span> #4
+     <span class="aframe-location"></span>   user = kwargs['instance']  #5
+        try:
+            # Double check UserProfile doesn't exist already
+            # (admin might create it before the signal fires)
+            UserProfile.objects.get(user=user)<span class="aframe-location"></span> #6
+
+        except UserProfile.DoesNotExist:
+            # No UserProfile exists for this user, create one
+            UserProfile.objects.create(user=user) <span class="aframe-location"></span> #7</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import the signal called when an ORM Model is saved.
+     <br/>#2 Import the @receiver decorator.
+     <br/>#3 Register this function to be called when a User object emits the post_save signal.
+     <br/>#4 Only take action if the User object is new and not created by a fixture.
+     <br/>#5 The newly created User object
+     <br/>#6 Attempt to get an existing UserProfile object.
+     <br/>#7 If no object existed, create one.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p107">
+<p>With your signal defined, you can test it out by signing in to the Django Admin and creating a new user named <em>vinny</em>. Within the Django Admin, you won’t be able to tell the difference, as the <code>StackedInline</code> form is there, whether or not the <code>UserProfile</code> object exists. Inside a terminal, run the <code>shell</code> management command, and do the following:</p>
+</div>
+<div class="browsable-container listing-container" id="p108">
+<div class="code-area-container">
+<pre class="code-area">&gt;&gt;&gt; from django.contrib.auth.models import User
+&gt;&gt;&gt; User.objects.all()
+&lt;QuerySet [&lt;User: admin&gt;, &lt;User: nicky&gt;, &lt;User: vinny&gt;]&gt;
+&gt;&gt;&gt; v = User.objects.last()
+&gt;&gt;&gt; v.userprofile
+&lt;UserProfile: UserProfile object (2)&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p109">
+<p>If your signal code had not worked, the last line in the REPL session would have caused an exception. Speaking of exceptions, having the signal handler in place does not fix past problems. Your admin account does not have a <code>UserProfile</code> associated with it. There are two things you can do to solve this problem. The first is to use the REPL and create a <code>UserProfile</code> object there; alternatively, you can use the Django Admin. Edit the admin user account, and create an association with a Musician object. Save it, and then go back and remove the association. The process of adding a <code>Musician</code> causes the Django Admin to create the <code>UserProfile</code> object for you.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p110">
+<h5 class="callout-container-h5 readable-text-h5">The trouble with signals</h5>
+</div>
+<div class="readable-text" id="p111">
+<p>Remember that ORM objects are proxies to the database. Signals are part of the ORM mechanic and are not tied to the database itself. Direct operations on your database will not emit a signal. Opening the SQLite REPL and adding a <code>User</code> by hand will result in a missing <code>UserProfile</code>.</p>
+</div>
+<div class="readable-text" id="p112">
+<p>Likewise, there are some bulk data operations available in Django that allow you to directly call SQL. These operations bypass the ORM layer and, therefore, also do not emit signals. Signals can be very handy, but you need to be cautious with the corner cases. </p>
+</div>
+</div>
+<div class="readable-text" id="p113">
+<h2 class="readable-text-h2"><span class="num-string">6.6</span> Password management</h2>
+</div>
+<div class="readable-text" id="p114">
+<p>In addition to providing a view handling logging in, Django also provides views for dealing with password resets. This process emails the user an account reset link with a one-time token, and when the user clicks it, they are sent to a form to create a new password. Figure 6.6 shows the steps in the process.</p>
+</div>
+<div class="readable-text intended-text" id="p115">
+<p> </p>
+</div>
+<div class="browsable-container figure-container" id="p116">
+<img alt="figure" height="1375" src="../../OEBPS/Images/CH06_F06_Trudeau.png" width="1033"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 6.6</span> Steps involved in a password reset<span class="aframe-location"></span></h5>
+</div>
+<div class="readable-text" id="p117">
+<p>Let’s follow the flow, building each piece along the way. To start, add a password reset link to your login page. The link can be looked up using <code>password_reset</code> as a key to the <code>{% url %}</code> tag:</p>
+</div>
+<div class="browsable-container listing-container" id="p118">
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/registration/login.xhtml --&gt;
+...
+&lt;br/&gt;
+&lt;p&gt;
+  &lt;a href="{% url 'password_reset' %}"&gt;Lost password?&lt;/a&gt;
+&lt;/p&gt;</pre>
+</div>
+</div>
+<div class="readable-text" id="p119">
+<h3 class="readable-text-h3"><span class="num-string">6.6.1</span> Password reset page</h3>
+</div>
+<div class="readable-text" id="p120">
+<p>Clicking the reset link takes the user to a view asking for their email address. This view renders the <code>password_reset_form.xhtml</code> template. Like the form in the login page, you need <code>{{ form.as_p }}</code> to render the <code>&lt;input&gt;</code> tags and <code>{% csrf_token %}</code> black magic (you’ll learn this spell later). Create RiffMates/templates/registration/password _reset_form.xhtml with the contents from the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p121">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.9</span> Form asking for the user’s email to send them a reset link</h5>
+<div class="code-area-container">
+<pre class="code-area">&lt;!-- RiffMates/templates/registration/password_reset_form.xhtml --&gt;
+{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;p&gt;
+  Forgotten your password? Enter your email address below, and we'll
+  email instructions for setting a new one.
+
+&lt;/p&gt;
+
+&lt;form method="post"&gt;
+  {% csrf_token %}
+  {{ form.as_p }} <span class="aframe-location"></span> #1
+
+  &lt;input type="submit" value="Reset Password"&gt; <span class="aframe-location"></span> #2
+&lt;/form&gt;
+{% endblock content %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Renders the form’s &lt;input&gt; tags
+     <br/>#2 A submit button for the form
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p122">
+<p>Filling this form starts the password reset process. Whatever the user submits, they get the same message. In olden times, websites would sometimes include helpful information like <em>we have no such email address</em>, but that is considered a security flaw. You’re exposing to the black hats some information about accounts in your system. The more secure approach is to do the same thing regardless of whether the email matches an account in the system. </p>
+</div>
+<div class="readable-text" id="p123">
+<h3 class="readable-text-h3"><span class="num-string">6.6.2</span> Password reset email</h3>
+</div>
+<div class="readable-text" id="p124">
+<p>The message shown after submitting the reset form is stored in a template called password_reset_done.xhtml. Create a new file in the registration directory with the others. Sample content is provided in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p125">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.10</span> Message shown after a reset has been requested</h5>
+<div class="code-area-container">
+<pre class="code-area">{% extends "base.xhtml" %}
+
+{% block content %}
+
+&lt;p&gt;
+  We've emailed you instructions for setting your password, if an
+  account exists with the email you entered. You should receive them
+  shortly.
+
+&lt;/p&gt;
+
+&lt;p&gt;
+  If you don't receive an email, please make sure you've entered the
+  address you registered with and check your spam folder.
+
+&lt;/p&gt;
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p126">
+<p>While it shows the user this message, Django simultaneously determines whether there is a <code>User</code> object with the submitted email address. If so, an email gets sent to the address. If there is no match, Django does nothing. Configuring your system to send email correctly is a book in its own right. Django provides a variety of <em>email backends</em>, depending on how you communicate with your email server. </p>
+</div>
+<div class="readable-text intended-text" id="p127">
+<p>The most common email backend uses SMTP to communicate with an email server. There are many third-party providers for such a service, or if you’re brave, you can run your own. Appendix B has more details on how to configure the <code>smtp.EmailBackend</code> for use in a production environment. </p>
+</div>
+<div class="readable-text intended-text" id="p128">
+<p>Thankfully, you don’t need to setup SMPT if you’re still developing or if you only want to test. My favorite email backend prints the email to the console instead of sending it; you see the results inline with the other output from the development server. To use the console backend, add the following to settings.py:</p>
+</div>
+<div class="browsable-container listing-container" id="p129">
+<div class="code-area-container">
+<pre class="code-area">EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'</pre>
+</div>
+</div>
+<div class="readable-text" id="p130">
+<p>The email sent to the user is based on a template: password_reset_email.xhtml. The message can say anything you want, as long as it includes the reset link. This link is accessible through the <code>{%</code> <code>url</code> <code>%}</code> tag, using <code>password_reset_confirm</code> as the argument. The view for this link takes two arguments that must be provided to the <code>{%</code> <code>url</code> <code>%}</code> tag: <code>uidb64=uid</code> and <code>token=token</code>. These values make up the one-time token in the reset link. A sample email message including the reset link is shown in the following listing. Add a new file called RiffMates/templates/registration/password_reset_email.xhtml with the contents from the listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p131">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.11</span> Template for the reset email sent to the user</h5>
+<div class="code-area-container code-area-with-html">
+<pre class="code-area">{% autoescape off %} <span class="aframe-location"></span> #1
+
+  You're receiving this email because you requested a password reset
+  for your user account at Alexandria.
+
+  Please go to the following page and choose a new password:
+
+  {% block reset_link %}
+    {{ protocol }}://{{ domain }}{% url 'password_reset_confirm'
+<span class="">↪</span> uidb64=uid token=token %} <span class="aframe-location"></span> #2
+  {% endblock %}
+
+  Your username, in case you've forgotten: {{ user.get_username }}
+
+  Thanks for using our site!
+
+{% endautoescape %}</pre>
+<div class="code-annotations-overlay-container">
+     #1 Turn off HTML escaping throughout the template.
+     <br/>#2 A fully qualified reset link with a one-time token
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p132">
+<p>Note that the <code>{%</code> <code>url</code> <code>%}</code> tag returns relative URLs. This isn’t a problem on a website, as the browser takes care of sending you to the right site. In an email, this is problematic, though, so you must include the protocol and domain in the link. The view includes this information in the context dictionary; you just need to render it. Using the console backend for development, you get the following email info:</p>
+</div>
+<div class="browsable-container listing-container" id="p133">
+<div class="code-area-container">
+<pre class="code-area">Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: Password reset on 127.0.0.1:8000
+From: webmaster@localhost
+To: admin@example.com
+Date: Tue, 02 May 2023 18:54:52 -0000
+
+
+  You're receiving this email because you requested a password reset
+  for your user account at RiffMates.
+
+  Please go to the following page and choose a new password:
+
+
+    http://127.0.0.1:8000/accounts/reset/MQ/bnl5vg-f639/
+
+
+  Your username, in case you've forgotten: admin
+
+  Thanks for using our site!</pre>
+</div>
+</div>
+<div class="readable-text" id="p134">
+<h3 class="readable-text-h3"><span class="num-string">6.6.3</span> New password form</h3>
+</div>
+<div class="readable-text" id="p135">
+<p>The next step in the reset process happens when the user clicks the one-time link in the email message. The link leads to a view that shows a form for entering a new password. This form uses the standard enter-it and then enter-it-to-confirm mechanism. The associated template is password_reset_confirm.xhtml. Add the contents of the following listing to RiffMates/templates/registration/password_reset_confirm.xhtml. </p>
+</div>
+<div class="browsable-container listing-container" id="p136">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.12</span> Template where the user chooses a new password</h5>
+<div class="code-area-container">
+<pre class="code-area">{% extends "base.xhtml" %}
+
+{% block content %}
+
+{% if validlink %}
+  &lt;form method="post"&gt;
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    &lt;input type="submit" value="Change password"&gt;
+  &lt;/form&gt;
+{% else %}
+  &lt;p&gt;
+    Invalid password reset link!
+  &lt;/p&gt;
+{% endif %}
+
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p137">
+<p>This template contains the by now familiar <code>{{ form.as_p }}</code> and black magic security token. The view passes a value in the context dictionary called <code>validlink</code>, which is <code>True</code> if the one-time token is valid. This allows you to use the same template for the view, even if the user has messed with the token. It does mean you need to have logic for handling the error case, though—not showing the <code>&lt;form&gt;</code> tag is good enough. </p>
+</div>
+<div class="readable-text intended-text" id="p138">
+<p>The final step in the process is telling the user that the reset process is complete. The password reset view expects this content to be in password_reset_complete.xhtml. This can be a simple message, but it is often handy to include a link to the login page as well. Create RiffMates/templates/registration/password_reset_complete.xhtml, using the contents of the following listing.</p>
+</div>
+<div class="browsable-container listing-container" id="p139">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 6.13</span> Template telling the user their password reset process is complete</h5>
+<div class="code-area-container">
+<pre class="code-area">{% extends "base.xhtml" %}
+
+{% block content %}
+&lt;h2&gt;Your password has been set&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href="{{ login_url }}"&gt;Login&lt;/a&gt;&lt;/p&gt;
+{% endblock content %}</pre>
+</div>
+</div>
+<div class="readable-text" id="p140">
+<p>The URL to the login page does not include the <code>?next</code> argument, so if the user clicks it, they are sent to the default. If you added <code>LOGIN_REDIRECT_URL</code> <code>=</code> <code>'/bands/bands/'</code> to the configuration, as recommended earlier, that default is the bands listing page. </p>
+</div>
+<div class="readable-text intended-text" id="p141">
+<p>If you’ve done all that work, you’re ready to test it out. Start the development server, and make sure to log out. Visit one of your new restricted view pages, and you will be redirected to the login page. On the login page, click the Lost Password? link. Unless you had the foresight to include an email address for the <em>nicky</em> account, the admin will be the only account with an email value. Use <em>admin@example.com</em> in the reset form, and then copy the reset link printed to your console. Paste the link in your browser, and complete the password reset process. And there you go! RiffMates is now a multiuser site, complete with restricted pages and password management. </p>
+</div>
+<div class="readable-text" id="p142">
+<h2 class="readable-text-h2"><span class="num-string">6.7</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p143"> The <code>@login_required</code> decorator only checks if a user got authenticated. A more generic view restriction can be performed using the <code>@user_passes_test</code> decorator in the same module (<a href="https://mng.bz/2KKN">https://mng.bz/2KKN</a>). It takes one required argument: a reference to a function that takes the <code>User</code> object as an argument and returns <code>True</code> if the user should be allowed in. Write a new view <code>venues_ restricted()</code> that is only visible by those users associated with a <code>Venue</code> object and displays a list of all venues. Hint: You can take advantage of other views in your code. They are just functions.  </li>
+<li class="readable-text" id="p144"> The auth system emits signals on login events. Capture the <code>django.contrib .auth.signals.user_login_failed</code> signal, and print a message displaying the username and path of the login attempt. See <a href="https://mng.bz/1GGZ">https://mng.bz/1GGZ</a> for details on the arguments passed when receiving this signal. (Note that in production, you should use logging rather than <code>print()</code>. See appendix B for more details.)  </li>
+</ol>
+<div class="readable-text" id="p145">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p146"> Django supports multiuser websites. </li>
+<li class="readable-text" id="p147"> Authentication proves who a user is, while authorization specifies what actions they can perform. </li>
+<li class="readable-text" id="p148"> User data can be stored in a profile object associated with the <code>User</code> account object through a <code>OneToOneField</code> relationship field. </li>
+<li class="readable-text" id="p149"> Django supports the use of a custom-defined <code>User</code> object as an alternative to a profile. </li>
+<li class="readable-text" id="p150"> The Django Admin supports the addition of inline forms to add user profile fields to the <code>User</code> object Add and Update screens. </li>
+<li class="readable-text" id="p151"> When placed on a view, the <code>@login_required</code> decorator redirects anonymous users to the login page, asking them to authenticate. </li>
+<li class="readable-text" id="p152"> Django provides a view handling user login but requires you to add a template to your site’s look and feel to work properly. </li>
+<li class="readable-text" id="p153"> Login for the Django Admin is handled similarly to site login but using separate views. If you’re only using the Django Admin and not otherwise providing user accounts, you avoid the need for a custom login page. </li>
+<li class="readable-text" id="p154"> Authorization code is typically view specific. You can add more detailed permission requirements, as needed. </li>
+<li class="readable-text" id="p155"> Django emits signals when it performs certain actions. These signals can be received in a function, allowing you to perform side effects. </li>
+<li class="readable-text" id="p156"> You can use a signal to automatically create a user profile object whenever a User ORM object gets created. Your signal handler traps the <code>post_save</code> signal and checks for a newly created <code>User</code> object that wasn’t created by a fixture. </li>
+<li class="readable-text" id="p157"> Django provides built-in views for the password reset process but requires you to customize the corresponding templates. </li>
+<li class="readable-text" id="p158"> The password reset process prompts the user for their email, sends them a one-time link, displays a reset form, and then a confirmation message. </li>
+<li class="readable-text" id="p159"> Django provides features for sending email and uses different backends for implementation. The <code>console.EmailBackend</code> is used during development, printing the email’s content to the console instead of sending it.  </li>
+</ul>
+</div></body>
+</html>

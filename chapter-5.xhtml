@@ -1,0 +1,685 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title>5 Django Admin</title>
+<link href="../../stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div id="sbo-rt-content"><div class="readable-text" id="p1">
+<h1 class="readable-text-h1"><span class="chapter-title-numbering"><span class="num-string">5</span> </span> <span class="chapter-title-text">Django Admin</span></h1>
+</div>
+<div class="introduction-summary">
+<h3 class="introduction-header">This chapter covers</h3>
+<ul>
+<li class="readable-text" id="p2">Using the Django Admin to manage your <code>Model</code> content</li>
+<li class="readable-text" id="p3">Creating a superuser</li>
+<li class="readable-text" id="p4">Customizing the Django Admin</li>
+<li class="readable-text" id="p5">Linking between <code>Model</code> objects in the Django Admin</li>
+<li class="readable-text" id="p6"><code>Model</code> <code>Meta</code> properties</li>
+</ul>
+</div>
+<div class="readable-text" id="p7">
+<p>This chapter covers the Django Admin, a built-in, web-based tool for managing your object relational mapping (ORM) <code>Model</code> objects. The Django Admin gives you screens to list, add, edit, and delete the objects in the database.</p>
+</div>
+<div class="readable-text" id="p8">
+<h2 class="readable-text-h2"><span class="num-string">5.1</span> Touring the Django Admin</h2>
+</div>
+<div class="readable-text" id="p9">
+<p>In the previous chapter, you learned how to use the ORM to add storage capabilities to your Django site. Along the way, you used two techniques to construct data: the <code>.create()</code> method on a <code>Model</code> object and fixtures. Wouldn’t it be nice if you had a graphical interface to manage your objects? Django comes with a tool that does this for you. The <em>Django Admin</em> is a customizable, web-based interface that allows you to create and modify your <code>Model</code> objects with very little code. </p>
+</div>
+<div class="readable-text intended-text" id="p10">
+<p>Figure 5.1 shows a Django Admin screen that lists all of the <code>Musician</code> objects in the database. The code I wrote to generate that screen is less than 80 lines long. With it, you have multifield sorting, field search, filtering, custom columns, and all the actions you need to be able to add, update, and delete musicians from the database.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p11">
+<img alt="figure" height="603" src="../../OEBPS/Images/CH05_F01_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.1</span> Parts of the Musician Listing page in the Django Admin</h5>
+</div>
+<div class="readable-text" id="p12">
+<p>As the name implies, the Django Admin’s purpose is administering your website. Its interface isn’t the prettiest, and its design is optimized for users who control your site. Before using the Django Admin, you need to understand the basics of user permissions. Django is a multiuser framework, meaning you can create websites that have user accounts, and each account can be restricted to a subset of activities. Django has fine-grained permission control, and you can get quite specific about who can do what, but it also has a high-level mechanism that is good enough for most situations. Django divides users into three classes:</p>
+</div>
+<ul>
+<li class="readable-text" id="p13"> General users </li>
+<li class="readable-text" id="p14"> Staff </li>
+<li class="readable-text" id="p15"> Admins </li>
+</ul>
+<div class="readable-text" id="p16">
+<p>So far, when visiting RiffMates, you’ve been acting as an anonymous general user: one who isn’t logged in. All the pages you’ve built have been public, so all users, including anonymous ones, are allowed to visit them. You’ll learn all about building pages with restrictions in a later chapter.</p>
+</div>
+<div class="readable-text intended-text" id="p17">
+<p>The Django Admin is behind a login wall, since you don’t want just anybody modifying your data. A user marked as <em>staff</em> is allowed to log in to the Django Admin. What they can do inside the Django Admin is dependent on their permissions. A user marked as <em>admin</em> automatically has permission to do everything in the Django Admin.</p>
+</div>
+<div class="callout-container sidebar-container">
+<div class="readable-text" id="p18">
+<h5 class="callout-container-h5 readable-text-h5">django-admin, Django Admin, admins, and superusers</h5>
+</div>
+<div class="readable-text" id="p19">
+<p>Django uses the word <em>admin</em> a lot—and to mean different things. As you might imagine, this can be a bit confusing.</p>
+</div>
+<div class="browsable-container browsable-table-container">
+<table>
+<thead>
+<tr>
+<th>
+<div>
+          Term 
+        </div></th>
+<th>
+<div>
+          Meaning 
+        </div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> <code>django-admin</code> <br/></td>
+<td>  The management script used to create new Django projects <br/></td>
+</tr>
+<tr>
+<td>  Django Admin <br/></td>
+<td>  The web interface allowing administrators to manage <code>Model</code> objects <br/></td>
+</tr>
+<tr>
+<td>  Admin <br/></td>
+<td>  The permission level applied to users with unrestricted access to the Django Admin <br/></td>
+</tr>
+<tr>
+<td>  Superuser <br/></td>
+<td>  Another term for an admin user, mostly used in the <code>createsuperuser</code> management command <br/></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="readable-text" id="p21">
+<p>Personally, I’ve never built a Django site for which I bothered with the staff designation. For sites that are complicated enough to have varying permission levels, I typically find that I want more control over the interface than the Django Admin provides. In this case, I end up building my own pages for staff-type activities. The admin user, though, is quite valuable. You can go a long way in being able to manage your site without having to write very much code, using the Django Admin and admin users.</p>
+</div>
+<div class="readable-text print-book-callout" id="p22">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>I will continue referring to <em>admin</em> in the singular, but it is a property of a user account. You can have as many users with admin permission as you’d like.</p>
+</div>
+<div class="readable-text" id="p23">
+<h3 class="readable-text-h3"><span class="num-string">5.1.1</span> Creating an admin user</h3>
+</div>
+<div class="readable-text" id="p24">
+<p>The Django Admin allows you to create and manage users, but you have a bootstrapping problem: you have to be able to log in to the Django Admin to use the Django Admin. To get around this, there is a management command for creating a user with admin privileges. The <code>createsuperuser</code> command asks you a few questions and gets you going:</p>
+</div>
+<div class="browsable-container listing-container" id="p25">
+<div class="code-area-container">
+<pre class="code-area">(venv) RiffMates$ python manage.py createsuperuser
+Username (leave blank to use 'ctrudeau'): admin
+Email address: admin@example.com
+Password:
+Password (again):
+The password is too similar to the username.
+This password is too short. It must contain at least 8 characters.
+This password is too common.
+Bypass password validation and create user anyway? [y/N]: y
+Superuser created successfully.</pre>
+</div>
+</div>
+<div class="readable-text" id="p26">
+<p>I’ll tell you a secret: I was a little naughty when selecting my password. Django has a set of rules for password strength, but the <code>createsuperuser</code> command allows you to ignore them. It prompts to confirm you’re OK with being naughty, and then it lets you proceed. </p>
+</div>
+<div class="readable-text print-book-callout" id="p27">
+<p><span class="print-book-callout-head">Warning</span> <strong></strong>When running a production site, you must guard access to the account that hosts your Django project. Anyone who can run commands can create a user with admin permissions and then will have full access to your site. With your newly created admin user in hand, you can now visit the Django Admin web interface. </p>
+</div>
+<div class="readable-text" id="p28">
+<h3 class="readable-text-h3"><span class="num-string">5.1.2</span> The default Django Admin</h3>
+</div>
+<div class="readable-text" id="p29">
+<p>If you were paying close attention, you might have noticed that the default <code>INSTALLED_APPS</code> configuration setting includes an app called <code>django.contrib.admin</code>. Likewise, the default main urls.py file also registers a <code>path</code> object for <code>admin/</code>. The Django Admin web interface is ready to go out of the box. If you don’t want the Django Admin, you can remove it by modifying those two files. </p>
+</div>
+<div class="readable-text intended-text" id="p30">
+<p>As the Django Admin is already configured, and you created an admin user, you can visit it by running the development server and going to http://localhost:8000/admin/. The page prompts you with a login screen.</p>
+</div>
+<div class="readable-text intended-text" id="p31">
+<p>I’m quite certain you’ve seen a login page before, and hopefully, know just what to do. Use the username and password you gave to the <code>createsuperuser</code> command, and authenticate to the Django Admin. </p>
+</div>
+<div class="readable-text intended-text" id="p32">
+<p>Once inside, you will see the home page, which shows you all the objects registered with the Django Admin, grouped by their app. As you haven’t registered any <code>Model</code> files yet, you see the two defaults: <em>Users</em> and <em>Groups</em>, as in figure 5.2.</p>
+</div>
+<div class="readable-text intended-text" id="p33">
+<p>You can explore these links if you like, but a later chapter deals with managing users and will cover this information in more detail. If you click the Users link, you will see a list of all your users, which, at the moment, is just the newly created admin account. If you are exploring, you can always get back to the home page by clicking<span class="aframe-location"></span> the “Django administration” logo in the top-left corner. The right side of the page mentions actions, which include changes made to objects recently. As you haven’t done anything yet, the Actions list is empty. When you add, edit, or delete an object, you will see information on that in this list. </p>
+</div>
+<div class="browsable-container figure-container" id="p34">
+<img alt="figure" height="408" src="../../OEBPS/Images/CH05_F02_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.2</span> Django Admin home page with links for User and Group <code>Model</code> objects</h5>
+</div>
+<div class="readable-text" id="p35">
+<h3 class="readable-text-h3"><span class="num-string">5.1.3</span> Adding your own models</h3>
+</div>
+<div class="readable-text" id="p36">
+<p>Any ORM <code>Model</code> you define can be added to the Django Admin with just a few lines of code. When you created your app using the <code>startapp</code> command, Django created models.py and admin.py files for you. You’ve used the models.py file to define <code>Model</code> classes, and the admin.py file is where you declare that you want a <code>Model</code> to participate in the Django Admin. To make this declaration, create an <code>admin.ModelAdmin</code> class, and then register it against the <code>Model</code> class you want in the Django Admin. Figure 5.3 shows the relationship between the Django Admin app, the <code>admin.ModelAdmin</code> and <code>Model</code> classes in your app, and the resulting web interface. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p37">
+<img alt="figure" height="1145" src="../../OEBPS/Images/CH05_F03_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.3</span> The Django Admin is an app that ships with Django, giving administrators the ability to create and modify registered <code>Model</code> objects.</h5>
+</div>
+<div class="readable-text" id="p38">
+<p>When Django loads your app, it looks for admin.py files the same way it looks for models.py files. To add a <code>Model</code> to the Django Admin, you create a class that inherits from <code>admin.ModelAdmin</code> and call the <code>register()</code> function to associate the class with the model. The <code>register()</code> function can also be used as a class decorator. This is my preference, as it keeps the registration close to the <code>admin.ModelAdmin</code> class declaration. </p>
+</div>
+<div class="readable-text intended-text" id="p39">
+<p>Each registered <code>admin.ModelAdmin</code> class gets a set of <em>CRUD pages</em>. CRUD, besides being a very fun acronym, stands for <em>create, read, update, and delete</em>, which refers to the actions you take on most pieces of data. The <em>Listing page</em> acts as one of the Read pages, showing all the objects for the given <code>Model</code> class. Each listed object is a link, taking you to a <em>Change page</em>, where you can update the fields of the given object. The Django Admin also has links to an <em>Add page</em>, which allows you to create new objects, as well as a <em>Delete page</em>, which—as you might have guessed—allows you to delete existing objects. Figure 5.4 shows the relationship between the <code>Model</code> and <code>admin.ModelAdmin</code> classes as well as the resulting Django Admin screens. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p40">
+<img alt="figure" height="653" src="../../OEBPS/Images/CH05_F04_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.4</span> <code>Model</code> class, <code>admin.ModelAdmin</code> class, and associated Django Admin screens</h5>
+</div>
+<div class="readable-text" id="p41">
+<p>Let’s look at a concrete example and register the <code>Musician</code> ORM class with the Django Admin. To do this, you create a class that inherits from <code>admin.ModelAdmin</code> inside admin.py. I typically give mine the same name as the ORM class, adding <code>Admin</code> as a suffix—<code>MusicianAdmin</code>, in this case. The default behavior of the <code>admin.ModelAdmin</code> class includes all the CRUD pages, so your new class can have an empty body, using just the <code>pass</code> keyword. The skeleton admin.py file generated by <code>startapp</code> imports <code>django.contrib.admin</code> for you, and the <code>register()</code> function lives inside that module. I use <code>register()</code> as a class decorator, passing in the <code>Musician</code> ORM class itself to make the association between the new admin class and the ORM. That’s it. One class import and three lines of code gives you a complete set of CRUD pages behind a secure login wall. The following listing shows the code you need inside admin.py to get this all to work. </p>
+</div>
+<div class="browsable-container listing-container" id="p42">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.1</span> The <code>MusicianAdmin</code> class</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/admin.py
+from django.contrib import admin
+
+from bands.models import Musician <span class="aframe-location"></span> #1
+
+@admin.register(Musician) <span class="aframe-location"></span> #2
+class MusicianAdmin(admin.ModelAdmin):<span class="aframe-location"></span> #3
+    pass <span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import your Musician class from models.py.
+     <br/>#2 Use the register() function as a class decorator to associate the admin class with the model.
+     <br/>#3 Inherit admin.ModelAdmin.
+     <br/>#4 Use the inherited class without additional changes.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p43">
+<p>Fire up your development server, and return to the Django Admin Home page: http://localhost:8000/admin/. The page now has a new section for the Bands app and contains links to add a <code>Musician</code> object, and view the Musician Listing page. Go ahead and click Musicians to view the page, which contains a listing with the data you created in chapter 4. The result is similar to figure 5.5. The listing page has a navigation menu on the left-hand side similar to the home page; it is collapsible; and for the sake of space, I have collapsed it. The small chevron (») icon can be clicked to expand the nav.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p44">
+<img alt="figure" height="527" src="../../OEBPS/Images/CH05_F05_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.5</span> Listing page showing all <code>Musician</code> objects in the database and corresponding CRUD operations</h5>
+</div>
+<div class="readable-text" id="p45">
+<p>On the Musician Listing page, underneath the header, a breadcrumb navigation widget is now displayed. This navigation aid has links to the home page, a page similar to the home page containing only the Bands app objects, and the name of the screen you are currently on.</p>
+</div>
+<div class="readable-text intended-text" id="p46">
+<p>The main feature of the listing page is the listing of <code>Musician</code> objects. Note how each object gets shown on this page. Does it look familiar? It is the output from the <code>.__str__()</code> method on your <code>MusicianModel</code> class. If you had not overridden <code>.__str__()</code>, this listing would show the less helpful <code>Musician object(#)</code> default. The listing page acts as the central control for your <code>Musician</code> objects, allowing you to </p>
+</div>
+<ol>
+<li class="readable-text" id="p47"> Add a new <code>Musician</code>. </li>
+<li class="readable-text" id="p48"> Edit an existing <code>Musician</code>. </li>
+<li class="readable-text" id="p49"> Delete one or more <code>Musician</code> objects. </li>
+</ol>
+<div class="readable-text" id="p50">
+<p>You add a new <code>Musician</code> using the ADD MUSICIAN + button in the top-right corner of the page. Click the button now, and you’ll see a form with all the fields for a <code>Musician</code>. Figure 5.6 shows the Add screen with the fields filled in to add Jimi Hendrix to the database. The Birth field has an optional date picker, although for 1942, that’d be a lot of clicking. Once you have filled in the form, you have three choices for saving: Save and Add Another saves the record and takes you back to this same page; Save and Continue Editing saves the record and keeps you editing Jimi; and Save saves the record and returns you to the listing.</p>
+</div>
+<div class="readable-text intended-text" id="p51">
+<p>Back on the listing screen, to edit a <code>Musician</code>, you click the link for its object. The text of this link is the result from <code>Musician.__str__()</code>. The Django Admin refers to edits as <em>changes</em>. The Change page is similar to the Add page, but it comes prepopulated with the <code>Musician</code> being edited.<span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p52">
+<img alt="figure" height="584" src="../../OEBPS/Images/CH05_F06_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.6</span> Add <code>Musician</code> page</h5>
+</div>
+<div class="readable-text intended-text" id="p53">
+<p>To delete a <code>Musician</code>, you can either go to the Change screen and push the Delete button, or on the listing screen, you can select one or more <code>Musician</code> objects using the check boxes and then choose Delete Selected Musicians from the Action drop-down menu.</p>
+</div>
+<div class="readable-text intended-text" id="p54">
+<p>All these pages get created for you because you wrote a simple <code>admin.ModelAdmin</code> class. That’s a lot of benefit for very little work, and what you’ve seen so far is merely the default. You can also customize the class to control the appearance and features of the page. </p>
+</div>
+<div class="readable-text" id="p55">
+<h2 class="readable-text-h2"><span class="num-string">5.2</span> Customizing a listing page</h2>
+</div>
+<div class="readable-text" id="p56">
+<p>The Django Admin’s class listing page shows each of the objects in the database for the corresponding class. By default, each object gets represented using the class’s <code>.__str__()</code> method. You can change this behavior by adding the <code>list_display</code> attribute to the <code>admin.ModelAdmin</code> class, which controls which columns are shown on the listing page. The attribute takes an iterable (usually a <code>tuple</code>) with an item for each desired column. Each item is a string: naming an object attribute, an argument-less object callable, or a callable on the <code>admin.ModelAdmin</code> class itself. In the case of a callable, the result returned from the method is the value for the column. </p>
+</div>
+<div class="readable-text intended-text" id="p57">
+<p>Let’s replace the default display for the <code>MusicianAdmin</code> class. Add the <code>list_ display</code> attribute to the <code>MusicianAdmin</code> class, setting it to a <code>tuple</code> containing <code>("id", "last_name",</code> <code>"show_weekday")</code>. The first two items in this <code>tuple</code> result in a <code>Musician</code> object’s ID and <code>last_name</code> fields being used as columns. The <code>"show_weekday"</code> value, in this case, is for a callable, which will be added to the class. </p>
+</div>
+<div class="readable-text intended-text" id="p58">
+<p>My <code>.show_weekday()</code> callable is a bit silly—it shows the day of the week the artist was born and can be implemented on either the <code>Musician</code> class or the <code>admin.ModelAdmin</code> class. On the <code>Musician</code> class, it needs to be a method without any arguments. As I only want this “feature” in the Django Admin, it is a best practice to put it on the <code>MusicianAdmin</code> class instead. In this case, the method takes a single argument, the object to be displayed, and gets called once for each object in the listing. The return value of the method populates the row in the column. </p>
+</div>
+<div class="readable-text intended-text" id="p59">
+<p>The title of the column for a callable is based on the name of the callable. Underscores are turned into spaces, and words are displayed in small caps. You can separate the name of your callable from the title name with one unusual thing. You may have heard that everything in Python is an object, even functions—well, this goes for methods on objects as well. Like all objects, you can assign attributes to a method. To me, this feels sort of strange, and there aren’t many use cases for it in the real world, but Django uses this language feature. The <code>.show_weekday()</code> method gets the optional string attribute <code>.short_description</code>, which, if present, gets used as the column title instead of the method name. </p>
+</div>
+<div class="readable-text intended-text" id="p60">
+<p>Listing 5.2 shows the new version of <code>MusicianAdmin</code> that defines the <code>list_display</code> attribute and the <code>.show_weekday()</code> method, including the <code>.short_description</code> attribute that renames the column title. Update your admin.py with this content. </p>
+</div>
+<div class="browsable-container listing-container" id="p61">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.2</span> Customized <code>MusicianAdmin</code> class with three columns</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/admin.py
+from django.contrib import admin
+from bands.models import Musician
+
+@admin.register(Musician)
+class MusicianAdmin(admin.ModelAdmin):
+    list_display = ('id', 'last_name', 'show_weekday') <span class="aframe-location"></span> #1
+
+    def show_weekday(self, obj): <span class="aframe-location"></span> #2
+        # Fetch weekday of artist’s birth
+     <span class="aframe-location"></span>   return obj.birth.strftime("%A")  #3
+    show_weekday.short_description = "Birth Weekday" <span class="aframe-location"></span> #4</pre>
+<div class="code-annotations-overlay-container">
+     #1 The listing page has three columns.
+     <br/>#2 Callable in list_display, invoked for each Musician object in the listing.
+     <br/>#3 The date format "%A" is for the weekday.
+     <br/>#4 Customize the column title.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p62">
+<p>With these changes in place, start your development server, and visit the <code>Musician</code> class’s listing page. It now looks like figure 5.7. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p63">
+<img alt="figure" height="512" src="../../OEBPS/Images/CH05_F07_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.7</span> Customized <code>Musician</code> listing page</h5>
+</div>
+<div class="readable-text" id="p64">
+<h3 class="readable-text-h3"><span class="num-string">5.2.1</span> Sorting and searching</h3>
+</div>
+<div class="readable-text" id="p65">
+<p>It isn’t obvious unless you mouse over them, but the column headers in the listing page are clickable. Clicking a column sorts it, in ascending order. Once a column gets sorted, a mouse-over reveals a toggle to turn sorting off. You can sort by multiple columns, allowing “first sort-by then sort-by” ordering. A small number shown in the header indicates the sorting precedence. Sorted columns also feature a small triangle that changes from ascending to descending sort order when clicked. </p>
+</div>
+<div class="readable-text intended-text" id="p66">
+<p>Sorting is performed at the database level for efficiency. You haven’t seen it yet, as you only have four objects, but the Django Admin supports pagination. If you have a lot of objects, Django doesn’t load them all into memory to perform the sort but gets the database to do the work. This has a consequence: Your custom columns can’t participate in the sort, as they aren’t in the database. The Birth Weekday column created in the previous example is not clickable, as you can‘t sort by it.</p>
+</div>
+<div class="readable-text intended-text" id="p67">
+<p>The Django Admin also supports search. To enable this feature, you add a <code>search_fields</code> attribute to the <code>admin.ModelAdmin</code> class. Like <code>list_display</code>, this takes an iterable of field names—in this case, the fields to matched against a search term. When <code>search_fields</code> is present, the Django Admin adds a search box to the top of the page. </p>
+</div>
+<div class="readable-text intended-text" id="p68">
+<p>Different search behavior can be specified by adding a suffix to the name of the participating field. Without a suffix, the search term gets used as a substring for matches. For example, using <code>last_name</code> in <code>search_fields</code> and searching for <em>e</em>, results in listing <code>Hendrix</code> and <code>Lennon</code> because they have the letter <em>e</em> in their last names.</p>
+</div>
+<div class="readable-text intended-text" id="p69">
+<p>The <code>__startswith</code> suffix causes search terms to match the beginning of the field. Configuring <code>first_name__startswith</code> and searching for <em>j</em> returns <code>Jimi</code> <code>Hendrix</code>, <code>John Bonham</code>, and <code>John</code> <code>Lennon</code>. The <code>__exact</code> suffix requires search terms to be exact matches (case insensitive). </p>
+</div>
+<div class="readable-text intended-text" id="p70">
+<p>The <code>search_fields</code> attribute can take multiple fields, and you can mix and match the suffixes as you like within the values. The following listing modifies the <code>list_ display</code> attribute of <code>MusicianAdmin</code> to add the <code>first_name</code> field as a column and makes the first and last names searchable. </p>
+</div>
+<div class="browsable-container listing-container" id="p71">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.3</span> Modified <code>MusicianAdmin</code> class to support search</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/admin.py
+...
+class MusicianAdmin(admin.ModelAdmin):
+    list_display = ("id", "last_name", "first_name", "show_weekday", )
+    search_fields = ("last_name", "first_name", )
+    ...</pre>
+</div>
+</div>
+<div class="readable-text" id="p72">
+<h3 class="readable-text-h3"><span class="num-string">5.2.2</span> Filtering</h3>
+</div>
+<div class="readable-text" id="p73">
+<p>In addition to searching, you can filter content as well. The way you implement this is similar: you add the <code>list_filter</code> attribute to your <code>admin.ModelAdmin</code> class. The simplest form of <code>list_filter</code> is the name of a field to filter by. </p>
+</div>
+<div class="readable-text intended-text" id="p74">
+<p>Filters are shown as widgets on the right-hand-side of the listing page. For fields in the <code>list_filter</code> configuration, all values for the field are shown as filter links—which can be problematic.</p>
+</div>
+<div class="readable-text intended-text" id="p75">
+<p>For a field that has a limited selection, like a <code>BooleanField</code> or anything restricted using the <code>choices</code> attribute, a complete list of values is fine. For a wide-open field, like <code>last_name</code>, this becomes both ugly and a performance limitation. For a large dataset, you do not want every single last name in your database showing on the right-hand side; in this case, you should use search capabilities instead. </p>
+</div>
+<div class="readable-text intended-text" id="p76">
+<p>The default filter for a <code>DateField</code> shows a small set of values to choose from: today, the last seven days, this month, and this year. For our musicians’ birthdays, this isn’t going to be helpful. You can define a custom filter list by extending the <code>SimpleListFilter</code> class. This class has two methods: one that defines the values to show in the filter listing and another that determines the corresponding filter to run on the <code>QuerySet</code> used for the page. </p>
+</div>
+<div class="readable-text intended-text" id="p77">
+<p>Although I’ve been using some famous musicians as my examples, RiffMates is really about musicians seeking musicians. It is reasonable to assume anybody in the database actively looking for another musician is alive. Filtering by the last few decades is likely good enough.</p>
+</div>
+<div class="readable-text intended-text" id="p78">
+<p>A custom list filter class extends <code>admin.SimpleListFitler</code>, defines two attributes, and defines two methods. The attributes are <code>title</code> and <code>parameter_name</code>, specifying the title of the filter and the name of what is being filtered by. The methods are <code>.lookups()</code> and <code>.queryset()</code>, which are responsible for naming the filter choices and performing the filter query, respectively. Figure 5.8 shows a high-level version of this code. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p79">
+<img alt="figure" height="364" src="../../OEBPS/Images/CH05_F08_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.8</span> An overview of a custom list filter</h5>
+</div>
+<div class="readable-text" id="p80">
+<p>The <code>.lookups()</code> method takes two arguments: the page’s <code>request</code> object and a reference to the associated <code>admin.ModelAdmin</code> class. The method is responsible for returning an iterable of <code>tuple</code>s, each containing a short- and long-form display of the filter choice. The choices are strings, and the short form is used in the URL as a query parameter to the filtered page. The long form is what is displayed to the user as the filter link. This structure is similar to what Django expects in the <code>choices</code> attribute of a field constructor. </p>
+</div>
+<div class="readable-text intended-text" id="p81">
+<p>The <code>.queryset()</code> method is responsible for doing the actual filtering. It takes two arguments: the page’s <code>request</code> object, and a <code>QuerySet</code>. When Django Admin calls this method, it has already preformed a query, which was used to construct the page. The resulting <code>QuerySet</code> object gets passed into <code>.queryset()</code>, allowing you to further perform actions on it. This method returns the modified <code>QuerySet</code> object with filtered contents. </p>
+</div>
+<div class="readable-text intended-text" id="p82">
+<p>Let’s define a custom filter that provides the last 10 decades as date groups to filter by, calling it <code>DecadeListFilter</code>. Its <code>.lookups()</code> method returns an iterable of decade ranges, and its <code>.queryset()</code> method filters the <code>QuerySet</code> argument by the decade chosen. </p>
+</div>
+<div class="readable-text intended-text" id="p83">
+<p>To calculate the range of decades, start with the current year, ignoring the current decade, and then count the 10 decades preceding it. The <code>.lookups()</code> method returns a <code>list</code> containing a series of <code>tuple</code>s, with each <code>tuple</code> containing the beginning year of decade as a string and another string showing the year range of the decade. The first value gets used as a query parameter in the URL, and although it would be nice for it to be an integer, it has to be a string. When the <code>.queryset()</code> method uses it, it must convert it back to an integer to perform the filter. </p>
+</div>
+<div class="readable-text intended-text" id="p84">
+<p>The <code>.queryset()</code> method uses the query parameter argument to affect a filter by date range. The <code>QuerySet</code> argument will be the entire set of <code>Musician</code> objects, and the filtered version returned needs to be limited to just the chosen decade. This filtering is done by calling <code>.filter()</code> on the <code>QuerySet</code>, passing in two limiters on the <code>birth</code> field. Recall that the <code>.filter()</code> method supports the use of suffixes to do comparisons. A decade range is all the dates greater than or equal to January 1st of the first year of the decade, limited by dates less than or equal to December 31st of the last year in the decade. Applying the <code>__gte</code> and <code>__lte</code> suffixes on the <code>birth</code> field in the call to <code>.filter()</code> achieves this result. </p>
+</div>
+<div class="readable-text intended-text" id="p85">
+<p>When a user clicks a link in the filter widget, the same listing page gets reloaded but with a corresponding query parameter set. To save you from having to process the query parameter yourself, the class has a <code>.value()</code> convenience method that returns the chosen filter argument. As our filter argument is a number containing the chosen, you convert it back to an integer and then use this to construct the decade date ranges for your <code>.filter()</code> call. </p>
+</div>
+<div class="readable-text intended-text" id="p86">
+<p>The following listing shows the <code>list_filter</code> argument to the <code>MusicianAdmin</code> class that references the new <code>DecadeListFilter</code> and the class code for the filter itself. Modify your admin.py file with the changes shown, and you’ll be able to filter your musicians by decade. </p>
+</div>
+<div class="browsable-container listing-container" id="p87">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.4</span> Custom list filter based on decades</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/admin.py
+...
+from datetime import datetime, date <span class="aframe-location"></span> #1
+...
+class DecadeListFilter(admin.SimpleListFilter): <span class="aframe-location"></span> #2
+ <span class="aframe-location"></span>   title = 'decade born'     #3
+    parameter_name = 'decade' <span class="aframe-location"></span> #4
+
+    def lookups(self, request, model_admin):
+        result = []
+
+        this_year = datetime.today().year
+        this_decade = (this_year // 10) * 10  <span class="aframe-location"></span> #5
+        start = this_decade - 10
+        for year in range(start, start - 100, -10): <span class="aframe-location"></span> #6
+            result.append( (str(year), f"{year}-{year+9}") ) <span class="aframe-location"></span> #7
+
+        return result
+
+    def queryset(self, request, queryset):
+        start = self.value()  <span class="aframe-location"></span> #8
+        if start is None:
+            return queryset
+
+        start = int(start)
+        result = queryset.filter(
+            birth__gte=date(start, 1, 1), <span class="aframe-location"></span> #9
+            birth__lte=date(start + 9, 12, 31),
+        )
+
+        return result
+...
+class MusicianAdmin(admin.ModelAdmin):
+    list_display = ("id", "last_name", "first_name", "birth",  <span class="aframe-location"></span> #10
+        "show_weekday", )
+    list_filter = (DecadeListFilter, ) <span class="aframe-location"></span> #11</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import datetime and date for decade calculations.
+     <br/>#2 Inherit from SimpleListFilter to define a new list filter.
+     <br/>#3 Define the list filter’s title.
+     <br/>#4 Define the list filter’s query parameter name.
+     <br/>#5 Determine the current decade.
+     <br/>#6 Loop backward through the 10 previous decades.
+     <br/>#7 Add a tuple containing the base year of the decade and a display string.
+     <br/>#8 Get the filtered value, checking for None (meaning no filter).
+     <br/>#9 Run a subfilter on the QuerySet, restricting the birth field to the chosen decade, starting on January 1st and going through December 31, 9 years later.
+     <br/>#10 Add a birth field column to the listing.
+     <br/>#11 Add the new DecadeListFilter to the admin.ModelAdmin class.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p88">
+<p>To make it a little more obvious, the code in the preceding listing also adds <code>birth</code> to the <code>list_display</code> attribute, so you can see if the decade filter is working. With the code in place, start your development server and take a look at your new <code>Musician</code> listing page. Figure 5.9 shows a page filtered from 1940–1949. <span class="aframe-location"></span></p>
+</div>
+<div class="browsable-container figure-container" id="p89">
+<img alt="figure" height="616" src="../../OEBPS/Images/CH05_F09_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.9</span> Listing page filtered by the 1940s</h5>
+</div>
+<div class="readable-text" id="p90">
+<p>Django comes prepackaged with some other filters. You can dive deep into the documentation to see what is available or learn to further customize on your own: <a href="https://docs.djangoproject.com/en/dev/ref/contrib/admin/filters/">https://docs.djangoproject.com/en/dev/ref/contrib/admin/filters/</a>.</p>
+</div>
+<div class="readable-text intended-text" id="p91">
+<p>When playing with your new list filter, take a look at the resulting URL. The first value in each <code>.lookups()</code> <code>tuple</code> gets used as the query parameter. The query parameter itself is defined through the <code>parameter_name</code> attribute. All of this is still a web application—Django is just doing many things on your behalf. Because the Django Admin uses query parameters to modify what is displayed on the page, you can take advantage of this and add features for yourself, you’ll do just that in the next section. </p>
+</div>
+<div class="readable-text" id="p92">
+<h3 class="readable-text-h3"><span class="num-string">5.2.3</span> New in Django 5: Facets</h3>
+</div>
+<div class="readable-text" id="p93">
+<p>If you’re using Django 5, you may have noticed another link in the filter control box on the right-hand side of the page: Show Counts. When you click this link, each filter choice has a counter appended, showing how many items are included in that filter. These counts are called <em>facets</em>. Clicking the link adds a <code>__facets=True</code> query parameter to the URL. When facets are being displayed, Show Counts becomes Hide Counts. </p>
+</div>
+<div class="readable-text intended-text" id="p94">
+<p>You can control whether facets are displayed by adding a <code>show_facets</code> member to your admin model. There are three possible settings:</p>
+</div>
+<ul>
+<li class="readable-text" id="p95"> <code>show_facets = admin.ShowFacets.ALWAYS</code>—Always display the facet. </li>
+<li class="readable-text" id="p96"> <code>show_facets = admin.ShowFacets.ALLOW</code>—Use the Show and Hide links, displaying facets if the query parameter is present (this is the default). </li>
+<li class="readable-text" id="p97"> <code>show_facets = admin.ShowFacets.NEVER</code>—Disable facets. </li>
+</ul>
+<div class="readable-text" id="p98">
+<p>Displaying the facet information means extra queries to the database because the Django Admin has to look up the count of each filter. This is why the <code>NEVER</code> option is available, so you can turn it off if the query is too expensive for your page. </p>
+</div>
+<div class="readable-text" id="p99">
+<h2 class="readable-text-h2"><span class="num-string">5.3</span> Cross-linking between related objects</h2>
+</div>
+<div class="readable-text" id="p100">
+<p>So far, you’ve only added <code>Musician</code> to the Django Admin. Adding a <code>Band</code> object is no different but has the added wrinkle of the <code>BandModel</code> including a relationship with the <code>Musician</code> class. To see how the Django Admin deals with inter-object relationships, create a bare minimum <code>BandAdmin</code> class, like the one in the following listing. </p>
+</div>
+<div class="browsable-container listing-container" id="p101">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.5</span> <code>BandAdmin</code> class</h5>
+<div class="code-area-container">
+<pre class="code-area">...
+from bands.models import Musician, Band <span class="aframe-location"></span> #1
+...
+@admin.register(Band) <span class="aframe-location"></span> #2
+class BandAdmin(admin.ModelAdmin):
+    pass</pre>
+<div class="code-annotations-overlay-container">
+     #1 Add the Band class to the import.
+     <br/>#2 Define and register a minimum BandAdmin class.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p102">
+<p>With your new class in place, run the development server, visit the Band Listing page, and then click on Wishful Thinking. Figure 5.10 shows the Change page for the object, including a multiselect widget for choosing the related <code>Musician</code> objects.</p>
+</div>
+<div class="browsable-container figure-container" id="p103">
+<img alt="figure" height="584" src="../../OEBPS/Images/CH05_F10_Trudeau.png" width="1100"/>
+<h5 class="figure-container-h5"><span class="num-string">Figure 5.10</span> <code>Band</code> Change screen with associated <code>Musician</code> objects</h5>
+</div>
+<div class="readable-text" id="p104">
+<p>For large datasets this screen can be rather slow to load. To populate the Musician Multiselect, every possible <code>Musician</code> object needs to be queried and shown. One way to improve the performance is to keep the <code>.__str__</code><code>()</code> result as short and simple as possible.</p>
+</div>
+<div class="readable-text intended-text" id="p105">
+<p>You saw how the Django Admin uses query parameters to display a subset of the results on the listing page when you use filters. Whether or not you have a filter, you can take advantage of this feature in your own code. You can add query parameters to the URL and change what is shown on the screen. This is handy if you want to display a single object without using the Change page. For example, http://localhost:8000/admin/bands/band/?id=2 displays the listing page with only the <code>Band</code> with an ID of 2 in the list.</p>
+</div>
+<div class="readable-text intended-text" id="p106">
+<p>The filter query parameters also support the same field lookup modifiers as the ORM. The http://localhost:8000/admin/bands/musician/?id__gte=3 URL shows the Musician Listing page containing only those <code>Musician</code> objects with an ID greater than or equal to 3. A more useful field lookup modifier is <code>__in</code>; passing it a comma-separated list of numbers limits the content of a listing page to just those IDs.</p>
+</div>
+<div class="readable-text intended-text" id="p107">
+<p>Using this feature, you can add a column to the listing page with clickable links to related objects—for example, a column on the Musician page that links to the musician’s bands. To do this, add another callable that returns a link. You don’t want to hardcode the link to the Band Listing page; you want to look it up. Recall the <code>{%</code> <code>url</code> <code>%}</code> that does this kind of lookup in a template—the Python code equivalent is the <code>reverse()</code> function in the <code>django.urls</code> module. All the Django Admin URLs are named, so if you know the pattern, you can look up other Django Admin pages using <code>reverse()</code>. </p>
+</div>
+<div class="readable-text intended-text" id="p108">
+<p>The name of a Django Admin listing page is <code>admin:</code><code>module_class</code><code>_changelist</code>, where <em>module</em> and <em>class</em> get replaced with the module and class name of the <code>Model</code> object listed. Calling <code>reverse()</code> with the right argument gives you the URL of the listing page, which you augment with a query parameter to filter the page.</p>
+</div>
+<div class="readable-text intended-text" id="p109">
+<p>Let’s add a band-membership link to the Musician Listing page. You need a new callable for the column—I’ve named mine <code>show_bands</code>. Inside the callable, use <code>reverse()</code> to look up the URL for the Band Listing page. This page is named <code>admin:bands_band_changelist</code> (<code>bands</code> for the app and <code>band</code> for the <code>Model</code>). To filter the listing by a musician‘s bands, you need the IDs of those bands. Query those IDs, and then construct an <code>?id__in</code> query parameter to append to your listing page URL.</p>
+</div>
+<div class="readable-text intended-text" id="p110">
+<p>Recall from the chapter on templates that Django escapes HTML, by default. You can’t just return text with an <code>&lt;a&gt;</code> tag inside it; you need to mark it as safe for rendering. The <code>format_html()</code> function from the <code>django.utils.xhtml</code> module lets you build safe HTML. This function uses paired braces ({}) as placeholders, allowing you to parameterize a string with an HTML link inside it. Like with <code>show_weekday</code>, add the <code>.short_description</code> attribute to change the column title. Make the changes shown in the following listing to your admin.py file, and then visit the Django Admin to see your new content. </p>
+</div>
+<div class="browsable-container listing-container" id="p111">
+<h5 class="listing-container-h5 browsable-container-h5"><span class="num-string">Listing 5.6</span> The <code>MusicianAdmin</code> class with links to the <code>Band</code> listing page</h5>
+<div class="code-area-container">
+<pre class="code-area"># RiffMates/bands/admin.py
+...
+from django.utils.xhtml import format_html <span class="aframe-location"></span> #1
+from django.urls import reverse
+...
+@admin.register(Musician)
+class MusicianAdmin(admin.ModelAdmin):
+    list_display = ("id", "last_name", "first_name", "birth", "show_weekday",
+        "show_bands")  <span class="aframe-location"></span> #2
+    ...
+
+    def show_bands(self, obj):
+        bands = obj.band_set.all() <span class="aframe-location"></span> #3
+        if len(bands) == 0:        <span class="aframe-location"></span> #4
+            return format_html("&lt;i&gt;None&lt;/i&gt;")
+
+        plural = ""      <span class="aframe-location"></span> #5
+        if len(bands) &gt; 1:
+            plural = "s"
+
+        parm = "?id__in=" + ",".join([str(b.id) for b in bands]) <span class="aframe-location"></span> #6
+       <span class="aframe-location"></span> url = reverse("admin:bands_band_changelist") + parm      #7
+        return format_html('&lt;a href="{}"&gt;Band{}&lt;/a&gt;', url, plural) <span class="aframe-location"></span> #8
+    show_bands.short_description = "Bands"</pre>
+<div class="code-annotations-overlay-container">
+     #1 Import format_html and reverse for use in the method.
+     <br/>#2 Add the show_bands callable to the columns.
+     <br/>#3 Query all bands associated with this musician.
+     <br/>#4 If there are no bands, use format_html to show an italicized None.
+     <br/>#5 If there is more than one band, the output should say Bands.
+     <br/>#6 Query parameter using the __in suffix and a comma-separated list of Band IDs.
+     <br/>#7 Look up the Band listing page, and then add the query parameter to the end.
+     <br/>#8 Create a safe &lt;a&gt; tag using the URL and the pluralization of Band.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p112">
+<p>Start your development server, and then return to the Musician Listing page. You now have a Bands column with clickable links. Each link goes to a filtered version of the Band Listing page, showing only those bands the musician is a member of. </p>
+</div>
+<div class="readable-text" id="p113">
+<h2 class="readable-text-h2"><span class="num-string">5.4</span> Model Meta properties</h2>
+</div>
+<div class="readable-text" id="p114">
+<p>You’ve seen how the <code>.__str__</code><code>()</code> method on a <code>Model</code> class changes the corresponding Django Admin listing page. Other properties of the <code>Model</code> can also effect the Django Admin. This is another one of those cases where Django takes advantage of a seldom used Python language feature. I heard you like classes—how about a class inside your class?</p>
+</div>
+<div class="readable-text intended-text" id="p115">
+<p>Django <code>Model</code> classes can optionally define a nested class named <code>Meta</code>. Django uses the attributes of this class to modify the default behavior of the resulting <code>Model</code> object. Some attributes are only used by the Django Admin, and others change the behavior of the <code>Model</code> itself, such as modifying the underlying database queries.</p>
+</div>
+<div class="readable-text intended-text" id="p116">
+<p>The following sections provide details on some of the most popular <code>Meta</code> attributes. For a full list, see <a href="https://docs.djangoproject.com/en/dev/ref/models/options/">https://docs.djangoproject.com/en/dev/ref/models/options/</a>.</p>
+</div>
+<div class="readable-text" id="p117">
+<h3 class="readable-text-h3"><span class="num-string">5.4.1</span> Sort order</h3>
+</div>
+<div class="readable-text" id="p118">
+<p>The <code>ordering</code> <code>Meta</code> attribute specifies the default sort order in response to queries on the object. This impacts both the order of the objects in the Django Admin listing pages as well as any query you run in your code. The underlying SQL gets an <code>ORDER BY</code> clause attached automatically. This attribute takes a list of field names and supports a dash (-) prefix to indicate descending sort order, as shown in the following example:</p>
+</div>
+<div class="browsable-container listing-container" id="p119">
+<div class="code-area-container">
+<pre class="code-area">class VenueStaff(models.Model):
+    # first_name, last_name, employee ID number fields
+    ...
+
+    class Meta:
+        ordering = ["last_name", "-employee_id"] <span class="aframe-location"></span> #1</pre>
+<div class="code-annotations-overlay-container">
+     #1 Sort by last_name and then by employee_id, in reverse order.
+     <br/>
+</div>
+</div>
+</div>
+<div class="readable-text" id="p120">
+<p>The default sort order is none. SQLite appears to return the <code>Musician</code> objects in reverse order by ID, but this should not be depended upon. Ordering costs overhead and requires the database to do additional work. It is handy though. To change the default sort order of the <code>Musician</code> class to be based on <code>last_name</code> and then <code>first_name</code>, make the following change in your RiffMates/bands/models.py file:</p>
+</div>
+<div class="browsable-container listing-container" id="p121">
+<div class="code-area-container">
+<pre class="code-area">class Musician(models.Model):
+    ...
+
+    class Meta:
+        ordering = ["last_name", "first_name"]</pre>
+</div>
+</div>
+<div class="readable-text" id="p122">
+<p>Once you’ve made the change, try running <code>Musician.objects.all()</code> in the REPL or visit the Django Admin <code>Musician</code> listing page to see the difference. </p>
+</div>
+<div class="readable-text" id="p123">
+<h3 class="readable-text-h3"><span class="num-string">5.4.2</span> Indexes</h3>
+</div>
+<div class="readable-text" id="p124">
+<p>In chapter 4, you learned about specifying an index in the field declaration of a <code>Model</code>. You can also declare indexes via <code>Meta</code> attributes. Using this mechanism allows you to have multiple fields participate in a single index. </p>
+</div>
+<div class="readable-text intended-text" id="p125">
+<p>The attribute name for this is <code>indexes</code>. It takes a list of <code>models.Index</code> objects, with each object instance specifying the participating fields, as shown in the following example:</p>
+</div>
+<div class="browsable-container listing-container" id="p126">
+<div class="code-area-container">
+<pre class="code-area">class VenueStaff(models.Model):
+    # first_name, last_name, employee ID number fields
+
+    class Meta:
+        indexes = [models.Index(fields=["last_name", "first_name"])]</pre>
+</div>
+</div>
+<div class="readable-text print-book-callout" id="p127">
+<p><span class="print-book-callout-head">NOTE</span> <strong></strong>Remember, indexes make a big performance difference on query results for the fields being searched. Without an index, the database needs to scan the entire table until it finds a matching result. The index works like a hash table, providing a shortcut to finding your values. </p>
+</div>
+<div class="readable-text" id="p128">
+<h3 class="readable-text-h3"><span class="num-string">5.4.3</span> Uniqueness</h3>
+</div>
+<div class="readable-text" id="p129">
+<p>The Django ORM automatically creates the ID field for you as a unique identifier for an object in the table. There may be situations where you want to ensure one or more other fields are also unique within a table. The <code>unique_together</code> attribute allows you to do just that. </p>
+</div>
+<div class="readable-text intended-text" id="p130">
+<p>This attribute takes a list of lists. The nested list contains the fields that are to be unique when combined, which are all in a list, as you can specify more than one set of fields. As a shortcut, you can specify this as a single list if you only have one set of fields that are to be unique together.</p>
+</div>
+<div class="readable-text intended-text" id="p131">
+<p>Consider the <code>Room</code> object, which defines a room in a <code>Venue</code>, discussed in chapter 4. You don’t want two rooms to have the same name in the same venue. You can avoid this by making the <code>Room</code> <code>name</code> and the <code>venue</code> <code>ForeignKey</code> unique together:</p>
+</div>
+<div class="browsable-container listing-container" id="p132">
+<div class="code-area-container">
+<pre class="code-area">class Room(models.Model):
+    # name and venue field declaration
+
+    class Meta:
+        unique_together = [["name", "venue"]]
+
+        # alternate short-cut version as there is only one "uniqueness"
+        # unique_together = ["name", "venue"]</pre>
+</div>
+</div>
+<div class="readable-text" id="p133">
+<p>The enforcement of the <code>unique_together</code> clause is done at the database level. If you create an object that violates this in code, an exception will be raised. If you attempt to do the same in the Django Admin, you will get an error message. If you make these kinds of changes to your models, don’t forget you’ll need to run the <code>makemigrations</code> and <code>migrate</code> management commands to have them take effect. </p>
+</div>
+<div class="readable-text intended-text" id="p134">
+<p>More recent versions of Django have a general-purpose mechanisms for specifying constraints on your tables. Django has constraint classes—one for uniqueness and the other for enforcing values. There is also an abstract base class, so you can write your own. The <code>unique_together</code> attribute duplicates the constraint case. It hasn’t been deprecated yet, but the documentation indicates it may be in the future. Writing your own constraints requires ORM features beyond the scope of this book (see: <a href="https://docs.djangoproject.com/en/dev/ref/models/constraints/">https://docs.djangoproject.com/en/dev/ref/models/constraints/</a> for more information). </p>
+</div>
+<div class="readable-text" id="p135">
+<h3 class="readable-text-h3"><span class="num-string">5.4.4</span> Object names</h3>
+</div>
+<div class="readable-text" id="p136">
+<p>Inside the Django Admin, the name of your <code>Model</code> is directly derived from the <code>Model</code> class name. For example, the <code>Musician</code> class appears as <em>musician</em>, <em>musicians</em>, <em>Musician</em>, and <em>Musicians</em>, depending on the context. Take a look at the Musician Listing page; on this page, you will find <em>Select musician to change</em> in the title and <em>Musicians</em> in the navigation breadcrumbs. </p>
+</div>
+<div class="readable-text intended-text" id="p137">
+<p>If your <code>Model</code> class consists of multiple words formatted in camel case, Django parses it into spearate words, capitalizing when necessary and appending the letter <em>s</em> to pluralize. For example, the <code>MusicianClassified</code> object is shown as <em>Musician classifieds</em> in its plural form. If you’re not happy with how this is done, the <code>verbose_name</code> and <code>verbose_name_plural</code> attributes give you control. These two <code>Meta</code> attributes are available on the class, but I’ve only ever seen them used by the Django Admin. </p>
+</div>
+<div class="readable-text intended-text" id="p138">
+<p>A <code>verbose_name</code> containing capitals appears that way everywhere. If the attribute is lowercase, it is capitalized where Django sees fit. I don’t like the mixed-case class name in the navigation bar, so I often set <code>verbose_name</code> to use the capitalization I want. Without <code>verbose_name</code>, <code>MusicianClassified</code> appears as <em>Musician classifieds</em> in the nav. I set <code>verbose_name</code> to <code>Musician Classified</code> to get <em>Musician Classifieds</em> in the nav. The downside is the title becomes <em>Select Musician Classified to change</em>. Pick your preference.</p>
+</div>
+<div class="readable-text intended-text" id="p139">
+<p>The most common use of <code>verbose_name_plural</code> is for words that don’t pluralize in normal ways or that are already plural. Consider a model named <code>Box</code>:</p>
+</div>
+<div class="browsable-container listing-container" id="p140">
+<div class="code-area-container">
+<pre class="code-area">class Box(models.Model):
+    # field declarations
+    ...
+
+    class Meta:
+        verbose_name_plural = "boxes"</pre>
+</div>
+</div>
+<div class="readable-text" id="p141">
+<p>Use of <code>verbose_name_plural</code> alone, or along with <code>verbose_name</code>, gets your <code>Model</code> names showing properly. My mother, the retired kindergarten teacher, thanks you for your proper grammar. </p>
+</div>
+<div class="readable-text" id="p142">
+<h2 class="readable-text-h2"><span class="num-string">5.5</span> Exercises</h2>
+</div>
+<ol>
+<li class="readable-text" id="p143"> Add search capabilities to the <code>BandAdmin</code> class.  </li>
+<li class="readable-text" id="p144"> Add default sorting by name to the <code>Band</code>, <code>Venue</code>, and <code>Room</code> classes.  </li>
+<li class="readable-text" id="p145"> Create <code>admin.ModelAdmin</code> classes for the <code>Venue</code> and <code>RoomModel</code> classes, including custom-linked column methods, like with <code>Musician</code> and <code>Band</code>, and searchable name fields.  </li>
+<li class="readable-text" id="p146"> Add a Members column to the Band Listing page, containing multiple links, one to each <code>Musician</code> in the <code>Band</code>. Note that appending to a string makes it unsafe again. Use <code>mark_safe</code> to fix that. </li>
+</ol>
+<div class="readable-text" id="p147">
+<h2 class="readable-text-h2">Summary</h2>
+</div>
+<ul>
+<li class="readable-text" id="p148"> The Django Admin is a built-in web interface for creating, editing, and deleting your <code>Model</code> objects. </li>
+<li class="readable-text" id="p149"> You create <code>admin.ModelAdmin</code> classes to register your <code>Model</code> classes with the Django Admin.  </li>
+<li class="readable-text" id="p150"> Access to the Django Admin is restricted to special users only: staff and admins (aka superusers). </li>
+<li class="readable-text" id="p151"> A superuser account is created using the <code>createsuperuser</code> management command.  </li>
+<li class="readable-text" id="p152"> The home page of the Django Admin lists all registered <code>Model</code> objects, grouped by their app. </li>
+<li class="readable-text" id="p153"> Each <code>admin.ModelAdmin</code> class generates a listing page and pages for adding, changing, and deleting objects. </li>
+<li class="readable-text" id="p154"> Columns on the listing page are determined by the <code>list_display</code> property of your <code>admin.ModelAdmin</code> object.  </li>
+<li class="readable-text" id="p155"> The <code>list_display</code> attribute contains the names of <code>Model</code> fields, argument-less <code>Model</code> methods, or methods on the <code>admin.ModelAdmin</code> class.  </li>
+<li class="readable-text" id="p156"> Columns based on <code>Model</code> fields are sortable by clicking the column header. Sorting by multiple columns as well as ascending and descending order are supported </li>
+<li class="readable-text" id="p157"> A callable used by <code>list_display</code> can return HTML, including links to other Django Admin pages, as long as it is a safe string. </li>
+<li class="readable-text" id="p158"> Django Admin listing pages support search using fields named in the <code>search_ fields</code> attribute on the <code>admin.ModelAdmin</code> class.  </li>
+<li class="readable-text" id="p159"> A filter on the listing page restricts what data is shown. Filters are enabled via the <code>list_filter</code> attribute on the <code>admin.ModelAdmin</code> class.  </li>
+<li class="readable-text" id="p160"> Custom filters inherit from <code>SimpleListFilter</code> and define the filter choices and a method that modifies the listing page’s <code>QuerySet</code>.  </li>
+<li class="readable-text" id="p161"> Registered URL routes, including Django Admin’s, can be looked up in Python, using the <code>reverse()</code> function.  </li>
+<li class="readable-text" id="p162"> Listing pages support query parameters to show a subset of the page contents. These parameters can be mixed with a URL lookup to add links to related objects in a custom column. </li>
+<li class="readable-text" id="p163"> You can nest an inner <code>Meta</code> class inside a <code>Model</code> class to control the behavior of the objects. Commonly used parameters control indexes on the table, field uniqueness, and the name of the object in the Django Admin.  </li>
+</ul>
+</div></body>
+</html>
