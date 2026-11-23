@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<title dir="ltr">Chapter 8: User Accounts</title>
+<link href="stylesheet.css" type="text/css" rel="stylesheet" />
+<meta charset="utf-8"/>
+</head>
+<body dir="ltr" class="lfm">
+<div>
+<h2 id="leanpub-auto-chapter-8-user-accounts">Chapter 8: User Accounts</h2>
+<p>One major area still needs to be added to our <em>Blog</em> application: user accounts. We have an <code>author</code> field but no way, currently, for a user to sign up, log in, log out, and so on. Implementing user authentication from scratch is famously hard and not advised! It is one area where you really don’t want to make a mistake because of all the resulting security implications. Fortunately, Django has a powerful, battle-tested, built-in <a href="https://docs.djangoproject.com/en/5.0/topics/auth/">user authentication system</a> that we can use and customize as needed.</p>
+
+<p>Whenever you create a new project, by default, Django installs the <code>auth</code> app, which provides us with a <a href="https://docs.djangoproject.com/en/5.0/ref/contrib/auth/#django.contrib.auth.models.User">User object</a> containing:</p>
+
+<ul>
+  <li>username</li>
+  <li>password</li>
+  <li>email</li>
+  <li>first_name</li>
+  <li>last_name</li>
+</ul>
+
+<p>We will use this <code>User</code> object to implement login, logout, and signup in our blog application.</p>
+
+<h3 id="leanpub-auto-log-in">Log In</h3>
+<p>Django provides us with a default view for a login page via <a href="https://docs.djangoproject.com/en/5.0/topics/auth/default/#django.contrib.auth.views.LoginView">LoginView</a>. All we need to add is a URL pattern for the auth system, a login template, and a minor update to our <code>django_project/settings.py</code> file.</p>
+
+<p>First, update the <code>django_project/urls.py</code> file. We’ll place our login and logout pages at the <code>accounts/</code> URL: a one-line addition to the next-to-last line.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># django_project/urls.py</code>
+<code class="kn">from</code> <code class="nn">django.contrib</code> <code class="kn">import</code> <code class="n">admin</code>
+<code class="kn">from</code> <code class="nn">django.urls</code> <code class="kn">import</code> <code class="n">path</code><code class="p">,</code> <code class="n">include</code>
+
+<code class="n">urlpatterns</code> <code class="o">=</code> <code class="p">[</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"admin/"</code><code class="p">,</code> <code class="n">admin</code><code class="o">.</code><code class="n">site</code><code class="o">.</code><code class="n">urls</code><code class="p">),</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"accounts/"</code><code class="p">,</code> <code class="n">include</code><code class="p">(</code><code class="s2">"django.contrib.auth.urls"</code><code class="p">)),</code>  <code class="c1"># new</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">""</code><code class="p">,</code> <code class="n">include</code><code class="p">(</code><code class="s2">"blog.urls"</code><code class="p">)),</code>
+<code class="p">]</code>
+</pre></div>
+
+</figure>
+
+<p>As the <a href="https://docs.djangoproject.com/en/5.0/topics/auth/default/#django.contrib.auth.views.LoginView">LoginView</a> documentation notes, by default, Django will look within a templates directory called <code>registration</code> for a file called <code>login.html</code> for a login form. So we need to create a new directory within <code>templates</code> called <code>registration</code> and the requisite file within it. From the command line, type <code>Control+c</code> to quit our local server. Then, create the new directory.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code>(.venv) $ mkdir templates/registration
+</pre></div>
+
+</figure>
+
+<p>Then, with your text editor, create a new template file, <code>templates/registration/login.html</code>, filled with the following code:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c">&lt;!-- templates/registration/login.html --&gt;</code>
+{% extends "base.html" %}
+
+{% block content %}
+<code class="p">&lt;</code><code class="nt">h2</code><code class="p">&gt;</code>Log In<code class="p">&lt;/</code><code class="nt">h2</code><code class="p">&gt;</code>
+<code class="p">&lt;</code><code class="nt">form</code> <code class="na">method</code><code class="o">=</code><code class="s">"post"</code><code class="p">&gt;</code>{% csrf_token %}
+  {{ form }}
+  <code class="p">&lt;</code><code class="nt">button</code> <code class="na">type</code><code class="o">=</code><code class="s">"submit"</code><code class="p">&gt;</code>Log In<code class="p">&lt;/</code><code class="nt">button</code><code class="p">&gt;</code>
+<code class="p">&lt;/</code><code class="nt">form</code><code class="p">&gt;</code>
+{% endblock content %}
+</pre></div>
+
+</figure>
+
+<p>We’re using HTML <code>&lt;form&gt;&lt;/form&gt;</code> tags and specifying the POST method since we’re sending data to the server (we’d use GET if we were requesting data, such as in a search engine form). We add <code>{% csrf_token %}</code> for security concerns to prevent a CSRF Attack and then include a “submit” button.</p>
+
+<p>The final step is to specify <em>where</em> to redirect the user upon successful login. We can set this with the <code>LOGIN_REDIRECT_URL</code> setting. At the bottom of the <code>django_project/settings.py</code> file, add the following:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># django_project/settings.py</code>
+<code class="n">LOGIN_REDIRECT_URL</code> <code class="o">=</code> <code class="s2">"home"</code>  <code class="c1"># new</code>
+</pre></div>
+
+</figure>
+
+<p>Now the user will be redirected to the “home” template, which is our homepage. And we’re actually done at this point! If you now start up the Django server again with <code>python manage.py runserver</code> and navigate to our login page at <code>http://127.0.0.1:8000/accounts/login/</code>, you’ll see the following:</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1007px">
+    <img src="images/08_login.png" alt="Login Page" style="width: 100%" />
+    <figcaption>Login Page</figcaption>
+  </figure>
+</div>
+
+
+<p>Upon entering the login info for our superuser account, we are redirected to the homepage. Notice that we didn’t add any <em>view</em> logic or create a database model because the Django auth system automatically provided both for us. Thanks, Django!</p>
+
+<h3 id="leanpub-auto-updated-homepage">Updated Homepage</h3>
+<p>Let’s update our <code>base.html</code> template so we display a message to users regardless of whether they are logged in. We can use the <a href="https://docs.djangoproject.com/en/5.0/ref/contrib/auth/#django.contrib.auth.models.User.is_authenticated">is_authenticated</a> attribute for this.</p>
+
+<p>For now, place this code in a prominent position. Later on, we can style it more appropriately. Update the <code>base.html</code> file with new code starting beneath the closing <code>&lt;/header&gt;</code> tag.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c">&lt;!-- templates/base.html --&gt;</code>
+...
+<code class="p">&lt;</code><code class="nt">body</code><code class="p">&gt;</code>
+  <code class="p">&lt;</code><code class="nt">div</code><code class="p">&gt;</code>
+    <code class="p">&lt;</code><code class="nt">header</code><code class="p">&gt;</code>
+      <code class="p">&lt;</code><code class="nt">div</code> <code class="na">class</code><code class="o">=</code><code class="s">"nav-left"</code><code class="p">&gt;</code>
+        <code class="p">&lt;</code><code class="nt">h1</code><code class="p">&gt;&lt;</code><code class="nt">a</code> <code class="na">href</code><code class="o">=</code><code class="s">"{% url 'home' %}"</code><code class="p">&gt;</code>Django blog<code class="p">&lt;/</code><code class="nt">a</code><code class="p">&gt;&lt;/</code><code class="nt">h1</code><code class="p">&gt;</code>
+      <code class="p">&lt;/</code><code class="nt">div</code><code class="p">&gt;</code>
+      <code class="p">&lt;</code><code class="nt">div</code> <code class="na">class</code><code class="o">=</code><code class="s">"nav-right"</code><code class="p">&gt;</code>
+        <code class="p">&lt;</code><code class="nt">a</code> <code class="na">href</code><code class="o">=</code><code class="s">"{% url 'post_new' %}"</code><code class="p">&gt;</code>+ New Blog Post<code class="p">&lt;/</code><code class="nt">a</code><code class="p">&gt;</code>
+      <code class="p">&lt;/</code><code class="nt">div</code><code class="p">&gt;</code>
+    <code class="p">&lt;/</code><code class="nt">header</code><code class="p">&gt;</code>
+    <code class="c">&lt;!-- start new HTML... --&gt;</code>
+    {% if user.is_authenticated %}
+    <code class="p">&lt;</code><code class="nt">p</code><code class="p">&gt;</code>Hi {{ user.username }}!<code class="p">&lt;/</code><code class="nt">p</code><code class="p">&gt;</code>
+    {% else %}
+    <code class="p">&lt;</code><code class="nt">p</code><code class="p">&gt;</code>You are not logged in.<code class="p">&lt;/</code><code class="nt">p</code><code class="p">&gt;</code>
+    <code class="p">&lt;</code><code class="nt">a</code> <code class="na">href</code><code class="o">=</code><code class="s">"{% url 'login' %}"</code><code class="p">&gt;</code>Log In<code class="p">&lt;/</code><code class="nt">a</code><code class="p">&gt;</code>
+    {% endif %}
+    <code class="c">&lt;!-- end new HTML... --&gt;</code>
+    {% block content %}
+    {% endblock content %}
+  <code class="p">&lt;/</code><code class="nt">div</code><code class="p">&gt;</code>
+<code class="p">&lt;/</code><code class="nt">body</code><code class="p">&gt;</code>
+
+<code class="p">&lt;/</code><code class="nt">html</code><code class="p">&gt;</code>
+</pre></div>
+
+</figure>
+
+<p>If the user is logged in, we say hello to them by name; if not, we provide a link to our newly created login page.</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1006px">
+    <img src="images/08_homepage_login.png" alt="Homepage Logged In" style="width: 100%" />
+    <figcaption>Homepage Logged In</figcaption>
+  </figure>
+</div>
+
+
+<p>It worked! My superuser name is <code>wsv</code>, which I see on the page.</p>
+
+<h3 id="leanpub-auto-log-out-link">Log Out Link</h3>
+<p>One of the major changes to Django 5.0, as noted in the <a href="https://docs.djangoproject.com/en/5.0/releases/5.0/">release notes</a>, is the removal support for logging out via <code>GET</code> requests. Previously, you could add a logout link such as &lt;a href=” {% url ‘logout’ %}”&gt;Log Out&lt;/a&gt; to a template file. But now a POST request via a form is required.</p>
+
+<p>Add a logout button to the <code>home.html</code> file under the “Hi {{ user.username }}!` section.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code><code class="c">&lt;!-- templates/base.html--&gt;</code>
+...
+{% if user.is_authenticated %}
+<code class="p">&lt;</code><code class="nt">p</code><code class="p">&gt;</code>Hi {{ user.username }}!<code class="p">&lt;/</code><code class="nt">p</code><code class="p">&gt;</code>
+<code class="p">&lt;</code><code class="nt">form</code> <code class="na">action</code><code class="o">=</code><code class="s">"{% url 'logout' %}"</code> <code class="na">method</code><code class="o">=</code><code class="s">"post"</code><code class="p">&gt;</code>
+  {% csrf_token %}
+  <code class="p">&lt;</code><code class="nt">button</code> <code class="na">type</code><code class="o">=</code><code class="s">"submit"</code><code class="p">&gt;</code>Log Out<code class="p">&lt;/</code><code class="nt">button</code><code class="p">&gt;</code>
+<code class="p">&lt;/</code><code class="nt">form</code><code class="p">&gt;</code>
+{% else %}
+...
+</pre></div>
+
+</figure>
+
+<p>The Django <code>auth</code> app provides us with the necessary view, so all we need to do is specify where to redirect a user when logging out. Update <code>django_project/settings.py</code> to provide a redirect link called <code>LOGOUT_REDIRECT_URL</code>. We can add it right next to our login redirect, so the bottom of the file should look as follows:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># django_project/settings.py</code>
+<code class="n">LOGIN_REDIRECT_URL</code> <code class="o">=</code> <code class="s2">"home"</code>
+<code class="n">LOGOUT_REDIRECT_URL</code> <code class="o">=</code> <code class="s2">"home"</code>  <code class="c1"># new</code>
+</pre></div>
+
+</figure>
+
+<p>If you refresh the homepage, you’ll see it now has a “log out” button for logged-in users.</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1007px">
+    <img src="images/08_homepage_logout_link.png" alt="Homepage Log Out Link " style="width: 100%" />
+    <figcaption>Homepage Log Out Link </figcaption>
+  </figure>
+</div>
+
+
+<p>And clicking it takes you back to the homepage with a <code>login</code> link.</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1008px">
+    <img src="images/08_homepage_logged_out.png" alt="Homepage Logged Out" style="width: 100%" />
+    <figcaption>Homepage Logged Out</figcaption>
+  </figure>
+</div>
+
+
+<p>Try logging in and out several times with your user account.</p>
+
+<h3 id="leanpub-auto-sign-up">Sign Up</h3>
+<p>Django does not provide a built-in view, URL, or template for signup. A common approach is to create a dedicated app, called <code>accounts</code> here, but also sometimes <code>users</code> in other projects, for this. That way, if we need to make further customizations to the user authentication process in the future, it is only contained in one place.</p>
+
+<p>On the command line, stop the local server with <code>Control+c</code> and create a dedicated new app, <code>accounts</code>.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code>(.venv) $ python manage.py startapp accounts
+</pre></div>
+
+</figure>
+
+<p>Then, add the new app to the <code>INSTALLED_APPS</code> setting in our <code>django_project/settings.py</code> file so it is registered with Django.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># django_project/settings.py</code>
+<code class="n">INSTALLED_APPS</code> <code class="o">=</code> <code class="p">[</code>
+    <code class="s2">"django.contrib.admin"</code><code class="p">,</code>
+    <code class="s2">"django.contrib.auth"</code><code class="p">,</code>
+    <code class="s2">"django.contrib.contenttypes"</code><code class="p">,</code>
+    <code class="s2">"django.contrib.sessions"</code><code class="p">,</code>
+    <code class="s2">"django.contrib.messages"</code><code class="p">,</code>
+    <code class="s2">"django.contrib.staticfiles"</code><code class="p">,</code>
+    <code class="s2">"blog"</code><code class="p">,</code>
+    <code class="s2">"accounts"</code><code class="p">,</code>  <code class="c1"># new</code>
+<code class="p">]</code>
+</pre></div>
+
+</figure>
+
+<p>Next, add a new URL path in <code>django_project/urls.py</code> pointing to this new app directly <strong>below</strong> where we include the built-in <code>auth</code> app.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># django_project/urls.py</code>
+<code class="kn">from</code> <code class="nn">django.contrib</code> <code class="kn">import</code> <code class="n">admin</code>
+<code class="kn">from</code> <code class="nn">django.urls</code> <code class="kn">import</code> <code class="n">path</code><code class="p">,</code> <code class="n">include</code>
+
+<code class="n">urlpatterns</code> <code class="o">=</code> <code class="p">[</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"admin/"</code><code class="p">,</code> <code class="n">admin</code><code class="o">.</code><code class="n">site</code><code class="o">.</code><code class="n">urls</code><code class="p">),</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"accounts/"</code><code class="p">,</code> <code class="n">include</code><code class="p">(</code><code class="s2">"django.contrib.auth.urls"</code><code class="p">)),</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"accounts/"</code><code class="p">,</code> <code class="n">include</code><code class="p">(</code><code class="s2">"accounts.urls"</code><code class="p">)),</code>  <code class="c1"># new</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">""</code><code class="p">,</code> <code class="n">include</code><code class="p">(</code><code class="s2">"blog.urls"</code><code class="p">)),</code>
+<code class="p">]</code>
+</pre></div>
+
+</figure>
+
+<p>The order of our <code>urls</code> matters here because Django reads this file from top to bottom. Therefore when we request the <code>/accounts/signup</code> url, Django will first look in <code>auth</code>, not find it, and <strong>then</strong> proceed to the <code>accounts</code> app.</p>
+
+<p>In your text editor, create a file called <code>accounts/urls.py</code> and add the following code:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># accounts/urls.py</code>
+<code class="kn">from</code> <code class="nn">django.urls</code> <code class="kn">import</code> <code class="n">path</code>
+<code class="kn">from</code> <code class="nn">.views</code> <code class="kn">import</code> <code class="n">SignUpView</code>
+
+<code class="n">urlpatterns</code> <code class="o">=</code> <code class="p">[</code>
+    <code class="n">path</code><code class="p">(</code><code class="s2">"signup/"</code><code class="p">,</code> <code class="n">SignUpView</code><code class="o">.</code><code class="n">as_view</code><code class="p">(),</code> <code class="n">name</code><code class="o">=</code><code class="s2">"signup"</code><code class="p">),</code>
+<code class="p">]</code>
+</pre></div>
+
+</figure>
+
+<p>We’re using a not-yet-created view called <code>SignUpView</code>, which we already know is class-based since it is capitalized and has the <code>as_view()</code> suffix. Its path is just <code>signup/</code>, so the complete URL path will be <code>accounts/signup/</code>.</p>
+
+<p>For the view, Django has a built-in form class, <a href="https://docs.djangoproject.com/en/5.0/topics/auth/default/#django.contrib.auth.forms.UserCreationForm">UserCreationForm</a>, that comes with three fields: <code>username</code>, <code>password1</code>, and <code>password2</code>. We can use it with <code>CreateView</code> to create our signup page. Replace the default <code>accounts/views.py</code> code with the following:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c1"># accounts/views.py</code>
+<code class="kn">from</code> <code class="nn">django.contrib.auth.forms</code> <code class="kn">import</code> <code class="n">UserCreationForm</code>
+<code class="kn">from</code> <code class="nn">django.urls</code> <code class="kn">import</code> <code class="n">reverse_lazy</code>
+<code class="kn">from</code> <code class="nn">django.views.generic</code> <code class="kn">import</code> <code class="n">CreateView</code>
+
+
+<code class="k">class</code> <code class="nc">SignUpView</code><code class="p">(</code><code class="n">CreateView</code><code class="p">):</code>
+    <code class="n">form_class</code> <code class="o">=</code> <code class="n">UserCreationForm</code>
+    <code class="n">success_url</code> <code class="o">=</code> <code class="n">reverse_lazy</code><code class="p">(</code><code class="s2">"login"</code><code class="p">)</code>
+    <code class="n">template_name</code> <code class="o">=</code> <code class="s2">"registration/signup.html"</code>
+</pre></div>
+
+</figure>
+
+<p>We’re subclassing the generic class-based view <code>CreateView</code> in our <code>SignUpView</code> class and specifying <code>UserCreationForm</code>, the not-yet-created template <code>registration/signup.html</code>. We also use <code>reverse_lazy</code> to redirect the user to the login page upon successful registration.</p>
+
+<p>Why use <code>reverse_lazy</code> here instead of <code>reverse</code>? The URLs are not loaded when the file is imported for generic class-based views, so we have to use the lazy form of <code>reverse</code> to load them later when they’re available.</p>
+
+<p>Create the file <code>templates/registration/signup.html</code> in your text editor and populate it with the code below.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Code</figcaption>
+<div class="highlight"><pre><code></code><code class="c">&lt;!-- templates/registration/signup.html --&gt;</code>
+{% extends "base.html" %}
+
+{% block content %}
+<code class="p">&lt;</code><code class="nt">h2</code><code class="p">&gt;</code>Sign Up<code class="p">&lt;/</code><code class="nt">h2</code><code class="p">&gt;</code>
+<code class="p">&lt;</code><code class="nt">form</code> <code class="na">method</code><code class="o">=</code><code class="s">"post"</code><code class="p">&gt;</code>{% csrf_token %}
+  {{ form.as_p }}
+  <code class="p">&lt;</code><code class="nt">button</code> <code class="na">type</code><code class="o">=</code><code class="s">"submit"</code><code class="p">&gt;</code>Sign Up<code class="p">&lt;/</code><code class="nt">button</code><code class="p">&gt;</code>
+<code class="p">&lt;/</code><code class="nt">form</code><code class="p">&gt;</code>
+{% endblock content %}
+</pre></div>
+
+</figure>
+
+<p>This format is very similar to what we’ve done before. We extend our base template at the top, place our logic between <code>&lt;form&gt;&lt;/form&gt;</code> tags with the added <code>as_p</code> to render it with paragraph tags, use the <code>csrf_token</code> for security, and include a submit button.</p>
+
+<p>We’re done! To test it out, start the local server with the <code>python manage.py runserver</code> command and navigate to <code>http://127.0.0.1:8000/accounts/signup/</code>.</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1008px">
+    <img src="images/08_signup.png" alt="Django Signup Page" style="width: 100%" />
+    <figcaption>Django Signup Page</figcaption>
+  </figure>
+</div>
+
+
+<p>Notice the large amount of extra text that Django includes by default. We can customize this using something like the built-in <a href="https://docs.djangoproject.com/en/5.0/ref/contrib/messages/">messages framework</a>, but for now, try out the form.</p>
+
+<p>I created a new user called “william” and was redirected to the login page upon submission. After logging in successfully with my new username and password, I was redirected to the homepage with our personalized “Hi username” greeting.</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1006px">
+    <img src="images/08_homepage_new_user.png" alt="Homepage for User William" style="width: 100%" />
+    <figcaption>Homepage for User William</figcaption>
+  </figure>
+</div>
+
+
+<p>Our ultimate flow is, therefore: <code>Signup -&gt; Login -&gt; Homepage</code>. And, of course, we can tweak this however we want. The <code>SignUpView</code> redirects to <code>login</code> because we set <code>success_url = reverse_lazy('login')</code>. The <code>Login</code> page redirects to the homepage because in our <code>django_project/settings.py</code> file, we set <code>LOGIN_REDIRECT_URL = 'home'</code>.</p>
+
+<p>It may initially be overwhelming to keep track of all the various parts of a Django project, but that’s normal. With time, they’ll start to make more sense.</p>
+
+<h3 id="leanpub-auto-sign-up-link">Sign Up Link</h3>
+<p>One last improvement we can make is to add a signup link to the logged-out homepage. We can’t expect our users to know the correct URL after all! How do we do this? Well, we need to figure out the URL name, and then we can pop it into our template. In <code>accounts/urls.py</code>, we provided it the name of <code>signup</code>, so that’s all we need to add to our <code>base.html</code> template with the <a href="https://docs.djangoproject.com/en/5.0/ref/templates/builtins/#url">url template tag</a> just as we’ve done for our other links.</p>
+
+<p>Add the link for “Sign Up” just below the existing link for “Log In” as follows:</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code><code class="c">&lt;!-- templates/base.html--&gt;</code>
+...
+<code class="p">&lt;</code><code class="nt">p</code><code class="p">&gt;</code>You are not logged in.<code class="p">&lt;/</code><code class="nt">p</code><code class="p">&gt;</code>
+<code class="p">&lt;</code><code class="nt">a</code> <code class="na">href</code><code class="o">=</code><code class="s">"{% url 'login' %}"</code><code class="p">&gt;</code>Log In<code class="p">&lt;/</code><code class="nt">a</code><code class="p">&gt;</code> |
+<code class="p">&lt;</code><code class="nt">a</code> <code class="na">href</code><code class="o">=</code><code class="s">"{% url 'signup' %}"</code><code class="p">&gt;</code>Sign Up<code class="p">&lt;/</code><code class="nt">a</code><code class="p">&gt;</code>
+...
+</pre></div>
+
+</figure>
+
+<p>The signup link will be visible if you navigate to the logged-out homepage. Much better!</p>
+
+
+<div class="figure-wrapper center">
+  <figure class="image" style="width: 1009px">
+    <img src="images/08_signup_link.png" alt="Signup Link" style="width: 100%" />
+    <figcaption>Signup Link</figcaption>
+  </figure>
+</div>
+
+
+<h3 id="leanpub-auto-github-1">GitHub</h3>
+
+<p>It’s been a while since we made a <code>git</code> commit. Let’s do that and then push a copy of our code onto GitHub. First, check all the new work we’ve done with <code>git status</code>.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code>(.venv) $ git status
+</pre></div>
+
+</figure>
+
+<p>Then add the new content and enter a commit message.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code>(.venv) $ git add -A
+(.venv) $ git commit -m "forms, user accounts, and static files"
+</pre></div>
+
+</figure>
+
+<p><a href="https://github.com/new">Create a new repo</a> on GitHub and follow the recommended steps. I’ve chosen the name <code>blog</code> here; my username is <code>wsvincent</code>. Make sure to use your own GitHub username and repo name for the command setting up a remote origin.</p>
+
+<figure class="code" dir="ltr">
+  <figcaption>Shell</figcaption>
+<div class="highlight"><pre><code></code>(.venv) $ git remote add origin https://github.com/wsvincent/blog.git
+(.venv) $ git branch -M main
+(.venv) $ git push -u origin main
+</pre></div>
+
+</figure>
+
+<p>All set!</p>
+
+<h3 id="leanpub-auto-conclusion-8">Conclusion</h3>
+<p>With a small amount of code, we have added a robust user authentication flow to our website: login, logout, and signup. Under the hood, Django has taken care of the many security gotchas that can crop up if you create a user authentication flow from scratch. The <em>Blog</em> website is now complete. It is intentionally minimalist in design, but the combination of user authentication and full CRUD functionality is present in most websites.</p>
+
+<p>In the next chapter, we will start the final project in the book: a <em>Newspaper</em> website that incorporates even more features.</p>
+
+
+
+</div>
+</body>
+</html>
