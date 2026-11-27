@@ -1,11 +1,11 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>The Modern Web</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>现代 Web</title><link href="epub.css" rel="stylesheet" type="text/css"/>
 <meta content="urn:uuid:557645f4-7322-455d-8288-c237dcd1d85f" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 1. The Modern Web" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch01">
-<h1><span class="label">Chapter 1. </span>The Modern Web</h1>
+<h1><span class="label">第 1 章 </span>现代 Web</h1>
 
 <blockquote>
-<p>The <a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id332"/>Web as I envisaged it, we have not seen it yet.
-The future is still so much bigger than the past.</p>
-<p data-type="attribution">Tim Berners-Lee</p>
+<p><a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id332"/>我所构想的万维网（Web），我们目前尚未真正见到。
+未来依然远比过去更加宏大。</p>
+<p data-type="attribution">蒂姆·伯纳斯-李（Tim Berners-Lee）</p>
 </blockquote>
 
 
@@ -14,37 +14,34 @@ The future is still so much bigger than the past.</p>
 
 
 <section data-pdf-bookmark="Preview" data-type="sect1"><div class="sect1" id="id295">
-<h1>Preview</h1>
+<h1>本章预览</h1>
 
-<p>Once upon a time, the web was small and simple.
-Developers had such fun throwing PHP, HTML, and MySQL calls
-into single files and proudly telling everyone
-to check out their website.
-But the web grew over time
-to zillions, nay, squillions of pages—and the early playground
-became a metaverse of theme parks.</p>
+<p>曾几何时，Web 既小巧又简单。
+开发者们乐此不疲地把 PHP、HTML 和 MySQL 调用全都塞进单个文件里，
+然后自豪地招呼大家来看看自己的网站。
+但随着时间推移，Web 增长到了数以亿计、甚至数不清的页面——早年间的小游乐场，
+如今已经演变成了一座由无数主题公园构成的元宇宙。</p>
 
-<p>In this chapter, I’ll point out some areas
-that have become ever more relevant to the modern web:</p>
+<p>在本章中，我将指出在现代 Web 中变得愈发重要的几个核心领域：</p>
 
 <ul>
 <li>
-<p>Services and APIs</p>
+<p>服务与 API（Services and APIs）</p>
 </li>
 <li>
-<p>Concurrency</p>
+<p>并发（Concurrency）</p>
 </li>
 <li>
-<p>Layers</p>
+<p>分层架构（Layers）</p>
 </li>
 <li>
-<p>Data</p>
+<p>数据（Data）</p>
 </li>
 </ul>
 
-<p>The next chapter will show what Python offers in these areas.
-After that, we’ll dive into the FastAPI web framework
-and see what it has to offer.</p>
+<p>下一章将展示 Python 在这些领域提供了哪些支持。
+在那之后，我们将深入探索 FastAPI Web 框架，
+看看它能为我们带来什么。</p>
 </div></section>
 
 
@@ -53,29 +50,24 @@ and see what it has to offer.</p>
 
 
 <section class="pagebreak-before less_space" data-pdf-bookmark="Services and APIs" data-type="sect1"><div class="sect1" id="id3">
-<h1>Services and APIs</h1>
+<h1>服务与 API</h1>
 
-<p>The web is a great connecting fabric.
-Although much activity still occurs on the
-<em>content</em> side—HTML, JavaScript, images, and so on—there’s an increasing emphasis on the application programming interfaces (APIs)
-that connect things.</p>
+<p>Web 是一张庞大的连接网络。
+尽管大量活动仍然发生在<em>内容（content）</em>端——如 HTML、JavaScript、图片等——但人们正越来越重视用于连接万物的应用程序编程接口（Application Programming Interface，简称 API）。</p>
 
-<p>Commonly,
-a web <em>service</em> <a data-primary="services" data-type="indexterm" id="id333"/>handles
-low-level database access and middle-level business logic
-(often lumped together as a <a data-primary="backend" data-type="indexterm" id="id334"/><em>backend</em>),
-while JavaScript or mobile apps provide a rich top-level <a data-primary="frontend" data-type="indexterm" id="id335"/><em>frontend</em>
-(interactive user interface).
-These fore and aft worlds have become more complex and divergent,
-usually requiring developers to specialize in one or the other.
-It’s harder to be a <em>full stack</em> developer than it used to
-be.<sup><a data-type="noteref" href="ch01.html#id336" id="id336-marker">1</a></sup></p>
+<p>通常情况下，
+Web <em>服务（service）</em><a data-primary="services" data-type="indexterm" id="id333"/>负责处理底层的数据库访问和中层的业务逻辑
+（这两者常被统称为<a data-primary="backend" data-type="indexterm" id="id334"/><em>后端［backend］</em>），
+而 JavaScript 或移动应用则提供丰富的顶层<a data-primary="frontend" data-type="indexterm" id="id335"/><em>前端（frontend）</em>
+（即交互式用户界面）。
+前端与后端这两个世界已经变得愈发复杂且分化明显，
+通常需要开发者专精于其中一方。
+如今想要成为一名<em>全栈（full stack）</em>开发者，已经比过去难得多了。<sup><a data-type="noteref" href="ch01.html#id336" id="id336-marker">1</a></sup></p>
 
-<p>These two worlds talk to each other using APIs.
-In the modern web, API design is as important as
-the design of websites themselves.
-An <a data-primary="APIs (application programming interfaces)" data-secondary="defined" data-type="indexterm" id="id337"/>API is a contract, similar to a database schema.
-Defining and modifying APIs is now a major job.</p>
+<p>这两个世界通过 API 进行通信。
+在现代 Web 中，API 设计与网站本身的设计同等重要。
+<a data-primary="APIs (application programming interfaces)" data-secondary="defined" data-type="indexterm" id="id337"/>API 是一份契约，类似于数据库模式（schema）。
+定义和修改 API 如今已是一项核心工作。</p>
 
 
 
@@ -85,78 +77,66 @@ Defining and modifying APIs is now a major job.</p>
 
 
 <section data-pdf-bookmark="Kinds of APIs" data-type="sect2"><div class="sect2" id="id4">
-<h2>Kinds of APIs</h2>
+<h2>API 的种类</h2>
 
-<p>Each <a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-type="indexterm" id="icd001"/>API defines the following:</p>
+<p>每一个 <a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-type="indexterm" id="icd001"/>API 都会定义以下两部分内容：</p>
 <dl>
-<dt>Protocol</dt>
+<dt>协议（Protocol）</dt>
 <dd>
-<p>The control structure</p>
+<p>控制结构</p>
 </dd>
-<dt>Format</dt>
+<dt>格式（Format）</dt>
 <dd>
-<p>The content structure</p>
+<p>内容结构</p>
 </dd>
 </dl>
 
-<p>Multiple API methods have developed as technology
-has evolved from isolated machines,
-to multitasking systems,
-to networked servers.
-You’ll probably run across one or more of these at some point,
-so the following is a brief summary before getting to
-<em>HTTP</em> and its friends, which are featured in this book:</p>
+<p>随着技术从孤立的单机演进到多任务系统，
+再到联网的服务器，衍生出了多种多样的 API 实现方式。
+你在开发生涯中很可能会接触到以下一种或多种方式，
+因此在进入本书的主角——<em>HTTP</em> 及其生态伙伴之前，
+我们先对它们作一个简要总结：</p>
 
 <ul>
 <li>
-<p>Before networking, an API usually meant a very close connection,
-like a function call to a<a data-primary="libraries" data-type="indexterm" id="id338"/> <em>library</em> in the same language as your
-application—say, calculating a square root in a math library.</p>
+<p>在网络普及之前，API 通常意味着非常紧密的调用关系，
+比如对使用同一种编程语言编写的<a data-primary="libraries" data-type="indexterm" id="id338"/><em>库（library）</em>发起函数调用——例如在数学库中计算平方根。</p>
 </li>
 <li>
-<p><em>Remote procedure calls (RPCs)</em> <a data-primary="RPCs (remote procedure calls)" data-type="indexterm" id="id339"/>were<a data-primary="remote procedure calls (RPCs)" data-type="indexterm" id="id340"/> invented to call
-functions in other processes,
-on the same machine or others,
-as though they were in the
-calling application.
-A popular current example is <a data-primary="gRPC" data-type="indexterm" id="id341"/><a href="https://grpc.io">gRPC</a>.</p>
+<p><em>远程过程调用（Remote Procedure Call，简称 RPC）</em><a data-primary="RPCs (remote procedure calls)" data-type="indexterm" id="id339"/><a data-primary="remote procedure calls (RPCs)" data-type="indexterm" id="id340"/>的发明，是为了能够调用本机或其他机器上其他进程中的函数，
+并且让调用体验就像调用本应用内部的函数一样自然。
+目前非常流行的一个代表是 <a data-primary="gRPC" data-type="indexterm" id="id341"/><a href="https://grpc.io">gRPC</a>。</p>
 </li>
 <li>
-<p><em>Messaging</em> <a data-primary="messaging" data-type="indexterm" id="id342"/>sends small chunks of data in pipelines
-among processes.
-Messages may be verb-like commands
-or may just indicate noun-like <em>events</em> of interest.
-Current popular messaging solutions,
-which vary broadly from toolkits to full servers,
-include
-<a data-primary="Apache Kafka" data-type="indexterm" id="id343"/><a data-primary="Kafka, Apache" data-type="indexterm" id="id344"/><a href="https://kafka.apache.org">Apache Kafka</a>,
-<a data-primary="RabbitMQ" data-type="indexterm" id="id345"/><a href="https://www.rabbitmq.com">RabbitMQ</a>,
-<a data-primary="NATS" data-type="indexterm" id="id346"/><a href="https://nats.io">NATS</a>,
-and
-<a data-primary="ZeroMQ" data-type="indexterm" id="id347"/><a href="https://zeromq.org">ZeroMQ</a>.
-Communication can follow different patterns:</p>
+<p><em>消息传递（Messaging）</em><a data-primary="messaging" data-type="indexterm" id="id342"/>通过管道在多个进程之间发送小块数据。
+消息可以是类似动词的“命令（command）”，
+也可以只是表示发生了某个值得关注的、类似名词的“<em>事件（event）</em>”。
+当前流行的消息传递方案（从轻量级工具包到完整的服务端系统跨度很大）包括：
+<a data-primary="Apache Kafka" data-type="indexterm" id="id343"/><a data-primary="Kafka, Apache" data-type="indexterm" id="id344"/><a href="https://kafka.apache.org">Apache Kafka</a>、
+<a data-primary="RabbitMQ" data-type="indexterm" id="id345"/><a href="https://www.rabbitmq.com">RabbitMQ</a>、
+<a data-primary="NATS" data-type="indexterm" id="id346"/><a href="https://nats.io">NATS</a>
+以及
+<a data-primary="ZeroMQ" data-type="indexterm" id="id347"/><a href="https://zeromq.org">ZeroMQ</a>。
+其通信过程可以遵循不同的模式：</p>
 <dl>
-<dt><a data-primary="request-response" data-type="indexterm" id="id348"/>Request-response</dt>
+<dt><a data-primary="request-response" data-type="indexterm" id="id348"/>请求-响应（Request-response）</dt>
 <dd>
-<p>One: one, like a web browser calling a web server.</p>
+<p>一对一通信，就像 Web 浏览器调用 Web 服务器一样。</p>
 </dd>
-<dt><a data-primary="pub-sub (publish-subscribe)" data-type="indexterm" id="id349"/>Publish-subscribe, or <em>pub-sub</em></dt>
+<dt><a data-primary="pub-sub (publish-subscribe)" data-type="indexterm" id="id349"/>发布-订阅（Publish-subscribe，简称 <em>pub-sub</em>）</dt>
 <dd>
-<p>A <em>publisher</em> emits messages,
-and <em>subscribers</em> act on each according to some data in the message,
-like a subject.</p>
+<p><em>发布者（publisher）</em>发出消息，
+而<em>订阅者（subscriber）</em>根据消息中的某些数据（如主题 subject）对各自感兴趣的消息做出响应。</p>
 </dd>
-<dt><a data-primary="queues" data-type="indexterm" id="id350"/>Queues</dt>
+<dt><a data-primary="queues" data-type="indexterm" id="id350"/>队列（Queues）</dt>
 <dd>
-<p>Like pub-sub, but only one of a pool of subscribers
-grabs the message and acts on it.</p>
+<p>类似于发布-订阅模式，但在订阅者池中，只有其中一个订阅者会获取该消息并执行处理。</p>
 </dd>
 </dl>
 </li>
 </ul>
 
-<p>Any of these may be used alongside a web service—for example, performing a slow backend task like sending an email
-or creating a thumbnail image<a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-startref="icd001" data-type="indexterm" id="id351"/>.</p>
+<p>以上任何一种机制都可以与 Web 服务配合使用——例如，用来执行发送电子邮件或生成缩略图这类耗时的后端任务<a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-startref="icd001" data-type="indexterm" id="id351"/>。</p>
 </div></section>
 
 
@@ -169,28 +149,28 @@ or creating a thumbnail image<a data-primary="APIs (application programming inte
 <section data-pdf-bookmark="HTTP" data-type="sect2"><div class="sect2" id="id5">
 <h2>HTTP</h2>
 
-<p><a data-primary="HTTP" data-type="indexterm" id="id352"/>Berners-Lee<a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id353"/> proposed three components for his World Wide Web:</p>
+<p><a data-primary="HTTP" data-type="indexterm" id="id352"/>伯纳斯-李（Berners-Lee）<a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id353"/>为他的万维网（World Wide Web）提出了三大核心组件：</p>
 <dl>
 <dt><a data-primary="HTML" data-type="indexterm" id="id354"/>HTML</dt>
 <dd>
-<p>A language for displaying data</p>
+<p>一种用于展示数据的标记语言</p>
 </dd>
 <dt>HTTP</dt>
 <dd>
-<p>A client-server protocol</p>
+<p>一种客户端-服务器通信协议</p>
 </dd>
-<dt><a data-primary="URLs" data-type="indexterm" id="id355"/>URLs</dt>
+<dt><a data-primary="URLs" data-type="indexterm" id="id355"/>URL</dt>
 <dd>
-<p>An addressing scheme for web resources</p>
+<p>一种针对 Web 资源的寻址方案</p>
 </dd>
 </dl>
 
-<p>Although these seem obvious in retrospect,
-they turned out to be a ridiculously useful combination.
-As the web evolved, people experimented,
-and some ideas, like the <code>IMG</code> tag, survived the Darwinian struggle.
-And as needs became clearer,
-people got serious about defining standards.</p>
+<p>虽然事后看来这些设想似乎理所当然，
+但事实证明，它们组成了一套极其有用的黄金搭档。
+随着 Web 的演进，人们不断进行各种尝试，
+其中一些想法（例如 <code>IMG</code> 标签）在优胜劣汰的竞争中存活了下来。
+而当需求变得愈发明确时，
+人们便开始认真地制定各项标准了。</p>
 </div></section>
 
 
@@ -203,132 +183,126 @@ people got serious about defining standards.</p>
 <section data-pdf-bookmark="REST(ful)" data-type="sect2"><div class="sect2" id="id6">
 <h2>REST(ful)</h2>
 
-<p>One <a data-primary="RESTful API design" data-type="indexterm" id="icd002"/>chapter in <a data-primary="Fielding, Roy" data-type="indexterm" id="id356"/>Roy Fielding’s Ph.D.
-<a href="https://oreil.ly/TwGmX">thesis</a> defined <em>Representational State Transfer (REST)</em>—an
-<em>architectural style</em> for HTTP use.<sup><a data-type="noteref" href="ch01.html#id357" id="id357-marker">2</a></sup>
-Although often referenced, it’s been largely
-<a href="https://oreil.ly/bsSry">misunderstood</a>.</p>
+<p><a data-primary="RESTful API design" data-type="indexterm" id="icd002"/><a data-primary="Fielding, Roy" data-type="indexterm" id="id356"/>罗伊·菲尔丁（Roy Fielding）在其博士<a href="https://oreil.ly/TwGmX">学位论文</a>的其中一章里，定义了<em>表述性状态转移（Representational State Transfer，简称 REST）</em>——一种使用 HTTP 的<em>架构风格（architectural style）</em>。<sup><a data-type="noteref" href="ch01.html#id357" id="id357-marker">2</a></sup>
+尽管这一概念经常被引用，但它在很大程度上一直被人们<a href="https://oreil.ly/bsSry">误解</a>。</p>
 
-<p class="pagebreak-before">A roughly shared adaptation has evolved and dominates the modern web.
-It’s called <em>RESTful</em>,
-with these characteristics:</p>
+<p class="pagebreak-before">后来，业界演化出了一套大致达成共识的改编实践，并在现代 Web 中占据了主导地位。
+它被称为 <em>RESTful</em>，
+具有以下特征：</p>
 
 <ul>
 <li>
-<p>Uses HTTP and client-server protocol</p>
+<p>使用 HTTP 和客户端-服务器协议</p>
 </li>
 <li>
-<p>Stateless (each connection is independent)</p>
+<p>无状态（Stateless，即每次连接都是相互独立的）</p>
 </li>
 <li>
-<p>Cacheable</p>
+<p>可缓存（Cacheable）</p>
 </li>
 <li>
-<p>Resource-based</p>
+<p>基于资源（Resource-based）</p>
 </li>
 </ul>
 
-<p>A <em>resource</em> <a data-primary="resources" data-type="indexterm" id="id358"/>is data that you can distinguish
-and perform operations on.
-A web service provides an <a data-primary="endpoints (routes)" data-type="indexterm" id="id359"/><em>endpoint</em>—a<a data-primary="routes (endpoints)" data-type="indexterm" id="id360"/> distinct URL and <a data-primary="HTTP verbs" data-type="indexterm" id="id361"/>HTTP <em>verb</em> (action)—for each feature that it wants to expose.
-An endpoint is also called a <em>route</em>,
-because it routes the URL to a function.</p>
+<p><em>资源（resource）</em><a data-primary="resources" data-type="indexterm" id="id358"/>是你可以区分并对其执行操作的数据。
+Web 服务会为它想要对外暴露的每一个功能提供一个<a data-primary="endpoints (routes)" data-type="indexterm" id="id359"/><em>端点（endpoint）</em>——即<a data-primary="routes (endpoints)" data-type="indexterm" id="id360"/>一个特定的 URL 与一个 <a data-primary="HTTP verbs" data-type="indexterm" id="id361"/>HTTP <em>动词（verb，代表操作动作）</em>的组合。
+端点也被称为<em>路由（route）</em>，
+因为它负责将该 URL 路由（分发）到对应的处理函数。</p>
 
-<p>Database users are familiar with the <em>CRUD</em>
-acronym of procedures: <a data-primary="CRUD (create, read, update, delete)" data-type="indexterm" id="id362"/>create, read, update, delete.
-The HTTP verbs are pretty CRUDdy:</p>
+<p>数据库用户都很熟悉代表四类基本操作的缩写词 <em>CRUD</em>：<a data-primary="CRUD (create, read, update, delete)" data-type="indexterm" id="id362"/>创建（create）、读取（read）、更新（update）和删除（delete）。
+HTTP 动词与 CRUD 操作有着非常直观的对应关系：</p>
 <dl>
 <dt><code>POST</code></dt>
 <dd>
-<p>Create (write)</p>
+<p>创建（写入）</p>
 </dd>
 <dt><code>PUT</code></dt>
 <dd>
-<p>Modify completely (replace)</p>
+<p>完全修改（替换）</p>
 </dd>
 <dt><code>PATCH</code></dt>
 <dd>
-<p>Modify partially (update)</p>
+<p>部分修改（更新）</p>
 </dd>
 <dt><code>GET</code></dt>
 <dd>
-<p>Um, get (read, retrieve)</p>
+<p>唔，获取（读取、检索）</p>
 </dd>
 <dt><code>DELETE</code></dt>
 <dd>
-<p>Uh, delete</p>
+<p>呃，删除</p>
 </dd>
 </dl>
 
-<p>A client sends a<a data-primary="HTTP requests" data-type="indexterm" id="id363"/> <em>request</em> to a RESTful endpoint
-with data in one of the following areas of an HTTP message:</p>
+<p>客户端向 RESTful 端点发送 <a data-primary="HTTP requests" data-type="indexterm" id="id363"/><em>请求（request）</em>时，
+可以将数据放在 HTTP 报文的以下几个区域之一：</p>
 
 <ul>
 <li>
-<p>Headers</p>
+<p>请求头（Headers）</p>
 </li>
 <li>
-<p>The URL string</p>
+<p>URL 字符串（The URL string）</p>
 </li>
 <li>
-<p>Query parameters</p>
+<p>查询参数（Query parameters）</p>
 </li>
 <li>
-<p>Body values</p>
+<p>请求体数据（Body values）</p>
 </li>
 </ul>
 
-<p>In turn, an <a data-primary="HTTP responses" data-type="indexterm" id="id364"/>HTTP <em>response</em> returns these:</p>
+<p>相应地，<a data-primary="HTTP responses" data-type="indexterm" id="id364"/>HTTP <em>响应（response）</em>会返回以下内容：</p>
 
 <ul>
 <li>
-<p>An integer
-<a href="https://oreil.ly/oBena"><em>status code</em></a>
-indicating the following:</p>
+<p>一个整型的<a href="https://oreil.ly/oBena"><em>状态码（status code）</em></a>，
+其不同号段的含义如下：</p>
 <dl>
-<dt>100s</dt>
+<dt>100 号段（100s）</dt>
 <dd>
-<p>Info, keep going</p>
+<p>信息提示，请继续请求</p>
 </dd>
-<dt>200s</dt>
+<dt>200 号段（200s）</dt>
 <dd>
-<p>Success</p>
+<p>成功</p>
 </dd>
-<dt>300s</dt>
+<dt>300 号段（300s）</dt>
 <dd>
-<p>Redirection</p>
+<p>重定向</p>
 </dd>
-<dt>400s</dt>
+<dt>400 号段（400s）</dt>
 <dd>
-<p>Client error</p>
+<p>客户端错误</p>
 </dd>
-<dt>500s</dt>
+<dt>500 号段（500s）</dt>
 <dd>
-<p>Server error</p>
+<p>服务端错误</p>
 </dd>
 </dl>
 </li>
 <li>
-<p>Various headers</p>
+<p>各种响应头（Headers）</p>
 </li>
 <li>
-<p>A body, which may be empty, single, or <em>chunked</em> (in successive pieces)</p>
+<p>响应体（Body），它可以是空的、单块完整的，或者是<em>分块传输的（chunked</em>，即分成连续的数据块返回）</p>
 </li>
 </ul>
 
-<p>At least one status code is an Easter egg:
-<code>418</code> (I’m a <a href="https://www.google.com/teapot">teapot</a>)
-is supposed to be returned by a web-connected teapot,
-if asked to brew <span class="keep-together">coffee</span>.</p>
+<p>至少有一个状态码是彩蛋：
+<code>418</code>（我是一个<a href="https://www.google.com/teapot">茶壶</a>）
+按照设定应当由联网的茶壶返回——
+当有人请求它煮<span class="keep-together">咖啡</span>的时候。</p>
 
 <figure><div class="figure" id="fig-teapot">
 <img alt="fapi 01in01" src="assets/fapi_01in01.png" width="100"/>
 <h6/>
 </div></figure>
 
-<p>You’ll find many websites and books on RESTful API design,
-all with useful rules of thumb.
-This book will dole some out on the way<a data-primary="RESTful API design" data-startref="icd002" data-type="indexterm" id="id365"/>.</p>
+<p>你会找到许多关于 RESTful API 设计的网站和书籍，
+它们都提供了实用的经验法则。
+本书也会在后续章节中陆续分享一些设计技巧<a data-primary="RESTful API design" data-startref="icd002" data-type="indexterm" id="id365"/>。</p>
 </div></section>
 
 
@@ -339,22 +313,19 @@ This book will dole some out on the way<a data-primary="RESTful API design" data
 
 
 <section data-pdf-bookmark="JSON and API Data Formats" data-type="sect2"><div class="sect2" id="id7">
-<h2>JSON and API Data Formats</h2>
+<h2>JSON 与 API 数据格式</h2>
 
-<p><a data-primary="JSON (JavaScript Object Notation)" data-type="indexterm" id="id366"/>Frontend applications
-can exchange plain ASCII text
-with backend web services,
-but how can you express data structures like lists of things?</p>
+<p><a data-primary="JSON (JavaScript Object Notation)" data-type="indexterm" id="id366"/>前端应用程序可以与后端 Web 服务交换纯 ASCII 文本，
+但我们该如何表达像“元素列表”这样的数据结构呢？</p>
 
-<p>Just about when we really started to need it,
-along came <em>JavaScript Object Notation (JSON)</em>—another simple idea that solves an important problem
-and seems obvious with hindsight.
-Although the <em>J</em> stands for <em>JavaScript</em>,
-the syntax looks a lot like Python too.</p>
+<p>就在我们真正开始迫切需要它的时候，
+<em>JavaScript 对象表示法（JavaScript Object Notation，简称 JSON）</em>应运而生——这是另一个解决了重大问题、事后看来又显得顺理成章的简洁创意。
+虽然其中的 <em>J</em> 代表 <em>JavaScript</em>，
+但它的语法看起来也和 Python 非常相似。</p>
 
-<p>JSON has largely replaced older attempts like XML and SOAP.
-In the rest of this book, you’ll see that
-JSON is the default web service input and output format.</p>
+<p>JSON 已经在很大程度上取代了 XML 和 SOAP 等早期尝试。
+在本书的其余部分中，你将看到
+JSON 是 Web 服务默认的输入与输出格式。</p>
 </div></section>
 
 
@@ -367,15 +338,13 @@ JSON is the default web service input and output format.</p>
 <section data-pdf-bookmark="JSON:API" data-type="sect2"><div class="sect2" id="id8">
 <h2>JSON:API</h2>
 
-<p><a data-primary="JSON:API proposal" data-type="indexterm" id="id367"/>The combination of RESTful design and JSON data formats
-is common now.
-But some wiggle room still remains for ambiguity
-and nerd tussles.
-The recent <a href="https://jsonapi.org">JSON:API</a> proposal
-aims to tighten specs a bit.
-This book will use the loose RESTful approach,
-but JSON:API or something similarly rigorous may be useful
-if you have significant tussles.</p>
+<p><a data-primary="JSON:API proposal" data-type="indexterm" id="id367"/>如今，RESTful 设计与 JSON 数据格式的结合已经非常普遍。
+但其中仍然存在一些模棱两可的弹性空间，
+常引发技术极客之间的争论。
+近年提出的 <a href="https://jsonapi.org">JSON:API</a> 规范提案，
+就旨在进一步收紧并明确相关规范。
+本书将采用较为宽松的 RESTful 方法，
+但如果你所在的团队经常因为接口规范争执不下，那么 JSON:API 或类似的严格规范可能会很有帮助。</p>
 </div></section>
 
 
@@ -388,13 +357,12 @@ if you have significant tussles.</p>
 <section data-pdf-bookmark="GraphQL" data-type="sect2"><div class="sect2" id="id9">
 <h2>GraphQL</h2>
 
-<p><a data-primary="GraphQL" data-type="indexterm" id="id368"/>RESTful interfaces can be cumbersome for some purposes.
-Facebook (now Meta) designed
-<a href="https://graphql.org">Graph Query Language (<em>GraphQL</em>)</a>
-to specify more flexible service queries.
-I won’t go into GraphQL in this book,
-but you may want to look into it if you find
-RESTful design inadequate for your application.</p>
+<p><a data-primary="GraphQL" data-type="indexterm" id="id368"/>对于某些特定场景而言，RESTful 接口可能会显得有些繁琐。
+Facebook（现为 Meta）设计了
+<a href="https://graphql.org">图查询语言（Graph Query Language，简称 <em>GraphQL</em>）</a>，
+用来编写更加灵活的服务查询。
+本书不会深入讨论 GraphQL，
+但如果你发现 RESTful 设计无法满足你的应用需求，不妨去了解一下它。</p>
 </div></section>
 </div></section>
 
@@ -404,74 +372,59 @@ RESTful design inadequate for your application.</p>
 
 
 <section data-pdf-bookmark="Concurrency" data-type="sect1"><div class="sect1" id="id10">
-<h1>Concurrency</h1>
+<h1>并发</h1>
 
-<p><a data-primary="concurrency" data-type="indexterm" id="icd003"/>Besides the growth of service orientation,
-the rapid expansion of the number of connections to
-web services requires ever better efficiency and scale.</p>
+<p><a data-primary="concurrency" data-type="indexterm" id="icd003"/>除了面向服务架构的普及之外，
+Web 服务连接数量的急剧增长，也对运行效率和扩展能力提出了越来越高的要求。</p>
 
-<p>We want to reduce the following:</p>
+<p>我们希望改善以下两项指标（降低延迟、提升吞吐）：</p>
 <dl>
-<dt>Latency</dt>
+<dt>延迟（Latency）</dt>
 <dd>
-<p>The up-front wait time</p>
+<p>前期的等待时间</p>
 </dd>
-<dt>Throughput</dt>
+<dt>吞吐量（Throughput）</dt>
 <dd>
-<p>The number of
-bytes per second between the service and its callers</p>
+<p>服务与其调用方之间每秒传输的字节数</p>
 </dd>
 </dl>
 
-<p>In the old web
-days,<sup><a data-type="noteref" href="ch01.html#id369" id="id369-marker">3</a></sup>
-people dreamed of
-supporting hundreds of simultaneous connections,
-then fretted about the “10K problem,”
-and now assume millions at a time.</p>
+<p>在早期的 Web 时代，<sup><a data-type="noteref" href="ch01.html#id369" id="id369-marker">3</a></sup>
+人们曾梦想着能够同时支持数百个并发连接，
+后来又为“C10K 问题（单机一万并发连接）”焦虑不已，
+而如今则动辄假设要同时处理数百万个连接。</p>
 
-<p>The term <em>concurrency</em> doesn’t mean full parallelism.
-Multiple processing isn’t occurring in the same nanosecond,
-in a single CPU.
-Instead, concurrency mostly avoids <a data-primary="busy waiting" data-type="indexterm" id="id370"/><em>busy waiting</em> (idling the CPU until a response is delivered).
-CPUs are zippy, but networks and disks are
-thousands to millions of times slower.
-So, whenever we talk to a network or disk, we don’t
-want to just sit there with a blank stare until it responds.</p>
+<p><em>并发（concurrency）</em>一词并不等同于完全的并行（parallelism）。
+在单个 CPU 中，并不会在同一纳秒内真正同时执行多个处理过程。
+相反，并发主要是为了避免<a data-primary="busy waiting" data-type="indexterm" id="id370"/><em>忙等待（busy waiting</em>，即在收到响应之前让 CPU 空闲等待）。
+CPU 的速度极快，但网络和磁盘的速度却比它慢上数千乃至数百万倍。
+因此，每当我们与网络或磁盘通信时，我们绝不希望只是两眼发直地干坐在那里等待它响应。</p>
 
-<p>Normal <a data-primary="Python" data-secondary="synchronous processing" data-type="indexterm" id="id371"/>Python execution is<a data-primary="synchronous processing" data-type="indexterm" id="id372"/> <em>synchronous</em>: one thing at a time,
-in the order specified by the code.
-Sometimes we want to be<a data-primary="asynchronous processing" data-type="indexterm" id="id373"/> <em>asynchronous</em>:
-do a little of one thing,
-then a little of another thing,
-back to the first thing, and so on.
-If all our code uses the CPU to calculate things (<em>CPU bound</em>),
-there’s really no spare time to be asynchronous.
-But if we perform something that makes the CPU wait for
-an external thing to complete (I/O bound), we can be asynchronous.</p>
+<p>普通的 <a data-primary="Python" data-secondary="synchronous processing" data-type="indexterm" id="id371"/>Python 执行方式是<a data-primary="synchronous processing" data-type="indexterm" id="id372"/><em>同步的（synchronous）</em>：一次只做一件事，
+严格按照代码指定的顺序执行。
+但有时我们希望它是<a data-primary="asynchronous processing" data-type="indexterm" id="id373"/><em>异步的（asynchronous）</em>：
+先做一点第一件事，
+再做一点第二件事，
+然后切回第一件事，依此类推。
+如果我们的所有代码都在占用 CPU 进行计算（即 <em>CPU 密集型，CPU bound</em>），
+那就确实没有多余的空闲时间来进行异步切换。
+但如果我们执行的操作需要让 CPU 等待某个外部操作完成（即 I/O 密集型，I/O bound），我们就可以采用异步方式。</p>
 
-<p>Asynchronous systems provide an<a data-primary="event loops" data-type="indexterm" id="id374"/> <em>event loop</em>:
-requests for slow operations are sent and noted,
-but we don’t hold up the CPU waiting for their responses.
-Instead, some immediate processing is done
-on each pass through the loop,
-and any responses that came in during that time are handled
-in the next pass.</p>
+<p>异步系统提供了一个<a data-primary="event loops" data-type="indexterm" id="id374"/><em>事件循环（event loop）</em>：
+针对慢速操作的请求会被发送出去并记录在案，
+但我们不会阻塞 CPU 去傻等它们的响应。
+相反，事件循环在每一轮遍历中都会执行一些可以立即处理的任务，
+而在此期间返回的任何响应，则会在下一轮循环中得到处理。</p>
 
-<p>The effects can be dramatic.
-Later in this book, you’ll see how FastAPI’s support
-of asynchronous processing makes it much faster than typical
-web frameworks.</p>
+<p>这种机制带来的性能提升可能是极其惊人的。
+在本书后面的章节中，你将看到 FastAPI 对异步处理的支持，
+是如何让它比传统的 Web 框架快得多的。</p>
 
-<p>Asynchronous processing isn’t magic.
-You still have to be careful to avoid doing too much
-CPU-intensive work
-during the event loop,
-because that will slow down everything. Later in this book, you’ll see the uses of Python’s
-<code>async</code> and <code>await</code> keywords,
-and how FastAPI lets you mix
-both synchronous and asynchronous
-processing<a data-primary="concurrency" data-startref="icd003" data-type="indexterm" id="id375"/>.</p>
+<p>当然，异步处理并不是万能魔法。
+你仍然需要小心谨慎，避免在事件循环中执行过多消耗 CPU 的密集计算工作，
+因为那会拖慢整体的一切运行。在本书后续内容中，你将看到 Python 的
+<code>async</code> 和 <code>await</code> 关键字的具体用法，
+以及 FastAPI 是如何允许你将同步处理与异步处理混合使用的<a data-primary="concurrency" data-startref="icd003" data-type="indexterm" id="id375"/>。</p>
 </div></section>
 
 
@@ -480,221 +433,198 @@ processing<a data-primary="concurrency" data-startref="icd003" data-type="indext
 
 
 <section data-pdf-bookmark="Layers" data-type="sect1"><div class="sect1" id="id11">
-<h1>Layers</h1>
+<h1>分层架构</h1>
 
-<p><a data-primary="layers" data-type="indexterm" id="icd004"/><em>Shrek</em> fans may remember he noted his
-layers of personality,
-to which Donkey replied, “Like an onion?”</p>
+<p><a data-primary="layers" data-type="indexterm" id="icd004"/>《怪物史瑞克》（<em>Shrek</em>）的影迷可能还记得，史瑞克曾提到他的性格是有层次（layers）的，
+而驴子回答道：“像洋葱一样？”</p>
 
 <figure><div class="figure" id="fig-onion">
 <img alt="fapi 01in02" src="assets/fapi_01in02.png" width="100"/>
 <h6/>
 </div></figure>
 
-<p>Well, if ogres and tearful vegetables can have layers,
-then so can software.
-To manage size and complexity,
-many applications have long used a so-called
-<em>three-tier model</em><a data-primary="three-tier model" data-type="indexterm" id="id376"/>.<sup><a data-type="noteref" href="ch01.html#id377" id="id377-marker">4</a></sup>
-This isn’t terribly new.
-Terms differ,<sup><a data-type="noteref" href="ch01.html#id378" id="id378-marker">5</a></sup>
-but for this book I’m using the following
-simple separation of terms (see <a data-type="xref" href="#fig-vert-layers">Figure 1-1</a>):</p>
+<p>好吧，既然食人魔和催泪的蔬菜都能分层次，
+软件自然也可以。
+为了管理规模和复杂度，
+许多应用程序长期以来一直采用所谓的
+<em>三层模型（three-tier model）</em><a data-primary="three-tier model" data-type="indexterm" id="id376"/>。<sup><a data-type="noteref" href="ch01.html#id377" id="id377-marker">4</a></sup>
+这并不是什么新鲜概念。
+虽然不同资料中的术语有所差异，<sup><a data-type="noteref" href="ch01.html#id378" id="id378-marker">5</a></sup>
+但在本书中，我将采用以下简洁的术语划分（见<a data-type="xref" href="#fig-vert-layers">图 1-1</a>）：</p>
 <dl>
-<dt><a data-primary="Web layer" data-type="indexterm" id="id379"/>Web</dt>
+<dt><a data-primary="Web layer" data-type="indexterm" id="id379"/>Web 层（Web）</dt>
 <dd>
-<p>Input/output layer over HTTP, which assembles client requests, calls the Service Layer, and returns responses</p>
+<p>基于 HTTP 的输入/输出层，负责组装客户端请求、调用服务层（Service Layer）并返回响应</p>
 </dd>
-<dt><a data-primary="Service layer" data-type="indexterm" id="id380"/>Service</dt>
+<dt><a data-primary="Service layer" data-type="indexterm" id="id380"/>服务层（Service）</dt>
 <dd>
-<p>The business logic, which calls the Data layer when needed</p>
+<p>业务逻辑层，在需要时会调用数据层（Data layer）</p>
 </dd>
-<dt><a data-primary="Data layer" data-type="indexterm" id="id381"/>Data</dt>
+<dt><a data-primary="Data layer" data-type="indexterm" id="id381"/>数据层（Data）</dt>
 <dd>
-<p>Access to data stores and other services</p>
+<p>负责访问数据存储和其他外部服务</p>
 </dd>
-<dt><a data-primary="Model box" data-type="indexterm" id="id382"/>Model</dt>
+<dt><a data-primary="Model box" data-type="indexterm" id="id382"/>模型模块（Model）</dt>
 <dd>
-<p>Data definitions shared by all layers</p>
+<p>供所有层级共享的数据定义</p>
 </dd>
-<dt>Web client</dt>
+<dt>Web 客户端（Web client）</dt>
 <dd>
-<p>Web browser or other HTTP client-side software</p>
+<p>Web 浏览器或其他 HTTP 客户端软件</p>
 </dd>
-<dt><a data-primary="databases" data-type="indexterm" id="id383"/>Database</dt>
+<dt><a data-primary="databases" data-type="indexterm" id="id383"/>数据库（Database）</dt>
 <dd>
-<p>The data store, often an SQL or NoSQL server</p>
+<p>数据存储系统，通常是 SQL 或 NoSQL 服务器</p>
 </dd>
 </dl>
 
 <figure><div class="figure" id="fig-vert-layers">
 <img alt="fapi 0101" src="assets/fapi_0101.png"/>
-<h6><span class="label">Figure 1-1. </span>Vertical layers<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id384"/></h6>
+<h6><span class="label">图 1-1. </span>垂直分层结构<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id384"/></h6>
 </div></figure>
 
-<p>These components will help you scale your site
-without having to start from scratch.
-They’re not laws of quantum
-mechanics,
-so consider them guidelines for this book’s exposition.</p>
+<p>这些组件将帮助你平滑地扩展站点规模，
+而无需推倒重来。
+它们并不是量子力学定律，
+所以请将它们视为本书阐述架构时的指导原则。</p>
 
-<p>The layers talk to one another via <a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id385"/>APIs.
-These can be simple function calls to separate Python modules,
-but could access external code via any method.
-As I showed earlier, this could include RPCs, messages, and so on.
-In this book, I’m assuming a single web server,
-with Python code importing other Python modules.
-The separation and information hiding is handled by the modules.</p>
+<p>各个层级之间通过 <a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id385"/>API 相互通信。
+这些 API 可以是对独立 Python 模块的简单函数调用，
+也可以通过任意方式访问外部代码。
+正如我前面展示的，这可以包括 RPC、消息队列等等。
+在本书中，我假设所有代码运行在单个 Web 服务器中，
+由 Python 代码直接导入（import）其他 Python 模块。
+职责分离与信息隐藏均由模块机制来处理。</p>
 
-<p>The <a data-primary="Web layer" data-type="indexterm" id="id386"/><em>Web layer</em> is the one that users see,
-via <em>client</em> applications and APIs.
-We’re usually talking about a RESTful web interface,
-with URLs, and JSON-encoded requests and responses.
-But alternative text
-(or command-line interface, CLI)
-clients <a data-primary="CLI (command-line interface)" data-type="indexterm" id="id387"/>also could be built alongside the Web layer.
-Python Web code may import Service-layer modules
-but should not import Data modules.</p>
+<p><a data-primary="Web layer" data-type="indexterm" id="id386"/><em>Web 层</em>是用户通过<em>客户端</em>应用程序和 API 直接接触的一层。
+我们通常探讨的是带有 URL、并使用 JSON 编码请求与响应的 RESTful Web 接口。
+但除了 Web 层之外，你也可以并排构建替代性的纯文本（或命令行界面，CLI）客户端<a data-primary="CLI (command-line interface)" data-type="indexterm" id="id387"/>。
+Python 的 Web 层代码可以导入服务层（Service-layer）模块，
+但不应当直接导入数据层（Data）模块。</p>
 
-<p>The <a data-primary="Service layer" data-type="indexterm" id="id388"/><em>Service layer</em> contains the actual details of whatever this
-website provides.
-This layer essentially looks like a <em>library</em>.
-It imports Data modules to access databases and external services
-but should not know the details.</p>
+<p><a data-primary="Service layer" data-type="indexterm" id="id388"/><em>服务层（Service layer）</em>包含该网站所提供功能的实际业务逻辑细节。
+这一层本质上看起来就像一个<em>库（library）</em>。
+它会导入数据层模块来访问数据库和外部服务，
+但不应当知晓底层的数据存储细节。</p>
 
-<p>The <a data-primary="Data layer" data-type="indexterm" id="id389"/><em>Data layer</em> provides the Service layer access to data,
-through files or client calls to other services.
-Alternative Data layers may also exist,
-communicating with a single Service layer.</p>
+<p><a data-primary="Data layer" data-type="indexterm" id="id389"/><em>数据层（Data layer）</em>通过文件读写或对其他服务的客户端调用，为服务层提供数据访问能力。
+系统中也可以同时存在多个替代性的数据层，
+与同一个服务层进行通信。</p>
 
-<p>The <a data-primary="Model box" data-type="indexterm" id="id390"/><em>Model box</em> isn’t an actual layer
-but a source of data definitions shared by the layers.
-This isn’t needed if you’re passing built-in Python
-data structures among them.
-As you will see, FastAPI’s inclusion of Pydantic
-enables the definition of data structures with
-many useful features.</p>
+<p><a data-primary="Model box" data-type="indexterm" id="id390"/><em>模型模块（Model box）</em>并不是一个实际的调用层，
+而是供各个层级共享的数据定义来源。
+如果你在各层之间只传递 Python 内置的数据结构，则不需要单独的模型模块。
+但正如你稍后将看到的，FastAPI 内置集成了 Pydantic，
+使我们能够定义出具有诸多实用特性的数据结构。</p>
 
-<p class="pagebreak-before">Why make these divisions?
-Among many reasons, each layer can be:</p>
+<p class="pagebreak-before">为什么要做这样的划分呢？
+在众多原因之中，最核心的优势在于每一层都可以：</p>
 
 <ul>
 <li>
-<p>Written by specialists.</p>
+<p>由相应领域的专家编写。</p>
 </li>
 <li>
-<p>Tested in isolation.</p>
+<p>独立进行测试。</p>
 </li>
 <li>
-<p>Replaced or supplemented: you might add a second
-Web layer, using a different API such as gRPC,
-alongside a web one.</p>
+<p>被替换或扩展：例如你可以在原有的 Web 层旁边，使用 gRPC 等不同的 API 再添加第二个 Web 接入层。</p>
 </li>
 </ul>
 
-<p>Follow one rule from <em>Ghostbusters</em>:
-Don’t cross the streams.
-That is, don’t let web details leak out of the Web layer,
-or database details out of the Data layer.</p>
+<p>请遵循《捉鬼敢死队》（<em>Ghostbusters</em>）里的一条铁律：
+不要让质子流交叉（Don’t cross the streams）。
+也就是说，不要让 Web 细节泄漏到 Web 层之外，
+也不要让数据库细节泄漏到数据层之外。</p>
 
-<p>You can visualize
-<em>layers</em> as a vertical stack<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id391"/>,
-like a cake in the Great British Bake Off.<sup><a data-type="noteref" href="ch01.html#id392" id="id392-marker">6</a></sup></p>
+<p>你可以把<em>分层（layers）</em>想象成一个垂直堆叠的结构<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id391"/>，
+就像《英国家庭烘焙大赛》（Great British Bake Off）里的多层蛋糕一样。<sup><a data-type="noteref" href="ch01.html#id392" id="id392-marker">6</a></sup></p>
 
 <figure><div class="figure" id="fig-cake">
 <img alt="fapi 01in03" src="assets/fapi_01in03.png" width="100"/>
 <h6/>
 </div></figure>
 
-<p>Here are some reasons for <a data-primary="layers" data-secondary="separation of" data-type="indexterm" id="id393"/>separation of the layers:</p>
+<p>以下是保持<a data-primary="layers" data-secondary="separation of" data-type="indexterm" id="id393"/>层级分离的几个重要原因：</p>
 
 <ul>
 <li>
-<p>If you don’t separate the layers, expect a hallowed web meme: <em>Now you have two problems</em>.</p>
+<p>如果你不把各层分离开来，就会印证那句著名的编程梗：<em>现在你有两个问题了（Now you have two problems）</em>。</p>
 </li>
 <li>
-<p>Once the layers are mixed, later separation will be <em>very</em> difficult.</p>
+<p>一旦各层的逻辑混杂在一起，日后想要再把它们拆分出来将会<em>极其</em>困难。</p>
 </li>
 <li>
-<p>You’ll need to know two or more specialties
-to understand and write tests if code logic gets muddled.</p>
+<p>如果代码逻辑纠缠不清，你必须同时精通两个或更多专业领域的知识，才能读懂代码并编写测试。</p>
 </li>
 </ul>
 
-<p>By the way,
-even though I call them <em>layers</em>,
-you don’t need to assume that one layer is
-“above” or “below” another,
-and that commands flow with gravity.
-Vertical chauvinism!
-You could also view layers as <a data-primary="layers" data-secondary="sideways-communicating boxes" data-type="indexterm" id="id394"/>sideways-communicating boxes (<a data-type="xref" href="#fig-horiz-layers">Figure 1-2</a>).</p>
+<p>顺便提一句，
+尽管我把它们称为<em>层（layers）</em>，
+但你不必先入为主地认为某一层就一定在另一层的“上方”或“下方”，
+也不必认为指令只能顺着重力方向流动。
+这可是“垂直沙文主义”！
+你完全可以把各个层看作是<a data-primary="layers" data-secondary="sideways-communicating boxes" data-type="indexterm" id="id394"/>横向通信的方框（见<a data-type="xref" href="#fig-horiz-layers">图 1-2</a>）。</p>
 
 <figure><div class="figure" id="fig-horiz-layers">
 <img alt="fapi 0102" src="assets/fapi_0102.png"/>
-<h6><span class="label">Figure 1-2. </span>Sideways-communicating boxes</h6>
+<h6><span class="label">图 1-2. </span>横向通信的模块方框</h6>
 </div></figure>
 
-<p>However you visualize them,
-the <em>only</em> communication paths between
-the boxes/layers are the arrows <a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id395"/>(APIs).
-This is important for testing and debugging.
-If undocumented doors exist in a factory,
-the night watchman will inevitably be surprised.</p>
+<p>无论你如何具象化地想象它们，
+这些方框/层级之间<em>唯一</em>的通信路径就是图中的箭头<a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id395"/>（即 API）。
+这一点对于测试和调试至关重要。
+如果一座工厂里存在未记录在案的暗门，
+守夜人迟早会撞见意想不到的惊吓。</p>
 
-<p>The arrows between the web client and Web layer
-use HTTP or HTTPS to transport mostly JSON text.
-The arrows between the Data layer and database
-use a database-specific protocol and carry SQL (or other) text.
-The arrows between the layers themselves are function calls
-carrying data models.</p>
+<p>Web 客户端与 Web 层之间的箭头使用 HTTP 或 HTTPS 协议，主要传输 JSON 文本。
+数据层与数据库之间的箭头使用特定于数据库的协议，并传输 SQL（或其他查询）文本。
+而各层内部之间的箭头，则是传递数据模型的函数调用。</p>
 
-<p>Also, the recommended data formats flowing through the arrows are as follows:</p>
+<p>此外，在这些箭头中流动的推荐数据格式如下：</p>
 <dl>
-<dt>Client ⇔ <a data-primary="Web layer" data-type="indexterm" id="id396"/>Web</dt>
+<dt>客户端（Client） ⇔ <a data-primary="Web layer" data-type="indexterm" id="id396"/>Web 层</dt>
 <dd>
-<p>RESTful HTTP with JSON</p>
+<p>承载 JSON 的 RESTful HTTP</p>
 </dd>
-<dt>Web ⇔ <a data-primary="Service layer" data-type="indexterm" id="id397"/>Service</dt>
+<dt>Web 层 ⇔ <a data-primary="Service layer" data-type="indexterm" id="id397"/>服务层（Service）</dt>
 <dd>
-<p>Models</p>
+<p>数据模型（Models）</p>
 </dd>
-<dt>Service ⇔ <a data-primary="Data layer" data-type="indexterm" id="id398"/>Data</dt>
+<dt>服务层（Service） ⇔ <a data-primary="Data layer" data-type="indexterm" id="id398"/>数据层（Data）</dt>
 <dd>
-<p>Models</p>
+<p>数据模型（Models）</p>
 </dd>
-<dt>Data ⇔ Databases and services</dt>
+<dt>数据层（Data） ⇔ 数据库与外部服务</dt>
 <dd>
-<p>Specific APIs</p>
+<p>专用 API（Specific APIs）</p>
 </dd>
 </dl>
 
-<p>Based on my own experience,
-this is how I’ve chosen to structure the topics in this book.
-It’s workable and has scaled to fairly complex sites,
-but isn’t sacred.
-You may have a better design!
-However you do it,
-these are the important points:</p>
+<p>基于我个人的开发经验，
+我选择按照这样的架构来组织本书的各个主题。
+这套方案切实可行，并且已经成功支撑过相当复杂的站点，
+但它并非金科玉律。
+你完全可能拥有更好的设计方案！
+无论你采用何种方式，
+以下几个核心要点都是相通的：</p>
 
 <ul>
 <li>
-<p>Separate domain-specific details.</p>
+<p>隔离特定领域的实现细节。</p>
 </li>
 <li>
-<p>Define standard APIs between the layers.</p>
+<p>在层级之间定义标准的 API。</p>
 </li>
 <li>
-<p>Don’t cheat; don’t leak.</p>
+<p>不要走捷径作弊；不要让底层细节泄漏。</p>
 </li>
 </ul>
 
-<p>Sometimes deciding
-which layer is the best home for code is a challenge.
-For example, <a data-type="xref" href="ch11.html#ch11">Chapter 11</a> looks at authentication and authorization requirements
-and how to implement them—as an extra layer
-between Web and Service,
-or within one of them.
-Software development is sometimes as much art as science.<a data-primary="layers" data-startref="icd004" data-type="indexterm" id="id399"/></p>
+<p>有时候，决定某段代码究竟最适合放在哪一层确实颇具挑战。
+例如，<a data-type="xref" href="ch11.html#ch11">第 11 章</a>探讨了身份认证（authentication）与授权（authorization）的需求及其实现方式——究竟是作为 Web 层与服务层之间的一个额外层级，
+还是放在其中某一层内部。
+软件开发有时既是一门科学，也是一门艺术。<a data-primary="layers" data-startref="icd004" data-type="indexterm" id="id399"/></p>
 </div></section>
 
 
@@ -703,22 +633,19 @@ Software development is sometimes as much art as science.<a data-primary="layers
 
 
 <section data-pdf-bookmark="Data" data-type="sect1"><div class="sect1" id="id12">
-<h1>Data</h1>
+<h1>数据</h1>
 
-<p><a data-primary="databases" data-type="indexterm" id="id400"/>The web has often been used as a
-frontend to relational databases,
-although many other ways of storing and accessing data
-have evolved, such as
-NoSQL or NewSQL databases.</p>
+<p><a data-primary="databases" data-type="indexterm" id="id400"/>Web 经常被用作关系型数据库的前端，
+不过如今也演进出了许多其他存储和访问数据的方式，
+例如 NoSQL 或 NewSQL 数据库。</p>
 
-<p>But beyond databases,
-<em>machine learning (ML)</em>—<a data-primary="ML (machine learning)" data-type="indexterm" id="id401"/>or <a data-primary="deep learning" data-type="indexterm" id="id402"/><em>deep learning</em> or
-just <em>AI</em><a data-primary="AI (artificial intelligence)" data-type="indexterm" id="id403"/>—is<a data-primary="artificial intelligence" data-see="AI" data-type="indexterm" id="id404"/> fundamentally remaking the technology landscape.
-The development of large models requires <em>lots</em>
-of messing with data, which has traditionally been called <a data-primary="ETL (extract, transform, load)" data-type="indexterm" id="id405"/>extract, transform, load (ETL).</p>
+<p>然而在数据库之外，
+<em>机器学习（machine learning，简称 ML）</em>——<a data-primary="ML (machine learning)" data-type="indexterm" id="id401"/>或者说<a data-primary="deep learning" data-type="indexterm" id="id402"/><em>深度学习（deep learning）</em>，乃至统称的
+<em>人工智能（AI）</em><a data-primary="AI (artificial intelligence)" data-type="indexterm" id="id403"/><a data-primary="artificial intelligence" data-see="AI" data-type="indexterm" id="id404"/>——正在从根本上重塑整个技术版图。
+大型模型的开发需要对数据做<em>海量的</em>整理与加工，这一过程在传统上被称为<a data-primary="ETL (extract, transform, load)" data-type="indexterm" id="id405"/>提取、转换和加载（extract, transform, load，简称 ETL）。</p>
 
-<p>As a general-purpose service architecture,
-the web can help with many of the fiddly bits of ML systems.</p>
+<p>作为一种通用的服务架构，
+Web 能够帮助解决机器学习系统中许多繁琐的工程细节。</p>
 </div></section>
 
 
@@ -727,15 +654,14 @@ the web can help with many of the fiddly bits of ML systems.</p>
 
 
 <section data-pdf-bookmark="Review" data-type="sect1"><div class="sect1" id="id296">
-<h1>Review</h1>
+<h1>本章回顾</h1>
 
-<p>The web uses many APIs, but especially RESTful ones.
-Asynchronous calls allow better concurrency,
-which speeds up the overall process.
-Web service applications are often large enough to divide into layers.
-Data has become a major area in its own right.
-All these concepts are addressed in the
-Python programming language,
-coming in the next chapter.</p>
+<p>Web 使用着形形色色的 API，但其中尤以 RESTful API 最为普遍。
+异步调用能够实现更好的并发性能，
+从而加快整体处理速度。
+Web 服务应用程序通常规模较大，适合划分为多个层级。
+数据本身也已经发展成为一个举足轻重的独立领域。
+所有这些概念在 Python 编程语言中都有相应的解决方案，
+我们将在下一章中展开介绍。</p>
 </div></section>
-<div data-type="footnotes"><p data-type="footnote" id="id336"><sup><a href="ch01.html#id336-marker">1</a></sup> I gave up trying a few years ago.</p><p data-type="footnote" id="id357"><sup><a href="ch01.html#id357-marker">2</a></sup> <em>Style</em> means a higher-level pattern, like <em>client-server</em>, rather than a specific design.</p><p data-type="footnote" id="id369"><sup><a href="ch01.html#id369-marker">3</a></sup> Around when caveman played hacky sack with giant ground sloths.</p><p data-type="footnote" id="id377"><sup><a href="ch01.html#id377-marker">4</a></sup> Choose your own dialect: tier/layer, tomato/tomahto/arigato.</p><p data-type="footnote" id="id378"><sup><a href="ch01.html#id378-marker">5</a></sup> You’ll often see the term <em>Model-View-Controller (MVC)</em> and <a data-primary="MVC (Model-View-Controller)" data-type="indexterm" id="id406"/>variations. Commonly accompanied by religious wars, toward which I’m agnostic.</p><p data-type="footnote" id="id392"><sup><a href="ch01.html#id392-marker">6</a></sup> As viewers know, if your layers get sloppy, you may not return to the tent the next week.</p></div></div></section></body></html>
+<div data-type="footnotes"><p data-type="footnote" id="id336"><sup><a href="ch01.html#id336-marker">1</a></sup> 我在几年前就已经放弃尝试做全栈了。</p><p data-type="footnote" id="id357"><sup><a href="ch01.html#id357-marker">2</a></sup> <em>风格（Style）</em>指的是更高层面的模式（如<em>客户端-服务器</em>模式），而非某种具体的设计实现。</p><p data-type="footnote" id="id369"><sup><a href="ch01.html#id369-marker">3</a></sup> 大约在穴居人还和大地懒一起踢沙包的远古年代。</p><p data-type="footnote" id="id377"><sup><a href="ch01.html#id377-marker">4</a></sup> 你可以按自己的习惯选用术语：tier 或 layer（层/层级），就像西红柿的不同发音 tomato/tomahto 一样，意思都差不多。</p><p data-type="footnote" id="id378"><sup><a href="ch01.html#id378-marker">5</a></sup> 你会经常看到<em>模型-视图-控制器（Model-View-Controller，简称 MVC）</em>及其<a data-primary="MVC (Model-View-Controller)" data-type="indexterm" id="id406"/>各种变体术语。它们通常伴随着虔诚的教派之争，对此我保持不可知论的中立态度。</p><p data-type="footnote" id="id392"><sup><a href="ch01.html#id392-marker">6</a></sup> 正如该节目的观众所知，如果你的蛋糕分层做得坍塌潦草，下周你可能就回不了烘焙帐篷了。</p></div></div></section></body></html>

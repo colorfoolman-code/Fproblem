@@ -1,10 +1,10 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Modern Python</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>现代 Python</title><link href="epub.css" rel="stylesheet" type="text/css"/>
 <meta content="urn:uuid:557645f4-7322-455d-8288-c237dcd1d85f" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 2. Modern Python" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch02">
-<h1><span class="label">Chapter 2. </span>Modern Python</h1>
+<h1><span class="label">第 2 章 </span>现代 Python</h1>
 
 <blockquote>
-<p>It’s all in a day’s work for Confuse-a-Cat.</p>
-<p data-type="attribution">Monty Python</p>
+<p>对于“迷惑猫咪公司（Confuse-a-Cat）”来说，这不过是日常工作罢了。</p>
+<p data-type="attribution">蒙提·派森（Monty Python，英国喜剧团体，Python 语言名称的灵感来源）</p>
 </blockquote>
 
 
@@ -13,28 +13,27 @@
 
 
 <section data-pdf-bookmark="Preview" data-type="sect1"><div class="sect1" id="id13">
-<h1>Preview</h1>
+<h1>本章预览</h1>
 
-<p><a data-primary="Python" data-type="indexterm" id="icd005"/>Python evolves to keep up with our changing technical world.
-This chapter discusses specific Python features
-that apply to issues in the previous chapter,
-and a few extras:</p>
+<p><a data-primary="Python" data-type="indexterm" id="icd005"/>Python 在不断演进，以跟上日新月异的技术世界。
+本章将讨论适用于上一章所提问题的特定 Python 特性，
+此外还会涵盖其他几项重要内容：</p>
 
 <ul>
 <li>
-<p>Tools</p>
+<p>工具（Tools）</p>
 </li>
 <li>
-<p>APIs and services</p>
+<p>API 与服务（APIs and services）</p>
 </li>
 <li>
-<p>Variables and type hinting</p>
+<p>变量与类型提示（Variables and type hinting）</p>
 </li>
 <li>
-<p>Data structures</p>
+<p>数据结构（Data structures）</p>
 </li>
 <li>
-<p>Web frameworks</p>
+<p>Web 框架（Web frameworks）</p>
 </li>
 </ul>
 </div></section>
@@ -45,33 +44,30 @@ and a few extras:</p>
 
 
 <section data-pdf-bookmark="Tools" data-type="sect1"><div class="sect1" id="id297">
-<h1>Tools</h1>
+<h1>工具</h1>
 
-<p>Every computing language has the following:</p>
+<p>每一门计算机编程语言都包含以下几个方面：</p>
 
 <ul>
 <li>
-<p>The core language and built-in standard packages</p>
+<p>核心语言及内置标准包</p>
 </li>
 <li>
-<p>Ways to add external packages</p>
+<p>添加外部扩展包的方式</p>
 </li>
 <li>
-<p>Recommended external packages</p>
+<p>推荐的外部扩展包</p>
 </li>
 <li>
-<p>An environment of development tools</p>
+<p>由开发工具构成的生态环境</p>
 </li>
 </ul>
 
-<p>The following sections
-list the Python tools required or recommended
-for this book.</p>
+<p>以下各节列出了阅读和实践本书所必需或推荐使用的 Python 工具。</p>
 
-<p>These may change over time!
-Python packaging and development tools are
-moving targets,
-and better solutions come along now and then.</p>
+<p>这些工具可能会随着时间推移而发生变化！
+Python 的包管理与开发工具一直处于动态演进之中，
+不时会有更优秀的解决方案涌现出来。</p>
 </div></section>
 
 
@@ -80,12 +76,11 @@ and better solutions come along now and then.</p>
 
 
 <section data-pdf-bookmark="Getting Started" data-type="sect1"><div class="sect1" id="id298">
-<h1>Getting Started</h1>
+<h1>快速入门</h1>
 
-<p>You should be able to write and run a Python program like
-<a data-type="xref" href="#ex-2-1">Example 2-1</a>.</p>
+<p>你应该能够编写并运行像<a data-type="xref" href="#ex-2-1">示例 2-1</a> 这样的 Python 程序。</p>
 <div data-type="example" id="ex-2-1">
-<h5><span class="label">Example 2-1. </span>The Python program that goes like this: <span class="plain">this.py</span></h5>
+<h5><span class="label">示例 2-1. </span>像这样运行的 Python 程序：<span class="plain">this.py</span></h5>
 
 <pre data-code-language="python" data-type="programlisting"><code class="k">def</code> <code class="nf">paid_promotion</code><code class="p">():</code>
     <code class="nb">print</code><code class="p">(</code><code class="s2">"(that calls this function!)"</code><code class="p">)</code>
@@ -94,22 +89,21 @@ and better solutions come along now and then.</p>
 <code class="n">paid_promotion</code><code class="p">()</code>
 <code class="nb">print</code><code class="p">(</code><code class="s2">"that goes like this."</code><code class="p">)</code></pre></div>
 
-<p>To execute this program from the command line
-in a text window or terminal,
-I’ll use the convention of a <code>$</code> <em>prompt</em>
-(your system begging you to type something, already).
-What you type after the prompt is shown in <strong><code>bold print</code></strong>.
-If you saved <a data-type="xref" href="#ex-2-1">Example 2-1</a> to a file named <em>this.py</em>, you can run it as shown in <a data-type="xref" href="#ex-2-2">Example 2-2</a>.</p>
+<p>为了展示如何在文本窗口或终端的命令行中执行该程序，
+我将遵循惯例使用 <code>$</code> 作为<em>命令提示符（prompt）</em>
+（也就是你的系统正眼巴巴地求着你赶紧输入点什么）。
+你在提示符后面输入的内容均以<strong><code>粗体代码</code></strong>显示。
+如果你将<a data-type="xref" href="#ex-2-1">示例 2-1</a> 保存为名为 <em>this.py</em> 的文件，就可以像<a data-type="xref" href="#ex-2-2">示例 2-2</a> 所示那样运行它。</p>
 <div data-type="example" id="ex-2-2">
-<h5><span class="label">Example 2-2. </span>Test <span class="plain">this.py</span></h5>
+<h5><span class="label">示例 2-2. </span>测试 <span class="plain">this.py</span></h5>
 
 <pre data-type="programlisting">$ <strong>python this.py</strong>
 This is the program
 (that calls this function!)
 that goes like this.</pre></div>
 
-<p>Some code examples use the interactive Python interpreter,
-which is what you get if you just type <strong><code>python</code></strong>:</p>
+<p>部分代码示例使用的是交互式 Python 解释器（interactive Python interpreter），
+只要直接在终端输入 <strong><code>python</code></strong> 回车即可进入该模式：</p>
 
 <pre data-type="programlisting">$ <strong>python</strong>
 Python 3.9.1 (v3.9.1:1e5d33e9b9, Dec  7 2020, 12:10:52)
@@ -117,26 +111,24 @@ Python 3.9.1 (v3.9.1:1e5d33e9b9, Dec  7 2020, 12:10:52)
 Type "help", "copyright", "credits" or "license" for more information.
 &gt;&gt;&gt;</pre>
 
-<p>The first few lines are specific to your operating system and
-Python version.
-The <code>&gt;&gt;&gt;</code> is your prompt here.
-A handy extra feature of the interactive interpreter
-is that it will print the value
-of a variable for you if you type its name:</p>
+<p>开头几行信息取决于你的操作系统与 Python 版本。
+这里的 <code>&gt;&gt;&gt;</code> 就是交互式提示符。
+交互式解释器有一个很顺手的附加特性：
+只要直接输入变量名，它就会自动把该变量的值打印出来：</p>
 
 <pre data-type="programlisting">&gt;&gt;&gt; <strong>wrong_answer = 43</strong>
 &gt;&gt;&gt; <strong>wrong_answer</strong>
 43</pre>
 
-<p class="pagebreak-before">This also works for expressions:</p>
+<p class="pagebreak-before">这一特性同样适用于表达式：</p>
 
 <pre data-type="programlisting">&gt;&gt;&gt; <strong>wrong_answer = 43</strong>
 &gt;&gt;&gt; <strong>wrong_answer - 3</strong>
 40</pre>
 
-<p>If you’re fairly new to Python
-or would like a quick review,
-read the next few sections.</p>
+<p>如果你刚接触 Python 不久，
+或者想要快速复习一下基础知识，
+请继续阅读接下来的几节内容。</p>
 
 
 
@@ -146,15 +138,15 @@ read the next few sections.</p>
 
 
 <section data-pdf-bookmark="Python Itself" data-type="sect2"><div class="sect2" id="id14">
-<h2>Python Itself</h2>
+<h2>Python 本身</h2>
 
-<p><a data-primary="Python" data-secondary="versions of" data-type="indexterm" id="id407"/>You will need, as a bare minimum, Python 3.7.
-This includes features like type hints and asyncio,
-which are core requirements for FastAPI.
-I recommend using at least Python 3.9,
-which will have a longer support lifetime.
-The standard source for <a data-primary="Python Software Foundation" data-type="indexterm" id="id408"/>Python is the
-<a href="https://www.python.org">Python Software Foundation</a>.</p>
+<p><a data-primary="Python" data-secondary="versions of" data-type="indexterm" id="id407"/>作为最低要求，你需要安装 Python 3.7 或更高版本。
+其中包含了类型提示（type hints）和 asyncio 等特性，
+它们都是 FastAPI 的核心运行要求。
+我建议至少使用 Python 3.9，
+因为它拥有更长的官方支持生命周期。
+获取 <a data-primary="Python Software Foundation" data-type="indexterm" id="id408"/>Python 的标准官方渠道是
+<a href="https://www.python.org">Python 软件基金会（Python Software Foundation）</a>网站。</p>
 </div></section>
 
 
@@ -165,24 +157,22 @@ The standard source for <a data-primary="Python Software Foundation" data-type="
 
 
 <section data-pdf-bookmark="Package Management" data-type="sect2"><div class="sect2" id="id15">
-<h2>Package Management</h2>
+<h2>包管理</h2>
 
-<p><a data-primary="Python" data-secondary="packages" data-type="indexterm" id="id409"/>You will want to download external Python packages
-and install them safely on your computer.
-The classic tool for this is<a data-primary="pip" data-type="indexterm" id="id410"/>
-<a href="https://pip.pypa.io">pip</a>.</p>
+<p><a data-primary="Python" data-secondary="packages" data-type="indexterm" id="id409"/>在开发中，你会需要下载外部 Python 包并将它们安全地安装到计算机上。
+完成这项工作的经典工具是<a data-primary="pip" data-type="indexterm" id="id410"/>
+<a href="https://pip.pypa.io">pip</a>。</p>
 
-<p>But how do you download this downloader?
-If you installed Python from the Python Software Foundation,
-you should already have pip.
-If not, follow the instructions at the pip site to get it.
-Throughout this book,
-as I introduce a new Python package,
-I’ll include the pip command
-to download it.</p>
+<p>但你该如何下载这个“下载器”呢？
+如果你是从 Python 软件基金会官网安装的 Python，
+那么系统中应该已经自带了 pip。
+如果没有，请按照 pip 官网上的说明进行安装。
+在本书各章中，
+每当我引入一个新的 Python 包时，
+都会附上对应的 pip 下载安装命令。</p>
 
-<p>Although you can do a lot with plain old pip, you’ll likely also want to use virtual environments
-and consider an alternative tool like Poetry.</p>
+<p>虽然单靠传统的 pip 就能完成许多工作，但你通常还会希望使用虚拟环境（virtual environments），
+并考虑像 Poetry 这样的替代工具。</p>
 </div></section>
 
 
@@ -193,60 +183,52 @@ and consider an alternative tool like Poetry.</p>
 
 
 <section data-pdf-bookmark="Virtual Environments" data-type="sect2"><div class="sect2" id="id16">
-<h2>Virtual Environments</h2>
+<h2>虚拟环境</h2>
 
-<p><a data-primary="Python" data-secondary="virtual environments" data-type="indexterm" id="icd006"/>Pip <a data-primary="virtual environments" data-type="indexterm" id="icd007"/>will download and install packages, but where should it put them?
-Although standard Python and its included libraries are usually
-installed in a standard place on your operating system,
-you may not (and probably should not)
-be able to change anything there.
-Pip uses a default directory other than the system one,
-so you won’t step on your system’s standard Python files.
-You can change this; see the pip site for
-details for your operating system.</p>
+<p><a data-primary="Python" data-secondary="virtual environments" data-type="indexterm" id="icd006"/>pip <a data-primary="virtual environments" data-type="indexterm" id="icd007"/>会下载并安装软件包，但它应该把这些包放在哪里呢？
+虽然标准 Python 及其自带的标准库通常会安装在操作系统的标准目录中，
+但你可能没有权限（而且通常也不应该）去修改那里的任何内容。
+pip 默认会使用系统目录以外的另一个目录，
+以免破坏系统自带的标准 Python 文件。
+你也可以修改这一安装路径；具体操作请针对你的操作系统查阅 pip 官网文档。</p>
 
-<p>But it’s common to work with multiple versions of Python,
-or make installations specific to a project, so you know exactly
-which packages are in there.
-To do this, Python supports <em>virtual environments</em>.
-These are just directories
-(<em>folders</em> in the non-Unix world)
-into which pip writes downloaded packages.
-When you <em>activate</em> a virtual environment, your shell
-(main system command interpreter) looks there first when
-loading Python modules.</p>
+<p>不过在实际开发中，我们经常需要同时使用多个不同版本的 Python，
+或者为特定项目创建独立的包安装环境，以便清楚地掌握项目里究竟安装了哪些包。
+为此，Python 支持<em>虚拟环境（virtual environments）</em>。
+它们本质上只是一些普通目录（在非 Unix 世界里常被称为<em>文件夹［folder］</em>），
+pip 会把下载好的软件包写入其中。
+当你<em>激活（activate）</em>某个虚拟环境时，你的 shell（主系统命令解释器）在加载 Python 模块时就会优先去该目录下查找。</p>
 
-<p>The program for this is<a data-primary="venv" data-type="indexterm" id="id411"/>
-<a href="https://oreil.ly/9kv5T">venv</a>,
-and it’s been included
-with standard Python since <span class="keep-together">version 3.4</span>.</p>
+<p>用于管理虚拟环境的内置工具是<a data-primary="venv" data-type="indexterm" id="id411"/>
+<a href="https://oreil.ly/9kv5T">venv</a>，
+自 Python <span class="keep-together">3.4 版本</span>起，它就已随标准 Python 一并内置提供。</p>
 
-<p>Let’s make a virtual environment called <code>venv1</code>.
-You can run the venv module as a standalone program:</p>
+<p>让我们创建一个名为 <code>venv1</code> 的虚拟环境。
+你可以将 venv 模块作为独立程序运行：</p>
 
 <pre data-type="programlisting">$ <strong>venv venv1</strong></pre>
 
-<p>Or as a Python module:</p>
+<p>或者将其作为 Python 模块运行：</p>
 
 <pre data-type="programlisting">$ <strong>python -m venv venv1</strong></pre>
 
-<p>To make this your current Python environment,
-run this shell command
-(on Linux or Mac; see the venv docs for Windows and others):</p>
+<p>要将其设为当前的 Python 环境，
+请运行以下 shell 命令
+（适用于 Linux 或 Mac；Windows 及其他系统请查阅 venv 文档）：</p>
 
 <pre data-type="programlisting">$ <strong>source venv1/bin/activate</strong></pre>
 
-<p>Now, anytime you run <code>pip install</code>,
-it will install packages under <code>venv1</code>.
-And when you run Python programs,
-that’s where your Python interpreter and modules will be found.</p>
+<p>现在，无论何时运行 <code>pip install</code>，
+它都会将软件包安装到 <code>venv1</code> 目录下。
+而且当你运行 Python 程序时，
+系统也会从该目录下查找对应的 Python 解释器和模块。</p>
 
-<p>To <em>de</em>activate your virtual environment,
-press Control-D (Linux or Mac), or type <span class="keep-together"><code><strong>deactivate</strong></code></span> (Windows).</p>
+<p>要<em>退出（deactivate）</em>当前虚拟环境，
+可以按下 Control-D（Linux 或 Mac），或者输入 <span class="keep-together"><code><strong>deactivate</strong></code></span>（Windows，在 Linux/Mac 下同样适用）。</p>
 
-<p>You can create alternative environments like <code>venv2</code>,
-and deactivate/activate to step between them
-(although I hope you have more naming imagination<a data-primary="Python" data-secondary="virtual environments" data-startref="icd006" data-type="indexterm" id="id412"/> than <a data-primary="virtual environments" data-startref="icd007" data-type="indexterm" id="id413"/>me).</p>
+<p>你可以创建像 <code>venv2</code> 这样的其他虚拟环境，
+并通过退出/激活（deactivate/activate）在它们之间灵活切换
+（不过希望你在起名字时比我更有想象力<a data-primary="Python" data-secondary="virtual environments" data-startref="icd006" data-type="indexterm" id="id412"/><a data-primary="virtual environments" data-startref="icd007" data-type="indexterm" id="id413"/>）。</p>
 </div></section>
 
 
@@ -259,37 +241,32 @@ and deactivate/activate to step between them
 <section data-pdf-bookmark="Poetry" data-type="sect2"><div class="sect2" id="id17">
 <h2>Poetry</h2>
 
-<p><a data-primary="Poetry" data-type="indexterm" id="id414"/>This combination of pip and venv is
-so common that people started combining them to save steps
-and avoid that <code>source</code> shell wizardry.
-One such package is<a data-primary="Pipenv" data-type="indexterm" id="id415"/>
-<a href="https://pipenv.pypa.io">Pipenv</a>,
-but a newer rival called
+<p><a data-primary="Poetry" data-type="indexterm" id="id414"/>由于 pip 与 venv 的搭配使用实在太常见了，人们便开始将二者结合起来，以简化操作步骤，
+并省去 <code>source</code> 那套繁琐的 shell 命令魔法。
+这类工具之一是<a data-primary="Pipenv" data-type="indexterm" id="id415"/>
+<a href="https://pipenv.pypa.io">Pipenv</a>，
+但一个名为
 <a href="https://python-poetry.org">Poetry</a>
-is becoming more popular.</p>
+的后起之秀正变得越来越受欢迎。</p>
 
-<p>Having used pip, Pipenv, and Poetry,
-I now prefer Poetry.
-Get it with <code>pip install poetry</code>.
-Poetry has many subcommands, such as <code>poetry add</code>
-to add a package to your virtual environment,
-<code>poetry install</code> to actually download and install it,
-and so on.
-Check the Poetry site or run the <code>poetry</code> command for help.</p>
+<p>在先后使用过 pip、Pipenv 和 Poetry 之后，
+我现在更青睐 Poetry。
+你可以通过 <code>pip install poetry</code> 安装它。
+Poetry 提供了许多子命令，例如使用 <code>poetry add</code>
+向虚拟环境中添加软件包，
+使用 <code>poetry install</code> 实际下载并安装依赖包，
+等等。
+你可以访问 Poetry 官网或直接运行 <code>poetry</code> 命令查看帮助信息。</p>
 
-<p>Besides downloading single packages,
-<a data-primary="pip" data-type="indexterm" id="id416"/>pip and Poetry manage multiple packages in configuration files:
-<em>requirements.txt</em> for pip, and <em>pyproject.toml</em> for Poetry.
-Poetry and pip don’t just download packages, but also manage the
-tricky dependencies that packages may have on other packages.
-You can specify desired package versions as
-minima, maxima, ranges, or exact values (also known as <em>pinning</em>).
-This can be important as your project grows
-and the packages that it
-depends on change.
-You may need a minimum version of a package if
-a feature that you use first appeared there,
-or a maximum if a feature was dropped.</p>
+<p>除了下载单个软件包之外，
+<a data-primary="pip" data-type="indexterm" id="id416"/>pip 和 Poetry 还可以通过配置文件管理多个软件包：
+pip 使用 <em>requirements.txt</em>，而 Poetry 使用 <em>pyproject.toml</em>。
+Poetry 和 pip 不仅负责下载软件包，还会管理包与包之间错综复杂的依赖关系。
+你可以将所需的软件包版本指定为最低版本、最高版本、版本区间或精确版本号（这也被称为<em>版本锁定［pinning］</em>）。
+随着项目规模不断扩大，以及所依赖的第三方包发生更新，
+这项功能会变得尤为重要。
+如果你用到的某个特性是在某个版本中首次引入的，你就需要指定最低版本；
+而如果某个特性在后续版本中被移除了，你则需要限制最高版本。</p>
 </div></section>
 
 
@@ -300,16 +277,14 @@ or a maximum if a feature was dropped.</p>
 
 
 <section class="pagebreak-before less_space" data-pdf-bookmark="Source Formatting" data-type="sect2"><div class="sect2" id="id18">
-<h2>Source Formatting</h2>
+<h2>源码格式化</h2>
 
-<p><a data-primary="Python" data-secondary="source formatting" data-type="indexterm" id="id417"/>Source <a data-primary="source formatting" data-type="indexterm" id="id418"/>formatting is less important than the topics of the previous sections but still helpful.
-Avoid code formatting (<em>bikeshedding</em>) arguments
-with a tool that
-massages source into a standard, nonweird
-format.
-One good choice is<a data-primary="Black" data-type="indexterm" id="id419"/>
-<a href="https://black.readthedocs.io">Black</a>.
-Install it with <code>pip install black</code>.</p>
+<p><a data-primary="Python" data-secondary="source formatting" data-type="indexterm" id="id417"/>源码<a data-primary="source formatting" data-type="indexterm" id="id418"/>格式化的重要程度虽不及前面几节介绍的工具，但依然非常有帮助。
+借助能将源代码自动整理为标准、规范格式的工具，
+你可以彻底避免团队在代码排版风格上陷入无休止的争论（即所谓的<em>自行车棚效应［bikeshedding］</em>）。
+一个很好的选择是<a data-primary="Black" data-type="indexterm" id="id419"/>
+<a href="https://black.readthedocs.io">Black</a>。
+你可以通过 <code>pip install black</code> 安装它。</p>
 </div></section>
 
 
@@ -320,14 +295,13 @@ Install it with <code>pip install black</code>.</p>
 
 
 <section data-pdf-bookmark="Testing" data-type="sect2"><div class="sect2" id="id19">
-<h2>Testing</h2>
+<h2>测试</h2>
 
-<p><a data-primary="Python" data-secondary="testing" data-type="indexterm" id="id420"/>Testing <a data-primary="testing" data-type="indexterm" id="id421"/>is covered in detail in <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>.
-Although the standard Python test package is unittest,
-the industrial-strength Python test package used by
-most Python developers is<a data-primary="pytest" data-type="indexterm" id="id422"/>
-<a href="https://docs.pytest.org">pytest</a>.
-Install it with <code>pip install pytest</code>.</p>
+<p><a data-primary="Python" data-secondary="testing" data-type="indexterm" id="id420"/>关于测试（<a data-primary="testing" data-type="indexterm" id="id421"/>testing）的详细内容将在<a data-type="xref" href="ch12.html#ch12">第 12 章</a>中深入探讨。
+虽然 Python 标准库自带的测试包是 unittest，
+但绝大多数 Python 开发者实际使用的工业级高强度测试框架是<a data-primary="pytest" data-type="indexterm" id="id422"/>
+<a href="https://docs.pytest.org">pytest</a>。
+你可以通过 <code>pip install pytest</code> 安装它。</p>
 </div></section>
 
 
@@ -338,21 +312,18 @@ Install it with <code>pip install pytest</code>.</p>
 
 
 <section data-pdf-bookmark="Source Control and Continuous Integration" data-type="sect2"><div class="sect2" id="id20">
-<h2>Source Control and Continuous Integration</h2>
+<h2>源码控制与持续集成</h2>
 
-<p><a data-primary="Python" data-secondary="source control" data-type="indexterm" id="id423"/>The <a data-primary="source control" data-type="indexterm" id="id424"/>almost-universal solution for source control now is<a data-primary="Git" data-type="indexterm" id="id425"/> <em>Git</em>,
-with storage repositories (<em>repos</em>) at sites like
-GitHub and GitLab.
-Using Git isn’t specific to Python or FastAPI,
-but you’ll likely spend a lot of your development time with Git.
-<a data-primary="pre-commit tool" data-type="indexterm" id="id426"/>The <a href="https://pre-commit.com">pre-commit</a> tool
-runs various tests on your local machine
-(such as <code>black</code> and <code>pytest</code>)
-before committing to Git.
-After pushing to a remote Git repo,
-more <a data-primary="CI (continuous integration)" data-type="indexterm" id="id427"/>continuous integration (CI) tests may be run there.</p>
+<p><a data-primary="Python" data-secondary="source control" data-type="indexterm" id="id423"/>如今，<a data-primary="source control" data-type="indexterm" id="id424"/>源码控制领域几乎一统天下的解决方案是 <a data-primary="Git" data-type="indexterm" id="id425"/><em>Git</em>，
+并配合 GitHub 和 GitLab 等平台上的代码仓库（repositories，简称 <em>repos</em>）使用。
+使用 Git 并非 Python 或 FastAPI 所独有，
+但在日常开发中，你很可能会花大量时间与 Git 打交道。
+<a data-primary="pre-commit tool" data-type="indexterm" id="id426"/><a href="https://pre-commit.com">pre-commit</a> 工具可以在你将代码提交（commit）到 Git 之前，
+先在本地机器上自动运行各项检查与测试（例如运行 <code>black</code> 和 <code>pytest</code>）。
+而当代码推送（push）到远程 Git 仓库后，
+远程仓库上还可以自动触发运行更多的<a data-primary="CI (continuous integration)" data-type="indexterm" id="id427"/>持续集成（continuous integration，简称 CI）测试。</p>
 
-<p><a data-type="xref" href="ch12.html#ch12">Chapter 12</a> and <a data-type="xref" href="ch13.html#troubleshooting">“Troubleshooting”</a> have more details.</p>
+<p><a data-type="xref" href="ch12.html#ch12">第 12 章</a>以及<a data-type="xref" href="ch13.html#troubleshooting">第 13 章的“故障排查（Troubleshooting）”一节</a>对此有更详细的介绍。</p>
 </div></section>
 
 
@@ -363,30 +334,29 @@ more <a data-primary="CI (continuous integration)" data-type="indexterm" id="id4
 
 
 <section data-pdf-bookmark="Web Tools" data-type="sect2"><div class="sect2" id="id175">
-<h2>Web Tools</h2>
+<h2>Web 工具</h2>
 
-<p><a data-type="xref" href="ch03.html#ch03">Chapter 3</a> shows how to install and use the main Python web tools
-used in this book:</p>
+<p><a data-type="xref" href="ch03.html#ch03">第 3 章</a>将展示如何安装和使用本书涉及的主要 Python Web 工具：</p>
 <dl>
 <dt>FastAPI<a data-primary="FastAPI" data-secondary="defined" data-type="indexterm" id="id428"/></dt>
 <dd>
-<p>The web framework itself</p>
+<p>Web 框架本身</p>
 </dd>
 <dt>Uvicorn<a data-primary="Uvicorn" data-secondary="defined" data-type="indexterm" id="id429"/></dt>
 <dd>
-<p>An asynchronous web server</p>
+<p>一个异步 Web 服务器</p>
 </dd>
 <dt>HTTPie<a data-primary="HTTPie" data-secondary="defined" data-type="indexterm" id="id430"/></dt>
 <dd>
-<p>A text web client, similar to curl</p>
+<p>一个命令行文本 Web 客户端，类似于 curl</p>
 </dd>
 <dt>Requests<a data-primary="Requests package" data-secondary="defined" data-type="indexterm" id="id431"/></dt>
 <dd>
-<p>A synchronous web client package</p>
+<p>一个同步 Web 客户端库</p>
 </dd>
 <dt><a data-primary="HTTPX" data-secondary="defined" data-type="indexterm" id="id432"/>HTTPX</dt>
 <dd>
-<p>A synchronous/asynchronous web client package</p>
+<p>一个同时支持同步与异步的 Web 客户端库</p>
 </dd>
 </dl>
 </div></section>
@@ -398,25 +368,21 @@ used in this book:</p>
 
 
 <section data-pdf-bookmark="APIs and Services" data-type="sect1"><div class="sect1" id="id21">
-<h1>APIs and Services</h1>
+<h1>API 与服务</h1>
 
-<p><a data-primary="Python" data-secondary="APIs and services" data-type="indexterm" id="id433"/>Python’s <a data-primary="services" data-type="indexterm" id="id434"/>modules <a data-primary="APIs (application programming interfaces)" data-secondary="in Python" data-type="indexterm" id="id435"/>and packages are essential for creating large
-applications that don’t become
-<a href="https://oreil.ly/zzX5T">“big balls of mud”</a>.
-Even in a single-process web service,
-you can maintain the separation discussed in <a data-type="xref" href="ch01.html#ch01">Chapter 1</a>
-by the careful design of modules and imports.</p>
+<p><a data-primary="Python" data-secondary="APIs and services" data-type="indexterm" id="id433"/>Python 的<a data-primary="services" data-type="indexterm" id="id434"/>模块（modules）<a data-primary="APIs (application programming interfaces)" data-secondary="in Python" data-type="indexterm" id="id435"/>和包（packages）对于构建大型应用程序至关重要，能防止代码演变成一团乱麻的
+<a href="https://oreil.ly/zzX5T">“大泥球（big balls of mud）”</a>。
+即便是在单进程的 Web 服务中，
+只要精心设计模块划分与导入关系，你依然能够保持<a data-type="xref" href="ch01.html#ch01">第 1 章</a>所讨论的层级分离架构。</p>
 
-<p>Python’s built-in data structures are extremely flexible,
-and very tempting to use everywhere.
-But in the coming chapters, you’ll see that
-we can define higher-level <em>models</em> to make our
-interlayer communication cleaner.
-These models rely on a fairly recent Python addition
-called <em>type hinting</em>.
-Let’s get into that,
-but first with a brief aside on how Python handles <em>variables</em>.
-This won’t hurt.</p>
+<p>Python 的内置数据结构极其灵活，
+让人忍不住想在所有地方都直接使用它们。
+但在接下来的章节中，你会看到我们可以定义更高层次的<em>模型（models）</em>，
+从而让跨层级的通信变得更加清晰整洁。
+这些模型依赖于 Python 近年新增的一项重要特性——<em>类型提示（type hinting）</em>。
+我们马上就会深入介绍它，
+但在那之前，先花一点篇幅聊聊 Python 是如何处理<em>变量（variables）</em>的。
+别担心，这一点也不难理解。</p>
 </div></section>
 
 
@@ -425,89 +391,75 @@ This won’t hurt.</p>
 
 
 <section data-pdf-bookmark="Variables Are Names" data-type="sect1"><div class="sect1" id="id22">
-<h1>Variables Are Names</h1>
+<h1>变量即名称</h1>
 
-<p><a data-primary="objects" data-type="indexterm" id="icd009"/>The <a data-primary="Python" data-secondary="objects" data-type="indexterm" id="icd008"/>term <em>object</em> has many definitions in the software world—maybe too many.
-In Python, an object is
-a data structure that wraps every distinct piece of data
-in the program,
-from an integer like <code>5</code>, to a function,
-to anything that you might define.
-It specifies, among other bookkeeping info, the following:</p>
+<p><a data-primary="objects" data-type="indexterm" id="icd009"/>在软件世界里，<a data-primary="Python" data-secondary="objects" data-type="indexterm" id="icd008"/><em>对象（object）</em>一词有着许多种定义——甚至可能有点太多了。
+在 Python 中，对象是一种封装了程序中每一个独立数据项的数据结构，
+小到像 <code>5</code> 这样的整数，大到函数，
+乃至你定义的任何内容，皆为对象。
+除了其他内部管理信息之外，每个对象都明确记录了以下内容：</p>
 
 <ul>
 <li>
-<p>A unique <em>identity</em> value</p>
+<p>一个唯一的<em>标识值（identity）</em></p>
 </li>
 <li>
-<p>The low-level <em>type</em> that matches the hardware</p>
+<p>与底层硬件相对应的底层<em>类型（type）</em></p>
 </li>
 <li>
-<p>The specific <em>value</em> (physical bits)</p>
+<p>具体的<em>值（value</em>，即物理比特位）</p>
 </li>
 <li>
-<p>A <em>reference count</em> of the number of variables that refer to it</p>
+<p>记录当前有多少个变量正指向它的<em>引用计数（reference count）</em></p>
 </li>
 </ul>
 
-<p>Python is <em>strongly typed</em> at the object level
-(its <em>type</em> doesn’t change, although its <em>value</em> might).
-An object is termed <em>mutable</em> if its value may be changed,
-<em>immutable</em> if not.</p>
+<p>Python 在对象层面上是<em>强类型的（strongly typed）</em>
+（即对象的<em>类型</em>一旦创建便不会改变，尽管它的<em>值</em>可能会变）。
+如果一个对象的值可以被修改，则称其为<em>可变对象（mutable）</em>；
+如果不能被修改，则称其为<em>不可变对象（immutable）</em>。</p>
 
-<p>But <a data-primary="variables" data-type="indexterm" id="id436"/>at <a data-primary="Python" data-secondary="variables" data-type="indexterm" id="id437"/>the <em>variable</em> level,
-Python differs from many other computing languages,
-and this can be confusing. In many other languages,
-a <em>variable</em> is essentially a direct pointer to an area of memory
-that contains a raw <em>value</em>,
-stored in bits that follow the computer’s hardware design.
-If you assign a new value to that variable,
-the language overwrites the previous value in memory with the new one.</p>
+<p>然而在<a data-primary="variables" data-type="indexterm" id="id436"/><a data-primary="Python" data-secondary="variables" data-type="indexterm" id="id437"/><em>变量（variable）</em>层面上，
+Python 与许多其他编程语言截然不同，
+这一点有时容易让人感到困惑。在许多其他语言中，
+<em>变量</em>本质上是一个直接指向某块内存区域的指针，
+该内存区域中存放着原始的<em>值</em>，
+并按照计算机硬件设计的位格式进行存储。
+如果你给该变量赋一个新值，
+语言会直接用新值覆盖内存中原来的旧值。</p>
 
-<p>That’s direct and fast.
-The compiler keeps track of what goes where.
-It’s one reason languages like C are faster than Python.
-As a developer, you need to ensure that
-you assign only values of the correct type to each variable.</p>
+<p>这种机制直接且高效。
+编译器会全程追踪什么数据存放在什么位置。
+这也是 C 等语言比 Python 运行得更快的原因之一。
+作为开发者，你必须确保只向每个变量赋予正确类型的值。</p>
 
-<p>Now, here’s the big difference with Python:
-a Python variable is just a <em>name</em> that
-is temporarily associated with a higher-level
-<em>object</em> in memory. If you assign a new value to a variable
-that refers to an immutable object,
-you’re actually creating a new object that
-contains that value,
-and then getting the name to refer to that new object.
-The old object (that the name used to refer to)
-is then free,
-and its memory can be reclaimed if no other
-names are still referring to it
-(i.e., its reference count is 0).</p>
+<p>现在，来看看 Python 最核心的区别所在：
+Python 的变量仅仅是一个<em>名称（name）</em>，
+它只是临时与内存中的某个高层次<em>对象（object）</em>关联在一起。如果你向一个当前指向不可变对象的变量赋新值，
+你实际上是在创建一个包含该新值的全新对象，
+然后让这个变量名称转而指向那个新对象。
+至于原来的旧对象（即该名称先前所指向的对象）则被解除了绑定，
+如果没有任何其他名称仍然指向它（即其引用计数变为 0），
+它所占用的内存就可以被回收释放。</p>
 
-<p>In
-<em>Introducing Python</em> (O’Reilly),
-I compare objects to plastic boxes sitting on
-memory shelves,
-and names/variables to sticky notes
-on these boxes.
-Or you can picture names as tags
-attached by strings to those boxes.</p>
+<p>在《Python 语言及其应用》（<em>Introducing Python</em>，O’Reilly 出版）一书中，
+我把对象比作摆放在内存货架上的塑料盒子，
+而把名称/变量比作贴在这些盒子上的便利贴（sticky notes）。
+或者，你也可以把名称想象成用细绳系在那些盒子上的标签牌。</p>
 
-<p>Usually, when you use a name,
-you assign it to one object, and it stays attached.
-Such simple consistency helps you understand your code.
-A variable’s <em>scope</em> is the area of code in which a name refers to
-the same object—such as within a function.
-You can use the same name in different scopes,
-but each one refers to a different object.</p>
+<p>通常情况下，当你使用一个变量名时，
+你会将它绑定到某个对象上，并一直保持这种绑定关系。
+这种简单的一致性有助于你理解自己的代码。
+变量的<em>作用域（scope）</em>是指某个名称始终指向同一个对象的代码区域——例如在一个函数内部。
+你可以在不同的作用域中使用相同的变量名，
+但它们各自指向的是不同的对象。</p>
 
-<p>Although you can make a variable refer to
-different objects throughout a Python program,
-that isn’t necessarily a good practice.
-Without looking, you don’t know if name <code>x</code> on line 100
-is in the same scope as name <code>x</code> on line 20.
-(By the way, <code>x</code> is a terrible name.
-We should pick names that actually confer <a data-primary="objects" data-startref="icd009" data-type="indexterm" id="id438"/>some<a data-primary="Python" data-secondary="objects" data-startref="icd008" data-type="indexterm" id="id439"/> meaning.)</p>
+<p>尽管你可以在一段 Python 程序中让同一个变量名先后指向不同的对象，
+但这通常并不是一个好习惯。
+如果不仔细上下文查看，你根本无法一眼判断第 100 行的名称 <code>x</code>
+与第 20 行的名称 <code>x</code> 是否处于同一个作用域中。
+（顺便说一句，<code>x</code> 是个非常糟糕的变量名。
+我们应当选用真正能够传达<a data-primary="objects" data-startref="icd009" data-type="indexterm" id="id438"/>实际<a data-primary="Python" data-secondary="objects" data-startref="icd008" data-type="indexterm" id="id439"/>语义的名称。）</p>
 </div></section>
 
 
@@ -516,36 +468,26 @@ We should pick names that actually confer <a data-primary="objects" data-startre
 
 
 <section data-pdf-bookmark="Type Hints" data-type="sect1"><div class="sect1" id="id23">
-<h1>Type Hints</h1>
+<h1>类型提示</h1>
 
-<p>All <a data-primary="Python" data-secondary="type hinting" data-type="indexterm" id="id440"/>of <a data-primary="type hinting" data-type="indexterm" id="id441"/>this background has a point.</p>
+<p>前面铺垫的所有这些<a data-primary="Python" data-secondary="type hinting" data-type="indexterm" id="id440"/><a data-primary="type hinting" data-type="indexterm" id="id441"/>背景知识，都是为了引出这一节的核心主题。</p>
 
-<p>Python 3.6 added <em>type hints</em> to declare the type of object
-to which a variable refers.
-These are <em>not</em> enforced by the Python interpreter as it’s running!
-Instead, they can be used by various tools to ensure that
-your use of a variable is consistent.
-The standard type checker is called <a data-primary="mypy" data-type="indexterm" id="id442"/><em>mypy</em>,
-and I’ll show you how it’s used later.</p>
+<p>Python 3.6 引入了<em>类型提示（type hints）</em>语法，用于声明某个变量所指向对象的类型。
+请注意，Python 解释器在运行时<em>并不会</em>强制检查这些类型提示！
+相反，它们可供各种外部工具使用，以确保你在代码中使用变量的方式保持前后一致。
+Python 标准的类型检查工具叫做 <a data-primary="mypy" data-type="indexterm" id="id442"/><em>mypy</em>，
+稍后我会向你展示它的具体用法。</p>
 
-<p>A type hint may seem like just a nice thing, like many lint
-tools used by programmers to avoid mistakes.
-For instance, it may remind you that
-your variable <code>count</code> refers to a Python object of type <code>int</code>.
-But hints,
-although they’re optional and unenforced notes
-(literally, hints),
-turn out to have unexpected uses.
-Later in this book, you’ll see how FastAPI adapted
-the Pydantic package to make clever use of
-type hinting.</p>
+<p>初看起来，类型提示似乎只是个锦上添花的小功能，就像程序员为了避免低级错误而使用的许多代码静态检查（lint）工具一样。
+比如，它可以提醒你变量 <code>count</code> 指向的是一个 <code>int</code> 类型的 Python 对象。
+但这些类型提示——尽管它们只是可选且不具强制性的注解（字面意义上的“提示”）——
+却展现出了意想不到的强大妙用。
+在本书后面的章节中，你将看到 FastAPI 是如何结合 Pydantic 库，
+对类型提示进行巧妙运用的。</p>
 
-<p>The addition of type declarations
-may be a trend in other, formerly typeless, languages.
-For example,
-many JavaScript
-developers have moved to
-<a href="https://www.typescriptlang.org">TypeScript</a>.</p>
+<p>为原本无类型声明的动态语言引入类型声明，或许正成为整个行业的一大趋势。
+例如，许多 JavaScript 开发者如今都已经转向了
+<a href="https://www.typescriptlang.org">TypeScript</a>。</p>
 </div></section>
 
 
@@ -554,10 +496,10 @@ developers have moved to
 
 
 <section data-pdf-bookmark="Data Structures" data-type="sect1"><div class="sect1" id="id299">
-<h1>Data Structures</h1>
+<h1>数据结构</h1>
 
-<p>You’ll get details on Python and data structures
-in <a data-type="xref" href="ch05.html#ch05">Chapter 5</a>.</p>
+<p>关于 Python 与数据结构的详细内容，
+你将在<a data-type="xref" href="ch05.html#ch05">第 5 章</a>中看到全面讲解。</p>
 </div></section>
 
 
@@ -566,29 +508,24 @@ in <a data-type="xref" href="ch05.html#ch05">Chapter 5</a>.</p>
 
 
 <section data-pdf-bookmark="Web Frameworks" data-type="sect1"><div class="sect1" id="id24">
-<h1>Web Frameworks</h1>
+<h1>Web 框架</h1>
 
-<p><a data-primary="Python" data-secondary="web frameworks" data-type="indexterm" id="icd010"/>Among<a data-primary="web frameworks" data-type="indexterm" id="icd011"/> other things, a web framework translates between
-HTTP bytes and Python data structures.
-It can save you a lot of effort.
-On the other hand, if part of it doesn’t work
-as you need it to,
-you may need to hack a solution.
-As the saying goes, don’t reinvent the wheel—unless you can’t get a round one.</p>
+<p><a data-primary="Python" data-secondary="web frameworks" data-type="indexterm" id="icd010"/>除了<a data-primary="web frameworks" data-type="indexterm" id="icd011"/>其他功能之外，Web 框架的核心职责之一是在 HTTP 字节流与 Python 数据结构之间进行相互转换。
+它能够为你省下大量繁琐的工作。
+但另一方面，如果框架的某个部分无法按你需要的方式工作，
+你就可能需要自己动手寻找变通方案（hack）了。
+正如俗话所说：不要重复造轮子——除非你手头根本找不到一个圆的轮子。</p>
 
-<p>The <a data-primary="WSGI (Web Server Gateway Interface)" data-type="indexterm" id="id443"/><a href="https://wsgi.readthedocs.io">Web Server Gateway Interface (WSGI)</a> is a synchronous Python
-<a href="https://peps.python.org/pep-3333">standard specification</a>
-to connect application code to web servers.
-Traditional Python web <span class="keep-together">frameworks</span> are all built on WSGI.
-But synchronous communication may mean busy waiting for
-something that’s <em>much</em> slower than the CPU,
-like a disk or network.
-Then you’ll look for better <a data-primary="concurrency" data-type="indexterm" id="id444"/><em>concurrency</em>.
-Concurrency has become more important in recent years.
-As a result, the Python<a data-primary="ASGI (Asynchronous Server Gateway Interface)" data-type="indexterm" id="id445"/>
-<a href="https://asgi.readthedocs.io">Asynchronous Server Gateway Interface (ASGI) specification</a>
-was developed.
-<a data-type="xref" href="ch04.html#ch04">Chapter 4</a> talks about this.</p>
+<p><a data-primary="WSGI (Web Server Gateway Interface)" data-type="indexterm" id="id443"/><a href="https://wsgi.readthedocs.io">Web 服务器网关接口（Web Server Gateway Interface，简称 WSGI）</a>是一项同步的 Python
+<a href="https://peps.python.org/pep-3333">标准规范</a>，
+用于将应用程序代码与 Web 服务器连接起来。
+传统的 Python Web <span class="keep-together">框架</span>全部构建在 WSGI 之上。
+然而，同步通信意味着在面对磁盘或网络等比 CPU <em>慢得多</em>的操作时，往往会陷入忙等待（busy waiting）。
+这时，你自然会寻求更好的<a data-primary="concurrency" data-type="indexterm" id="id444"/><em>并发（concurrency）</em>能力。
+近年来，并发的重要性日益凸显。
+为此，Python 社区制定了<a data-primary="ASGI (Asynchronous Server Gateway Interface)" data-type="indexterm" id="id445"/>
+<a href="https://asgi.readthedocs.io">异步服务器网关接口（Asynchronous Server Gateway Interface，简称 ASGI）规范</a>。
+<a data-type="xref" href="ch04.html#ch04">第 4 章</a>将专门讨论这一主题。</p>
 
 
 
@@ -601,19 +538,14 @@ was developed.
 <h2>Django</h2>
 
 <p><a data-primary="Django" data-secondary="defined" data-type="indexterm" id="id446"/><a href="https://www.djangoproject.com">Django</a>
-is a full-featured web framework
-that tags itself as
-“the web framework for perfectionists with deadlines.”
-It was announced by
-Adrian Holovaty<a data-primary="Holovaty, Adrian" data-type="indexterm" id="id447"/>
-and
-Simon <span class="keep-together">Willison</span><a data-primary="Willison, Simon" data-type="indexterm" id="id448"/>
-in 2003,
-and named after
-Django Reinhardt,
-a 20th-century Belgian jazz guitarist.
-Django is often used for database-backed corporate sites.
-I include more details on Django in <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>.</p>
+是一个功能完备的全栈式 Web 框架，
+它的官方标语是“为有截止日期的完美主义者打造的 Web 框架”。
+它由 Adrian Holovaty<a data-primary="Holovaty, Adrian" data-type="indexterm" id="id447"/>
+和 Simon <span class="keep-together">Willison</span><a data-primary="Willison, Simon" data-type="indexterm" id="id448"/>
+于 2003 年发布，
+并以 20 世纪比利时爵士吉他大师 Django Reinhardt 的名字命名。
+Django 常被用于构建以数据库为支撑的企业级网站。
+我将在<a data-type="xref" href="ch07.html#ch07">第 7 章</a>中详细介绍 Django 的更多细节。</p>
 </div></section>
 
 
@@ -626,12 +558,12 @@ I include more details on Django in <a data-type="xref" href="ch07.html#ch07">Ch
 <section data-pdf-bookmark="Flask" data-type="sect2"><div class="sect2" id="id26">
 <h2>Flask</h2>
 
-<p><a data-primary="Flask" data-type="indexterm" id="id449"/>In contrast,
-<a href="https://flask.palletsprojects.com">Flask</a>,
-introduced by Armin Ronacher<a data-primary="Ronacher, Armin" data-type="indexterm" id="id450"/> in 2010,
-is a <em>microframework</em>.
-<a data-type="xref" href="ch07.html#ch07">Chapter 7</a> has more information on Flask
-and how it compares with Django and <span class="keep-together">FastAPI</span>.</p>
+<p><a data-primary="Flask" data-type="indexterm" id="id449"/>相比之下，
+由 Armin Ronacher<a data-primary="Ronacher, Armin" data-type="indexterm" id="id450"/> 于 2010 年推出的
+<a href="https://flask.palletsprojects.com">Flask</a>，
+则是一个<em>微框架（microframework）</em>。
+<a data-type="xref" href="ch07.html#ch07">第 7 章</a>包含了关于 Flask 的更多信息，
+并将它与 Django 和 <span class="keep-together">FastAPI</span> 进行了横向对比。</p>
 </div></section>
 
 
@@ -644,55 +576,44 @@ and how it compares with Django and <span class="keep-together">FastAPI</span>.<
 <section data-pdf-bookmark="FastAPI" data-type="sect2"><div class="sect2" id="id27">
 <h2>FastAPI</h2>
 
-<p><a data-primary="FastAPI" data-secondary="rise of" data-type="indexterm" id="id451"/>After meeting other suitors at the ball,
-we finally encounter the intriguing FastAPI,
-the subject of this book.
-Although FastAPI was published by
-Sebastián Ramírez<a data-primary="Ramírez, Sebastián" data-type="indexterm" id="id452"/>
-in 2018,
-it has already climbed to
-the third place
-of Python web frameworks,
-behind Flask and Django,
-and is growing faster.
-A 2022
-<a href="https://oreil.ly/36WTQ">comparison</a>
-shows that it may pass them at some point.</p>
-<div data-type="note" epub:type="note"><h6>Note</h6>
-<p>As of the end of October 2023, here are the GitHub star counts:</p>
+<p><a data-primary="FastAPI" data-secondary="rise of" data-type="indexterm" id="id451"/>在舞会上见过了其他几位追求者之后，
+我们终于迎来了令人眼前一亮的 FastAPI——也就是本书的主角。
+尽管 FastAPI 由 Sebastián Ramírez<a data-primary="Ramírez, Sebastián" data-type="indexterm" id="id452"/>
+于 2018 年才正式发布，
+但它已经跃居 Python Web 框架排行榜的第三位，
+仅次于 Flask 和 Django，
+而且增长势头比前两者更快。
+2022 年的一项<a href="https://oreil.ly/36WTQ">对比研究</a>表明，它在未来某个时刻很可能会超越前两者。</p>
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>截至 2023 年 10 月底，这三大框架在 GitHub 上的 Star 数量如下：</p>
 
 <ul>
 <li>
-<p>Django: 73.8 thousand</p>
+<p>Django：7.38 万（73.8 thousand）</p>
 </li>
 <li>
-<p>Flask: 64.8 thousand</p>
+<p>Flask：6.48 万（64.8 thousand）</p>
 </li>
 <li>
-<p>FastAPI: 64 thousand</p>
+<p>FastAPI：6.4 万（64 thousand）</p>
 </li>
 </ul>
 </div>
 
-<p class="pagebreak-before">After careful investigation into
-<a href="https://oreil.ly/JDDOm">alternatives</a>,
-Ramírez came up
-with a
-<a href="https://oreil.ly/zJFTX">design</a>
-that was heavily based on two third-party Python packages:</p>
+<p class="pagebreak-before">在对各种<a href="https://oreil.ly/JDDOm">替代方案</a>进行了深入调研之后，
+Ramírez 提出了一套深度基于两个第三方 Python 包的<a href="https://oreil.ly/zJFTX">架构设计</a>：</p>
 
 <ul>
 <li>
-<p><em>Starlette</em> for web details</p>
+<p>使用 <em>Starlette</em> 处理底层 Web 机制</p>
 </li>
 <li>
-<p><em>Pydantic</em> for data details</p>
+<p>使用 <em>Pydantic</em> 处理数据定义与校验细节</p>
 </li>
 </ul>
 
-<p>And he added his own ingredients
-and special sauces to the final product.
-You’ll see what I mean in the <a data-primary="web frameworks" data-startref="icd011" data-type="indexterm" id="id453"/>next <a data-primary="Python" data-secondary="web frameworks" data-startref="icd010" data-type="indexterm" id="id454"/>chapter<a data-primary="Python" data-startref="icd005" data-type="indexterm" id="id455"/>.</p>
+<p>在此基础上，他又加入了自己的独创设计与“秘制酱料”，打造出了最终的成品。
+在<a data-primary="web frameworks" data-startref="icd011" data-type="indexterm" id="id453"/>下一<a data-primary="Python" data-secondary="web frameworks" data-startref="icd010" data-type="indexterm" id="id454"/>章<a data-primary="Python" data-startref="icd005" data-type="indexterm" id="id455"/>中，你将亲眼见证它的精妙之处。</p>
 </div></section>
 </div></section>
 
@@ -702,26 +623,25 @@ You’ll see what I mean in the <a data-primary="web frameworks" data-startref="
 
 
 <section data-pdf-bookmark="Review" data-type="sect1"><div class="sect1" id="id300">
-<h1>Review</h1>
+<h1>本章回顾</h1>
 
-<p>This chapter covered a lot of ground
-related to today’s Python:</p>
+<p>本章围绕当今的现代 Python 涵盖了非常丰富的内容：</p>
 
 <ul>
 <li>
-<p>Useful tools for a Python web developer</p>
+<p>面向 Python Web 开发者的实用工具</p>
 </li>
 <li>
-<p>The prominence of APIs and services</p>
+<p>API 与服务的重要地位</p>
 </li>
 <li>
-<p>Python’s type hinting, objects, and variables</p>
+<p>Python 的类型提示、对象与变量机制</p>
 </li>
 <li>
-<p>Data structures for web services</p>
+<p>面向 Web 服务的数据结构</p>
 </li>
 <li>
-<p>Web frameworks</p>
+<p>主流 Web 框架概览</p>
 </li>
 </ul>
 </div></section>
