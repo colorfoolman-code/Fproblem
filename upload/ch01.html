@@ -1,0 +1,741 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>The Modern Web</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:557645f4-7322-455d-8288-c237dcd1d85f" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 1. The Modern Web" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch01">
+<h1><span class="label">Chapter 1. </span>The Modern Web</h1>
+
+<blockquote>
+<p>The <a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id332"/>Web as I envisaged it, we have not seen it yet.
+The future is still so much bigger than the past.</p>
+<p data-type="attribution">Tim Berners-Lee</p>
+</blockquote>
+
+
+
+
+
+
+<section data-pdf-bookmark="Preview" data-type="sect1"><div class="sect1" id="id295">
+<h1>Preview</h1>
+
+<p>Once upon a time, the web was small and simple.
+Developers had such fun throwing PHP, HTML, and MySQL calls
+into single files and proudly telling everyone
+to check out their website.
+But the web grew over time
+to zillions, nay, squillions of pages—and the early playground
+became a metaverse of theme parks.</p>
+
+<p>In this chapter, I’ll point out some areas
+that have become ever more relevant to the modern web:</p>
+
+<ul>
+<li>
+<p>Services and APIs</p>
+</li>
+<li>
+<p>Concurrency</p>
+</li>
+<li>
+<p>Layers</p>
+</li>
+<li>
+<p>Data</p>
+</li>
+</ul>
+
+<p>The next chapter will show what Python offers in these areas.
+After that, we’ll dive into the FastAPI web framework
+and see what it has to offer.</p>
+</div></section>
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Services and APIs" data-type="sect1"><div class="sect1" id="id3">
+<h1>Services and APIs</h1>
+
+<p>The web is a great connecting fabric.
+Although much activity still occurs on the
+<em>content</em> side—HTML, JavaScript, images, and so on—there’s an increasing emphasis on the application programming interfaces (APIs)
+that connect things.</p>
+
+<p>Commonly,
+a web <em>service</em> <a data-primary="services" data-type="indexterm" id="id333"/>handles
+low-level database access and middle-level business logic
+(often lumped together as a <a data-primary="backend" data-type="indexterm" id="id334"/><em>backend</em>),
+while JavaScript or mobile apps provide a rich top-level <a data-primary="frontend" data-type="indexterm" id="id335"/><em>frontend</em>
+(interactive user interface).
+These fore and aft worlds have become more complex and divergent,
+usually requiring developers to specialize in one or the other.
+It’s harder to be a <em>full stack</em> developer than it used to
+be.<sup><a data-type="noteref" href="ch01.html#id336" id="id336-marker">1</a></sup></p>
+
+<p>These two worlds talk to each other using APIs.
+In the modern web, API design is as important as
+the design of websites themselves.
+An <a data-primary="APIs (application programming interfaces)" data-secondary="defined" data-type="indexterm" id="id337"/>API is a contract, similar to a database schema.
+Defining and modifying APIs is now a major job.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Kinds of APIs" data-type="sect2"><div class="sect2" id="id4">
+<h2>Kinds of APIs</h2>
+
+<p>Each <a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-type="indexterm" id="icd001"/>API defines the following:</p>
+<dl>
+<dt>Protocol</dt>
+<dd>
+<p>The control structure</p>
+</dd>
+<dt>Format</dt>
+<dd>
+<p>The content structure</p>
+</dd>
+</dl>
+
+<p>Multiple API methods have developed as technology
+has evolved from isolated machines,
+to multitasking systems,
+to networked servers.
+You’ll probably run across one or more of these at some point,
+so the following is a brief summary before getting to
+<em>HTTP</em> and its friends, which are featured in this book:</p>
+
+<ul>
+<li>
+<p>Before networking, an API usually meant a very close connection,
+like a function call to a<a data-primary="libraries" data-type="indexterm" id="id338"/> <em>library</em> in the same language as your
+application—say, calculating a square root in a math library.</p>
+</li>
+<li>
+<p><em>Remote procedure calls (RPCs)</em> <a data-primary="RPCs (remote procedure calls)" data-type="indexterm" id="id339"/>were<a data-primary="remote procedure calls (RPCs)" data-type="indexterm" id="id340"/> invented to call
+functions in other processes,
+on the same machine or others,
+as though they were in the
+calling application.
+A popular current example is <a data-primary="gRPC" data-type="indexterm" id="id341"/><a href="https://grpc.io">gRPC</a>.</p>
+</li>
+<li>
+<p><em>Messaging</em> <a data-primary="messaging" data-type="indexterm" id="id342"/>sends small chunks of data in pipelines
+among processes.
+Messages may be verb-like commands
+or may just indicate noun-like <em>events</em> of interest.
+Current popular messaging solutions,
+which vary broadly from toolkits to full servers,
+include
+<a data-primary="Apache Kafka" data-type="indexterm" id="id343"/><a data-primary="Kafka, Apache" data-type="indexterm" id="id344"/><a href="https://kafka.apache.org">Apache Kafka</a>,
+<a data-primary="RabbitMQ" data-type="indexterm" id="id345"/><a href="https://www.rabbitmq.com">RabbitMQ</a>,
+<a data-primary="NATS" data-type="indexterm" id="id346"/><a href="https://nats.io">NATS</a>,
+and
+<a data-primary="ZeroMQ" data-type="indexterm" id="id347"/><a href="https://zeromq.org">ZeroMQ</a>.
+Communication can follow different patterns:</p>
+<dl>
+<dt><a data-primary="request-response" data-type="indexterm" id="id348"/>Request-response</dt>
+<dd>
+<p>One: one, like a web browser calling a web server.</p>
+</dd>
+<dt><a data-primary="pub-sub (publish-subscribe)" data-type="indexterm" id="id349"/>Publish-subscribe, or <em>pub-sub</em></dt>
+<dd>
+<p>A <em>publisher</em> emits messages,
+and <em>subscribers</em> act on each according to some data in the message,
+like a subject.</p>
+</dd>
+<dt><a data-primary="queues" data-type="indexterm" id="id350"/>Queues</dt>
+<dd>
+<p>Like pub-sub, but only one of a pool of subscribers
+grabs the message and acts on it.</p>
+</dd>
+</dl>
+</li>
+</ul>
+
+<p>Any of these may be used alongside a web service—for example, performing a slow backend task like sending an email
+or creating a thumbnail image<a data-primary="APIs (application programming interfaces)" data-secondary="kinds of" data-startref="icd001" data-type="indexterm" id="id351"/>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="HTTP" data-type="sect2"><div class="sect2" id="id5">
+<h2>HTTP</h2>
+
+<p><a data-primary="HTTP" data-type="indexterm" id="id352"/>Berners-Lee<a data-primary="Berners-Lee, Tim" data-type="indexterm" id="id353"/> proposed three components for his World Wide Web:</p>
+<dl>
+<dt><a data-primary="HTML" data-type="indexterm" id="id354"/>HTML</dt>
+<dd>
+<p>A language for displaying data</p>
+</dd>
+<dt>HTTP</dt>
+<dd>
+<p>A client-server protocol</p>
+</dd>
+<dt><a data-primary="URLs" data-type="indexterm" id="id355"/>URLs</dt>
+<dd>
+<p>An addressing scheme for web resources</p>
+</dd>
+</dl>
+
+<p>Although these seem obvious in retrospect,
+they turned out to be a ridiculously useful combination.
+As the web evolved, people experimented,
+and some ideas, like the <code>IMG</code> tag, survived the Darwinian struggle.
+And as needs became clearer,
+people got serious about defining standards.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="REST(ful)" data-type="sect2"><div class="sect2" id="id6">
+<h2>REST(ful)</h2>
+
+<p>One <a data-primary="RESTful API design" data-type="indexterm" id="icd002"/>chapter in <a data-primary="Fielding, Roy" data-type="indexterm" id="id356"/>Roy Fielding’s Ph.D.
+<a href="https://oreil.ly/TwGmX">thesis</a> defined <em>Representational State Transfer (REST)</em>—an
+<em>architectural style</em> for HTTP use.<sup><a data-type="noteref" href="ch01.html#id357" id="id357-marker">2</a></sup>
+Although often referenced, it’s been largely
+<a href="https://oreil.ly/bsSry">misunderstood</a>.</p>
+
+<p class="pagebreak-before">A roughly shared adaptation has evolved and dominates the modern web.
+It’s called <em>RESTful</em>,
+with these characteristics:</p>
+
+<ul>
+<li>
+<p>Uses HTTP and client-server protocol</p>
+</li>
+<li>
+<p>Stateless (each connection is independent)</p>
+</li>
+<li>
+<p>Cacheable</p>
+</li>
+<li>
+<p>Resource-based</p>
+</li>
+</ul>
+
+<p>A <em>resource</em> <a data-primary="resources" data-type="indexterm" id="id358"/>is data that you can distinguish
+and perform operations on.
+A web service provides an <a data-primary="endpoints (routes)" data-type="indexterm" id="id359"/><em>endpoint</em>—a<a data-primary="routes (endpoints)" data-type="indexterm" id="id360"/> distinct URL and <a data-primary="HTTP verbs" data-type="indexterm" id="id361"/>HTTP <em>verb</em> (action)—for each feature that it wants to expose.
+An endpoint is also called a <em>route</em>,
+because it routes the URL to a function.</p>
+
+<p>Database users are familiar with the <em>CRUD</em>
+acronym of procedures: <a data-primary="CRUD (create, read, update, delete)" data-type="indexterm" id="id362"/>create, read, update, delete.
+The HTTP verbs are pretty CRUDdy:</p>
+<dl>
+<dt><code>POST</code></dt>
+<dd>
+<p>Create (write)</p>
+</dd>
+<dt><code>PUT</code></dt>
+<dd>
+<p>Modify completely (replace)</p>
+</dd>
+<dt><code>PATCH</code></dt>
+<dd>
+<p>Modify partially (update)</p>
+</dd>
+<dt><code>GET</code></dt>
+<dd>
+<p>Um, get (read, retrieve)</p>
+</dd>
+<dt><code>DELETE</code></dt>
+<dd>
+<p>Uh, delete</p>
+</dd>
+</dl>
+
+<p>A client sends a<a data-primary="HTTP requests" data-type="indexterm" id="id363"/> <em>request</em> to a RESTful endpoint
+with data in one of the following areas of an HTTP message:</p>
+
+<ul>
+<li>
+<p>Headers</p>
+</li>
+<li>
+<p>The URL string</p>
+</li>
+<li>
+<p>Query parameters</p>
+</li>
+<li>
+<p>Body values</p>
+</li>
+</ul>
+
+<p>In turn, an <a data-primary="HTTP responses" data-type="indexterm" id="id364"/>HTTP <em>response</em> returns these:</p>
+
+<ul>
+<li>
+<p>An integer
+<a href="https://oreil.ly/oBena"><em>status code</em></a>
+indicating the following:</p>
+<dl>
+<dt>100s</dt>
+<dd>
+<p>Info, keep going</p>
+</dd>
+<dt>200s</dt>
+<dd>
+<p>Success</p>
+</dd>
+<dt>300s</dt>
+<dd>
+<p>Redirection</p>
+</dd>
+<dt>400s</dt>
+<dd>
+<p>Client error</p>
+</dd>
+<dt>500s</dt>
+<dd>
+<p>Server error</p>
+</dd>
+</dl>
+</li>
+<li>
+<p>Various headers</p>
+</li>
+<li>
+<p>A body, which may be empty, single, or <em>chunked</em> (in successive pieces)</p>
+</li>
+</ul>
+
+<p>At least one status code is an Easter egg:
+<code>418</code> (I’m a <a href="https://www.google.com/teapot">teapot</a>)
+is supposed to be returned by a web-connected teapot,
+if asked to brew <span class="keep-together">coffee</span>.</p>
+
+<figure><div class="figure" id="fig-teapot">
+<img alt="fapi 01in01" src="assets/fapi_01in01.png" width="100"/>
+<h6/>
+</div></figure>
+
+<p>You’ll find many websites and books on RESTful API design,
+all with useful rules of thumb.
+This book will dole some out on the way<a data-primary="RESTful API design" data-startref="icd002" data-type="indexterm" id="id365"/>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="JSON and API Data Formats" data-type="sect2"><div class="sect2" id="id7">
+<h2>JSON and API Data Formats</h2>
+
+<p><a data-primary="JSON (JavaScript Object Notation)" data-type="indexterm" id="id366"/>Frontend applications
+can exchange plain ASCII text
+with backend web services,
+but how can you express data structures like lists of things?</p>
+
+<p>Just about when we really started to need it,
+along came <em>JavaScript Object Notation (JSON)</em>—another simple idea that solves an important problem
+and seems obvious with hindsight.
+Although the <em>J</em> stands for <em>JavaScript</em>,
+the syntax looks a lot like Python too.</p>
+
+<p>JSON has largely replaced older attempts like XML and SOAP.
+In the rest of this book, you’ll see that
+JSON is the default web service input and output format.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="JSON:API" data-type="sect2"><div class="sect2" id="id8">
+<h2>JSON:API</h2>
+
+<p><a data-primary="JSON:API proposal" data-type="indexterm" id="id367"/>The combination of RESTful design and JSON data formats
+is common now.
+But some wiggle room still remains for ambiguity
+and nerd tussles.
+The recent <a href="https://jsonapi.org">JSON:API</a> proposal
+aims to tighten specs a bit.
+This book will use the loose RESTful approach,
+but JSON:API or something similarly rigorous may be useful
+if you have significant tussles.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="GraphQL" data-type="sect2"><div class="sect2" id="id9">
+<h2>GraphQL</h2>
+
+<p><a data-primary="GraphQL" data-type="indexterm" id="id368"/>RESTful interfaces can be cumbersome for some purposes.
+Facebook (now Meta) designed
+<a href="https://graphql.org">Graph Query Language (<em>GraphQL</em>)</a>
+to specify more flexible service queries.
+I won’t go into GraphQL in this book,
+but you may want to look into it if you find
+RESTful design inadequate for your application.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Concurrency" data-type="sect1"><div class="sect1" id="id10">
+<h1>Concurrency</h1>
+
+<p><a data-primary="concurrency" data-type="indexterm" id="icd003"/>Besides the growth of service orientation,
+the rapid expansion of the number of connections to
+web services requires ever better efficiency and scale.</p>
+
+<p>We want to reduce the following:</p>
+<dl>
+<dt>Latency</dt>
+<dd>
+<p>The up-front wait time</p>
+</dd>
+<dt>Throughput</dt>
+<dd>
+<p>The number of
+bytes per second between the service and its callers</p>
+</dd>
+</dl>
+
+<p>In the old web
+days,<sup><a data-type="noteref" href="ch01.html#id369" id="id369-marker">3</a></sup>
+people dreamed of
+supporting hundreds of simultaneous connections,
+then fretted about the “10K problem,”
+and now assume millions at a time.</p>
+
+<p>The term <em>concurrency</em> doesn’t mean full parallelism.
+Multiple processing isn’t occurring in the same nanosecond,
+in a single CPU.
+Instead, concurrency mostly avoids <a data-primary="busy waiting" data-type="indexterm" id="id370"/><em>busy waiting</em> (idling the CPU until a response is delivered).
+CPUs are zippy, but networks and disks are
+thousands to millions of times slower.
+So, whenever we talk to a network or disk, we don’t
+want to just sit there with a blank stare until it responds.</p>
+
+<p>Normal <a data-primary="Python" data-secondary="synchronous processing" data-type="indexterm" id="id371"/>Python execution is<a data-primary="synchronous processing" data-type="indexterm" id="id372"/> <em>synchronous</em>: one thing at a time,
+in the order specified by the code.
+Sometimes we want to be<a data-primary="asynchronous processing" data-type="indexterm" id="id373"/> <em>asynchronous</em>:
+do a little of one thing,
+then a little of another thing,
+back to the first thing, and so on.
+If all our code uses the CPU to calculate things (<em>CPU bound</em>),
+there’s really no spare time to be asynchronous.
+But if we perform something that makes the CPU wait for
+an external thing to complete (I/O bound), we can be asynchronous.</p>
+
+<p>Asynchronous systems provide an<a data-primary="event loops" data-type="indexterm" id="id374"/> <em>event loop</em>:
+requests for slow operations are sent and noted,
+but we don’t hold up the CPU waiting for their responses.
+Instead, some immediate processing is done
+on each pass through the loop,
+and any responses that came in during that time are handled
+in the next pass.</p>
+
+<p>The effects can be dramatic.
+Later in this book, you’ll see how FastAPI’s support
+of asynchronous processing makes it much faster than typical
+web frameworks.</p>
+
+<p>Asynchronous processing isn’t magic.
+You still have to be careful to avoid doing too much
+CPU-intensive work
+during the event loop,
+because that will slow down everything. Later in this book, you’ll see the uses of Python’s
+<code>async</code> and <code>await</code> keywords,
+and how FastAPI lets you mix
+both synchronous and asynchronous
+processing<a data-primary="concurrency" data-startref="icd003" data-type="indexterm" id="id375"/>.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Layers" data-type="sect1"><div class="sect1" id="id11">
+<h1>Layers</h1>
+
+<p><a data-primary="layers" data-type="indexterm" id="icd004"/><em>Shrek</em> fans may remember he noted his
+layers of personality,
+to which Donkey replied, “Like an onion?”</p>
+
+<figure><div class="figure" id="fig-onion">
+<img alt="fapi 01in02" src="assets/fapi_01in02.png" width="100"/>
+<h6/>
+</div></figure>
+
+<p>Well, if ogres and tearful vegetables can have layers,
+then so can software.
+To manage size and complexity,
+many applications have long used a so-called
+<em>three-tier model</em><a data-primary="three-tier model" data-type="indexterm" id="id376"/>.<sup><a data-type="noteref" href="ch01.html#id377" id="id377-marker">4</a></sup>
+This isn’t terribly new.
+Terms differ,<sup><a data-type="noteref" href="ch01.html#id378" id="id378-marker">5</a></sup>
+but for this book I’m using the following
+simple separation of terms (see <a data-type="xref" href="#fig-vert-layers">Figure 1-1</a>):</p>
+<dl>
+<dt><a data-primary="Web layer" data-type="indexterm" id="id379"/>Web</dt>
+<dd>
+<p>Input/output layer over HTTP, which assembles client requests, calls the Service Layer, and returns responses</p>
+</dd>
+<dt><a data-primary="Service layer" data-type="indexterm" id="id380"/>Service</dt>
+<dd>
+<p>The business logic, which calls the Data layer when needed</p>
+</dd>
+<dt><a data-primary="Data layer" data-type="indexterm" id="id381"/>Data</dt>
+<dd>
+<p>Access to data stores and other services</p>
+</dd>
+<dt><a data-primary="Model box" data-type="indexterm" id="id382"/>Model</dt>
+<dd>
+<p>Data definitions shared by all layers</p>
+</dd>
+<dt>Web client</dt>
+<dd>
+<p>Web browser or other HTTP client-side software</p>
+</dd>
+<dt><a data-primary="databases" data-type="indexterm" id="id383"/>Database</dt>
+<dd>
+<p>The data store, often an SQL or NoSQL server</p>
+</dd>
+</dl>
+
+<figure><div class="figure" id="fig-vert-layers">
+<img alt="fapi 0101" src="assets/fapi_0101.png"/>
+<h6><span class="label">Figure 1-1. </span>Vertical layers<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id384"/></h6>
+</div></figure>
+
+<p>These components will help you scale your site
+without having to start from scratch.
+They’re not laws of quantum
+mechanics,
+so consider them guidelines for this book’s exposition.</p>
+
+<p>The layers talk to one another via <a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id385"/>APIs.
+These can be simple function calls to separate Python modules,
+but could access external code via any method.
+As I showed earlier, this could include RPCs, messages, and so on.
+In this book, I’m assuming a single web server,
+with Python code importing other Python modules.
+The separation and information hiding is handled by the modules.</p>
+
+<p>The <a data-primary="Web layer" data-type="indexterm" id="id386"/><em>Web layer</em> is the one that users see,
+via <em>client</em> applications and APIs.
+We’re usually talking about a RESTful web interface,
+with URLs, and JSON-encoded requests and responses.
+But alternative text
+(or command-line interface, CLI)
+clients <a data-primary="CLI (command-line interface)" data-type="indexterm" id="id387"/>also could be built alongside the Web layer.
+Python Web code may import Service-layer modules
+but should not import Data modules.</p>
+
+<p>The <a data-primary="Service layer" data-type="indexterm" id="id388"/><em>Service layer</em> contains the actual details of whatever this
+website provides.
+This layer essentially looks like a <em>library</em>.
+It imports Data modules to access databases and external services
+but should not know the details.</p>
+
+<p>The <a data-primary="Data layer" data-type="indexterm" id="id389"/><em>Data layer</em> provides the Service layer access to data,
+through files or client calls to other services.
+Alternative Data layers may also exist,
+communicating with a single Service layer.</p>
+
+<p>The <a data-primary="Model box" data-type="indexterm" id="id390"/><em>Model box</em> isn’t an actual layer
+but a source of data definitions shared by the layers.
+This isn’t needed if you’re passing built-in Python
+data structures among them.
+As you will see, FastAPI’s inclusion of Pydantic
+enables the definition of data structures with
+many useful features.</p>
+
+<p class="pagebreak-before">Why make these divisions?
+Among many reasons, each layer can be:</p>
+
+<ul>
+<li>
+<p>Written by specialists.</p>
+</li>
+<li>
+<p>Tested in isolation.</p>
+</li>
+<li>
+<p>Replaced or supplemented: you might add a second
+Web layer, using a different API such as gRPC,
+alongside a web one.</p>
+</li>
+</ul>
+
+<p>Follow one rule from <em>Ghostbusters</em>:
+Don’t cross the streams.
+That is, don’t let web details leak out of the Web layer,
+or database details out of the Data layer.</p>
+
+<p>You can visualize
+<em>layers</em> as a vertical stack<a data-primary="layers" data-secondary="vertical" data-type="indexterm" id="id391"/>,
+like a cake in the Great British Bake Off.<sup><a data-type="noteref" href="ch01.html#id392" id="id392-marker">6</a></sup></p>
+
+<figure><div class="figure" id="fig-cake">
+<img alt="fapi 01in03" src="assets/fapi_01in03.png" width="100"/>
+<h6/>
+</div></figure>
+
+<p>Here are some reasons for <a data-primary="layers" data-secondary="separation of" data-type="indexterm" id="id393"/>separation of the layers:</p>
+
+<ul>
+<li>
+<p>If you don’t separate the layers, expect a hallowed web meme: <em>Now you have two problems</em>.</p>
+</li>
+<li>
+<p>Once the layers are mixed, later separation will be <em>very</em> difficult.</p>
+</li>
+<li>
+<p>You’ll need to know two or more specialties
+to understand and write tests if code logic gets muddled.</p>
+</li>
+</ul>
+
+<p>By the way,
+even though I call them <em>layers</em>,
+you don’t need to assume that one layer is
+“above” or “below” another,
+and that commands flow with gravity.
+Vertical chauvinism!
+You could also view layers as <a data-primary="layers" data-secondary="sideways-communicating boxes" data-type="indexterm" id="id394"/>sideways-communicating boxes (<a data-type="xref" href="#fig-horiz-layers">Figure 1-2</a>).</p>
+
+<figure><div class="figure" id="fig-horiz-layers">
+<img alt="fapi 0102" src="assets/fapi_0102.png"/>
+<h6><span class="label">Figure 1-2. </span>Sideways-communicating boxes</h6>
+</div></figure>
+
+<p>However you visualize them,
+the <em>only</em> communication paths between
+the boxes/layers are the arrows <a data-primary="APIs (application programming interfaces)" data-secondary="communication between layers/boxes" data-type="indexterm" id="id395"/>(APIs).
+This is important for testing and debugging.
+If undocumented doors exist in a factory,
+the night watchman will inevitably be surprised.</p>
+
+<p>The arrows between the web client and Web layer
+use HTTP or HTTPS to transport mostly JSON text.
+The arrows between the Data layer and database
+use a database-specific protocol and carry SQL (or other) text.
+The arrows between the layers themselves are function calls
+carrying data models.</p>
+
+<p>Also, the recommended data formats flowing through the arrows are as follows:</p>
+<dl>
+<dt>Client ⇔ <a data-primary="Web layer" data-type="indexterm" id="id396"/>Web</dt>
+<dd>
+<p>RESTful HTTP with JSON</p>
+</dd>
+<dt>Web ⇔ <a data-primary="Service layer" data-type="indexterm" id="id397"/>Service</dt>
+<dd>
+<p>Models</p>
+</dd>
+<dt>Service ⇔ <a data-primary="Data layer" data-type="indexterm" id="id398"/>Data</dt>
+<dd>
+<p>Models</p>
+</dd>
+<dt>Data ⇔ Databases and services</dt>
+<dd>
+<p>Specific APIs</p>
+</dd>
+</dl>
+
+<p>Based on my own experience,
+this is how I’ve chosen to structure the topics in this book.
+It’s workable and has scaled to fairly complex sites,
+but isn’t sacred.
+You may have a better design!
+However you do it,
+these are the important points:</p>
+
+<ul>
+<li>
+<p>Separate domain-specific details.</p>
+</li>
+<li>
+<p>Define standard APIs between the layers.</p>
+</li>
+<li>
+<p>Don’t cheat; don’t leak.</p>
+</li>
+</ul>
+
+<p>Sometimes deciding
+which layer is the best home for code is a challenge.
+For example, <a data-type="xref" href="ch11.html#ch11">Chapter 11</a> looks at authentication and authorization requirements
+and how to implement them—as an extra layer
+between Web and Service,
+or within one of them.
+Software development is sometimes as much art as science.<a data-primary="layers" data-startref="icd004" data-type="indexterm" id="id399"/></p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Data" data-type="sect1"><div class="sect1" id="id12">
+<h1>Data</h1>
+
+<p><a data-primary="databases" data-type="indexterm" id="id400"/>The web has often been used as a
+frontend to relational databases,
+although many other ways of storing and accessing data
+have evolved, such as
+NoSQL or NewSQL databases.</p>
+
+<p>But beyond databases,
+<em>machine learning (ML)</em>—<a data-primary="ML (machine learning)" data-type="indexterm" id="id401"/>or <a data-primary="deep learning" data-type="indexterm" id="id402"/><em>deep learning</em> or
+just <em>AI</em><a data-primary="AI (artificial intelligence)" data-type="indexterm" id="id403"/>—is<a data-primary="artificial intelligence" data-see="AI" data-type="indexterm" id="id404"/> fundamentally remaking the technology landscape.
+The development of large models requires <em>lots</em>
+of messing with data, which has traditionally been called <a data-primary="ETL (extract, transform, load)" data-type="indexterm" id="id405"/>extract, transform, load (ETL).</p>
+
+<p>As a general-purpose service architecture,
+the web can help with many of the fiddly bits of ML systems.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Review" data-type="sect1"><div class="sect1" id="id296">
+<h1>Review</h1>
+
+<p>The web uses many APIs, but especially RESTful ones.
+Asynchronous calls allow better concurrency,
+which speeds up the overall process.
+Web service applications are often large enough to divide into layers.
+Data has become a major area in its own right.
+All these concepts are addressed in the
+Python programming language,
+coming in the next chapter.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id336"><sup><a href="ch01.html#id336-marker">1</a></sup> I gave up trying a few years ago.</p><p data-type="footnote" id="id357"><sup><a href="ch01.html#id357-marker">2</a></sup> <em>Style</em> means a higher-level pattern, like <em>client-server</em>, rather than a specific design.</p><p data-type="footnote" id="id369"><sup><a href="ch01.html#id369-marker">3</a></sup> Around when caveman played hacky sack with giant ground sloths.</p><p data-type="footnote" id="id377"><sup><a href="ch01.html#id377-marker">4</a></sup> Choose your own dialect: tier/layer, tomato/tomahto/arigato.</p><p data-type="footnote" id="id378"><sup><a href="ch01.html#id378-marker">5</a></sup> You’ll often see the term <em>Model-View-Controller (MVC)</em> and <a data-primary="MVC (Model-View-Controller)" data-type="indexterm" id="id406"/>variations. Commonly accompanied by religious wars, toward which I’m agnostic.</p><p data-type="footnote" id="id392"><sup><a href="ch01.html#id392-marker">6</a></sup> As viewers know, if your layers get sloppy, you may not return to the tent the next week.</p></div></div></section></body></html>
